@@ -1,112 +1,206 @@
-create table brands (
-	brand_id INT IDENTITY PRIMARY KEY,
-	name varchar(25)
+CREATE TABLE brands (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name TEXT UNIQUE NOT NULL
 );
 
 create table categories (
-	category_id INT IDENTITY PRIMARY KEY,
-	name varchar(30)
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name TEXT UNIQUE NOT NULL
 );
 
 create table taxes (
-	tax_id INT IDENTITY PRIMARY KEY,
-	name varchar(100) NOT NULL,
-	percentage decimal(17,2) NOT NULL
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name TEXT UNIQUE NOT NULL,
+	percentage DECIMAL(5,2) NOT NULL
 );
 
 create table suppliers (
-	supplier_id INT IDENTITY PRIMARY KEY,
-	name varchar(30),
-	surname varchar(30),
-	address varchar(100),
-	phone varchar(20),
-	email varchar(100) NOT NULL,
-	isActive BIT NOT NULL DEFAULT 1,
-	credit decimal(17,2) NOT NULL,
-	curr_credit decimal(17,2) NOT NULL DEFAULT 0,
-    CONSTRAINT CK_suppliers_credit CHECK (curr_credit <= credit)
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name TEXT NOT NULL,
+	address TEXT,
+	email TEXT NOT NULL,
+	is_active BOOLEAN NOT NULL DEFAULT TRUE,
+	credit_limit DECIMAL(17,2) NOT NULL,
+	curr_credit DECIMAL(17,2) NOT NULL DEFAULT 0
+);
+
+create table category_suppliers (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	supplier_id INT NOT NULL REFERENCES suppliers(id),
+	category_id INT NOT NULL REFERENCES categories(id),
+	UNIQUE(supplier_id, category_id)
+	-- We *could* have used both the category and supplier ids
+	-- and have a composite PK, but we're likely to add a column
+	-- for the price this supplier has for the category. And at that 
+	-- point our table has stopped being a simple tuple and starts
+	-- storing business data, so it will be referenced from somewhere
+	-- else, and using a composite PK becomes a hassle. This is for 
+	-- future stability and comfort. Huzzah!
 );
 
 create table sale_conditions (
-	sale_condition_id INT IDENTITY PRIMARY KEY,
-	name varchar(25) NOT NULL
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name VARCHAR(25) NOT NULL
 );
 
 create table roles (
-	role_id INT IDENTITY PRIMARY KEY,
-	name varchar(25) NOT NULL
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name VARCHAR(25) UNIQUE NOT NULL
 );
 
 create table employees (
-	employee_id INT IDENTITY PRIMARY KEY,
-	name varchar(50) NOT NULL,
-	surname varchar(50),
-	role_id INT NOT NULL,
-	location_id INT NOT NULL,
-	isActive INT NOT NULL DEFAULT 1,
-	FOREIGN KEY (location_id) REFERENCES locations(location_id),
-	FOREIGN KEY (role_id) REFERENCES roles(role_id)
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name VARCHAR(50) NOT NULL,
+	surname VARCHAR(50),
+	role_id INT NOT NULL REFERENCES roles(id),
+	location_id INT NOT NULL REFERENCES locations(id),
+	is_active BOOLEAN DEFAULT TRUE
 );
 
 -- an/a item/product like "Oil 2L"
 create table products (
-	product_id INT IDENTITY PRIMARY KEY,
-	code varchar(25) NOT NULL,
-	cost decimal(17,2) NOT NULL,
-	price decimal(17,2) NOT NULL,
-	category_id INT NOT NULL,
-	brand_id INT,				-- Sin el NOT NULL, porque no es realmente necesario aqui
-	isActive BIT NOT NULL DEFAULT 1,
-	description VARCHAR(MAX) NOT NULL,
-	FOREIGN KEY (category_id) REFERENCES categories(category_id),
-	FOREIGN KEY (brand_id) REFERENCES brands(brand_id)
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	code TEXT UNIQUE NOT NULL,
+	cost DECIMAL(17,2) NOT NULL,
+	price DECIMAL(17,2) NOT NULL,
+	category_id INT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
+	brand_id INT REFERENCES brands(id) ON DELETE RESTRICT,	
+	is_active BOOLEAN NOT NULL DEFAULT TRUE,
+	description TEXT NOT NULL
 );
 
-create table product_suppliers (
-    product_id INT NOT NULL,
-    supplier_id INT NOT NULL,
-
-    -- Clave primaria compuesta: UNIQUE + CLUSTERED por defecto
-    CONSTRAINT pk_product_supplier PRIMARY KEY (product_id, supplier_id),
-
-    -- Claves foraneas
-    FOREIGN KEY (product_id) REFERENCES products(product_id),
-    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
-);
 
 create table product_taxes (
-	product_id INT,
-	tax_id INT,
-	FOREIGN KEY (product_id) REFERENCES products(product_id),
-	FOREIGN KEY (tax_id) REFERENCES taxes(tax_id),
+	product_id INT NOT NULL REFERENCES products(id),
+	tax_id INT NOT NULL REFERENCES taxes(id),
 	
-    -- Clave primaria compuesta: UNIQUE + CLUSTERED por defecto
     CONSTRAINT pk_product_tax PRIMARY KEY (product_id, tax_id)
 );
 
-create table invoices (
-	invoice_id INT IDENTITY PRIMARY KEY,
-	supplier_id INT NOT NULL,
-	created_at DATETIMEOFFSET(3) NOT NULL DEFAULT SYSDATETIMEOFFSET(),
-	date DATE,
-	expiration_date DATETIMEOFFSET(3) NOT NULL,
-	total decimal(17,2) NOT NULL,
-	total_paid decimal(17,2),
-	sale_condition_id INT NOT NULL,
-	location_id int NOT NULL,
-	FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id),
-	FOREIGN KEY (sale_condition_id) REFERENCES sale_conditions(sale_condition_id),
-	FOREIGN KEY (location_id) REFERENCES locations(location_id)
-)
+create table clients (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name TEXT NOT NULL,
+	surname TEXT NOT NULL,
+	CI VARCHAR(10) NOT NULL,
+	RUC VARCHAR(10),
+	address TEXT,
+	email TEXT NOT NULL,
+	birth_date DATE,
+	curr_credit DECIMAL(17,2) NOT NULL DEFAULT 0,
+	credit_limit DECIMAL(17,2) NOT NULL
+);
 
-create table invoice_details (
-	invoice_detail_id INT IDENTITY PRIMARY KEY,
-	invoice_id INT NOT NULL,
-	product_id INT NOT NULL,
-	unit_cost decimal(17,2) NOT NULL,
-	tax decimal(17,2) NOT NULL,
-	quantity INT NOT NULL,
-	sub_total decimal(17,2) NOT NULL,
-	FOREIGN KEY (invoice_id) REFERENCES invoices(invoice_id),
-	FOREIGN KEY (product_id) REFERENCES products(product_id)
-)
+create table sales_invoices (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	client_id INT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+	invoice_nr VARCHAR(20) NOT NULL,
+	created_at DATE NOT NULL DEFAULT CURRENT_DATE,
+	date DATE NOT NULL,
+	expiration_date DATE NOT NULL,
+	total decimal(17,2) NOT NULL,
+	total_paid decimal(17,2) DEFAULT 0 NOT NULL,
+	sale_condition_id INT NOT NULL REFERENCES sale_conditions(id),
+	quote_id INT REFERENCES quotes(id)
+);
+
+create table sale_invoice_details (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	invoice_id INT NOT NULL REFERENCES sales_invoices(id) ON DELETE CASCADE,
+	product_id INT NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+	unit_cost DECIMAL(17,2) NOT NULL,
+	tax DECIMAL(17,2) NOT NULL,
+	quantity INT NOT NULL
+);
+
+create table quote_statuses (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	status TEXT UNIQUE NOT NULL
+);
+
+create table quotes (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	client_id INT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+	created_at DATE NOT NULL,
+	status_id INT NOT NULL REFERENCES quote_statuses(id) ON DELETE RESTRICT,
+	total DECIMAL(17,2) NOT NULL
+);
+
+create table quote_details (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	quote_id INT NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+	product_id INT NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+	unit_cost DECIMAL(17,2) NOT NULL,
+	tax DECIMAL(17,2) NOT NULL,
+	quantity INT NOT NULL
+);
+
+create table credit_notes (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	credit_note_nr VARCHAR(20) UNIQUE NOT NULL,
+	sale_invoice_id INT NOT NULL REFERENCES sales_invoices(id) ON DELETE RESTRICT,
+	created_at DATE NOT NULL,
+	total DECIMAL(17,2) NOT NULL
+);
+
+create table credit_note_details (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	credit_note_id INT NOT NULL REFERENCES credit_notes(id) ON DELETE CASCADE,
+	product_id INT NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+	unit_cost DECIMAL(17,2) NOT NULL,
+	tax DECIMAL(17,2) NOT NULL,
+	quantity INT NOT NULL
+);
+
+
+create table phone_numbers (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	phone_number TEXT NOT NULL,
+	is_emergency BOOLEAN DEFAULT FALSE
+);
+
+create table employee_relatives (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	employee_id INT NOT NULL REFERENCES employees(id),
+	relative_id INT NOT NULL REFERENCES relatives(id)
+);
+
+create table relatives (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name TEXT NOT NULL,
+	surname TEXT NOT NULL,
+	CI VARCHAR(10) NOT NULL,
+	address TEXT,
+	birth_date DATE NOT NULL,
+	-- "brother", "daughter", "husband", etc
+	kind_of_relationship TEXT, 
+	disabilities BOOLEAN DEFAULT FALSE,
+	-- Do we still have employees related to this person?
+	is_active BOOLEAN DEFAULT TRUE
+);
+
+create table suppliers_phones (
+	supplier_id INT NOT NULL REFERENCES suppliers(id),
+	phone_id INT NOT NULL REFERENCES phone_numbers(id),
+	PRIMARY KEY (supplier_id, phone_id)
+);
+
+create table relatives_phones (
+	relative_id INT NOT NULL REFERENCES relatives(id),
+	phone_id INT NOT NULL REFERENCES phone_numbers(id),
+	PRIMARY KEY (relative_id, phone_id)
+);
+
+create table clients_phones (
+	client_id INT NOT NULL REFERENCES clients(id),
+	phone_id INT NOT NULL REFERENCES phone_numbers(id),
+	PRIMARY KEY (client_id, phone_id)
+);
+
+create table employees_phones (
+	employee_id INT NOT NULL REFERENCES employees(id),
+	phone_id INT NOT NULL REFERENCES phone_numbers(id),
+	PRIMARY KEY (employee_id, phone_id)
+);
+
+
+	
