@@ -42,21 +42,6 @@ create table sale_conditions (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	name VARCHAR(25) NOT NULL
 );
-
-create table roles (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	name VARCHAR(25) UNIQUE NOT NULL
-);
-
-create table employees (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	name VARCHAR(50) NOT NULL,
-	surname VARCHAR(50),
-	role_id INT NOT NULL REFERENCES roles(id),
-	location_id INT NOT NULL REFERENCES locations(id),
-	is_active BOOLEAN DEFAULT TRUE
-);
-
 -- an/a item/product like "Oil 2L"
 create table products (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -90,6 +75,19 @@ create table clients (
 	credit_limit DECIMAL(17,2) NOT NULL
 );
 
+create table quote_statuses (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	status TEXT UNIQUE NOT NULL
+);
+
+create table quotes (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	client_id INT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+	created_at DATE NOT NULL,
+	status_id INT NOT NULL REFERENCES quote_statuses(id) ON DELETE RESTRICT,
+	total DECIMAL(17,2) NOT NULL
+);
+
 create table sales_invoices (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	client_id INT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
@@ -110,19 +108,6 @@ create table sale_invoice_details (
 	unit_cost DECIMAL(17,2) NOT NULL,
 	tax DECIMAL(17,2) NOT NULL,
 	quantity INT NOT NULL
-);
-
-create table quote_statuses (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	status TEXT UNIQUE NOT NULL
-);
-
-create table quotes (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	client_id INT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
-	created_at DATE NOT NULL,
-	status_id INT NOT NULL REFERENCES quote_statuses(id) ON DELETE RESTRICT,
-	total DECIMAL(17,2) NOT NULL
 );
 
 create table quote_details (
@@ -162,20 +147,6 @@ create table employee_relatives (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	employee_id INT NOT NULL REFERENCES employees(id),
 	relative_id INT NOT NULL REFERENCES relatives(id)
-);
-
-create table relatives (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	name TEXT NOT NULL,
-	surname TEXT NOT NULL,
-	CI VARCHAR(10) NOT NULL,
-	address TEXT,
-	birth_date DATE NOT NULL,
-	-- "brother", "daughter", "husband", etc
-	kind_of_relationship TEXT, 
-	disabilities BOOLEAN DEFAULT FALSE,
-	-- Do we still have employees related to this person?
-	is_active BOOLEAN DEFAULT TRUE
 );
 
 create table suppliers_phones (
