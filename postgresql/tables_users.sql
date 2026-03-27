@@ -7,7 +7,8 @@ create table roles (
 create table users (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	employee_id INT REFERENCES employees(id),
-	username TEXT NOT NULL,
+	username TEXT UNIQUE NOT NULL,
+	email TEXT UNIQUE NOT NULL,
 	pass_hash TEXT NOT NULL,
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
 	last_login_at TIMESTAMP,
