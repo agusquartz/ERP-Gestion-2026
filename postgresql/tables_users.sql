@@ -1,7 +1,7 @@
 create table roles (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	name,
-	description
+	name TEXT UNIQUE NOT NULL,
+	description TEXT NOT NULL
 );
 
 create table users (

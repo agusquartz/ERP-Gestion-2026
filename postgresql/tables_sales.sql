@@ -76,7 +76,7 @@ create table quotes (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	client_id INT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
 	created_at DATE NOT NULL,
-	status_id INT NOT NULL REFERENCES transaction_statuses(id) ON DELETE RESTRICT,
+	status_id INT NOT NULL REFERENCES statuses(id) ON DELETE RESTRICT,
 	total DECIMAL(17,2) NOT NULL
 );
 
@@ -137,7 +137,7 @@ create table phone_numbers (
 
 create table employee_relatives (
 	employee_id INT NOT NULL REFERENCES employees(id),
-	relative_id INT NOT NULL REFERENCES relatives(id)
+	relative_id INT NOT NULL REFERENCES relatives(id),
 	CONSTRAINT pk_employee_relatives PRIMARY KEY (employee_id, relative_id)
 );
 

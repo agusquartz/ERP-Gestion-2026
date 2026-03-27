@@ -10,7 +10,7 @@ CREATE TABLE employees (
     job_title       TEXT,
     is_active       BOOLEAN DEFAULT TRUE,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 -- Current contract or economic condition of an employee.
