@@ -67,7 +67,7 @@ create table clients (
 	credit_limit DECIMAL(17,2) NOT NULL
 );
 
-create table transaction_statuses (
+create table statuses (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	status TEXT UNIQUE NOT NULL
 );
