@@ -25,17 +25,9 @@ create table suppliers (
 );
 
 create table category_suppliers (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	supplier_id INT NOT NULL REFERENCES suppliers(id),
 	category_id INT NOT NULL REFERENCES categories(id),
-	UNIQUE(supplier_id, category_id)
-	-- We *could* have used both the category and supplier ids
-	-- and have a composite PK, but we're likely to add a column
-	-- for the price this supplier has for the category. And at that 
-	-- point our table has stopped being a simple tuple and starts
-	-- storing business data, so it will be referenced from somewhere
-	-- else, and using a composite PK becomes a hassle. This is for 
-	-- future stability and comfort. Huzzah!
+	CONSTRAINT pk_category_suppliers PRIMARY KEY (supplier_id, category_id)
 );
 
 create table sale_conditions (
@@ -75,7 +67,7 @@ create table clients (
 	credit_limit DECIMAL(17,2) NOT NULL
 );
 
-create table quote_statuses (
+create table transaction_statuses (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	status TEXT UNIQUE NOT NULL
 );
@@ -84,7 +76,7 @@ create table quotes (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	client_id INT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
 	created_at DATE NOT NULL,
-	status_id INT NOT NULL REFERENCES quote_statuses(id) ON DELETE RESTRICT,
+	status_id INT NOT NULL REFERENCES transaction_statuses(id) ON DELETE RESTRICT,
 	total DECIMAL(17,2) NOT NULL
 );
 
@@ -144,9 +136,9 @@ create table phone_numbers (
 );
 
 create table employee_relatives (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	employee_id INT NOT NULL REFERENCES employees(id),
 	relative_id INT NOT NULL REFERENCES relatives(id)
+	CONSTRAINT pk_employee_relatives PRIMARY KEY (employee_id, relative_id)
 );
 
 create table suppliers_phones (
