@@ -66,6 +66,28 @@ CREATE TABLE journal_entry_details (
 );
 
 
+-- System modules (payroll, billing, etc).
+-- Purpose:
+--   - Group entry models by functional area.
+CREATE TABLE modules (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Accounting closure (period lock).
+-- Purpose:
+--   - Freeze all entries up to a certain date.
+--   - Prevent modifications after closing.
+CREATE TABLE accounting_closures (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    closure_type TEXT NOT NULL, -- e.g. 'monthly','yearly'
+    closure_date DATE NOT NULL,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
 -- Entry templates for automatic or manual generation.
 -- Purpose:
 --   - Define how entries are generated for business operations.
@@ -107,25 +129,3 @@ CREATE TABLE entry_model_details (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-
--- System modules (payroll, billing, etc).
--- Purpose:
---   - Group entry models by functional area.
-CREATE TABLE modules (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Accounting closure (period lock).
--- Purpose:
---   - Freeze all entries up to a certain date.
---   - Prevent modifications after closing.
-CREATE TABLE accounting_closures (
-    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-
-    closure_type TEXT NOT NULL, -- e.g. 'monthly','yearly'
-    closure_date DATE NOT NULL,
-
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);

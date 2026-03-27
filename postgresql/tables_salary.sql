@@ -1,16 +1,22 @@
+create table roles (
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	name VARCHAR(25) UNIQUE NOT NULL
+);
 
 -- Basic and stable data about employees.
 CREATE TABLE employees (
     id              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     document        VARCHAR(20) UNIQUE NOT NULL,
-    full_name       TEXT NOT NULL,
+    name	        TEXT NOT NULL,
+    surname	        TEXT NOT NULL,
     birth_date      DATE,
     hire_date       DATE NOT NULL,
     termination_date DATE,
     job_title       TEXT,
     is_active       BOOLEAN DEFAULT TRUE,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT now()
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT now(),
+	role_id			INT NOT NULL REFERENCES roles(id)
 );
 
 -- Current contract or economic condition of an employee.
@@ -166,8 +172,8 @@ CREATE TABLE novelties (
 -- relatives (parientes) -> for family allowance
 CREATE TABLE relatives (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    employee_id INT NOT NULL REFERENCES employees(id) ON DELETE RESTRICT,
-    full_name TEXT NOT NULL,
+    name TEXT NOT NULL,
+    surname TEXT NOT NULL,
     document TEXT,
     relation_type TEXT NOT NULL, -- child, spouse, other
     birth_date DATE,
