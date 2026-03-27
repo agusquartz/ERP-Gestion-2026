@@ -1,8 +1,3 @@
-create table roles (
-	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	name VARCHAR(25) UNIQUE NOT NULL
-);
-
 -- Basic and stable data about employees.
 CREATE TABLE employees (
     id              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -16,7 +11,6 @@ CREATE TABLE employees (
     is_active       BOOLEAN DEFAULT TRUE,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT now(),
-	role_id			INT NOT NULL REFERENCES roles(id)
 );
 
 -- Current contract or economic condition of an employee.
