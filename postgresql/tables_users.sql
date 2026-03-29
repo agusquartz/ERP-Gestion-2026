@@ -11,7 +11,9 @@ create table users (
 	email TEXT UNIQUE NOT NULL,
 	pass_hash TEXT NOT NULL,
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
-	last_login_at TIMESTAMP,
+	last_login_at TIMESTAMPTZ,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMPTZ,
 	role_id INT REFERENCES roles(id)
 );
 
