@@ -10,6 +10,7 @@ use axum::http::HeaderValue;
 use axum::serve;
 use tokio::net::TcpListener;
 use std::net::SocketAddr;
+use shared::db_config;
 
 mod modules {
     pub mod auth;
@@ -19,6 +20,8 @@ mod modules {
 
 mod shared {
     pub mod config;
+    pub mod db_config;
+    pub mod errors;
 }
 
 pub mod utils {
@@ -42,9 +45,23 @@ async fn main() {
         .expect("Failed to load environment variables from .env file");
 
     //dotenv().ok();
+    
+    //DATABASE CONFIGURATION
+    //-------------------------------------------------------------------------
+    //TODO: error management
+    let db_params = db_config::DbParams {
+        host: std::env::var("DB_HOST").unwrap(),
+        port: std::env::var("DB_PORT").unwrap().parse().unwrap(),
+        user: std::env::var("DB_USER").unwrap(),
+        password: std::env::var("DB_PASSWORD").unwrap(),
+        db_name: Some(std::env::var("DB_NAME").unwrap()),
+        pool_max_size: std::env::var("DB_POOL_SIZE").unwrap().parse().unwrap(),
+    };
 
     // FORCE INITIALIZATION
+    db_config::init_global_pool(db_params).await.unwrap();
     let _ = &*crate::shared::config::CONFIG;
+
 
     // -------------------------------------------------------------------------
     // CORS CONFIGURATION

@@ -25,3 +25,6 @@ rand_core = { version = "0.6.4", features = ["getrandom"] }
 chrono = { version = "0.4.42", features = ["serde"] }
 chrono-tz = { version = "0.10.4", features = ["serde"] }
 url = "2"
+tokio-postgres = { version = "^0.7", features = ["with-chrono-0_4"] }
+deadpool-postgres = "0.14.1"
+thiserror = "2.0.18"
