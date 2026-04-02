@@ -45,16 +45,19 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
     }
 
     const timer = setTimeout(async () => {
-        let f = await getProductByQuery(query);
-        if (descFilter) f = f.filter((p) => 
-            p.descripcion.toLowerCase().includes(descFilter.toLowercase()) ||
-            p.sku.toLowerCase().includes(descFilter.toLowerCase()) 
-            );
-        if (catFilter) f = f.filter((p) => p.categoria === catFilter);
-        if (locFilter) f = f.filter((p) => p.ubicacion === locFilter);
-        serFiltered(f);
-        serActiveRow(0);
-
+        try {
+            let f = await getProductByQuery(query);
+            if (descFilter) f = f.filter((p) => 
+                p.descripcion.toLowerCase().includes(descFilter.toLowercase()) ||
+                p.sku.toLowerCase().includes(descFilter.toLowerCase()) 
+                );
+            if (catFilter) f = f.filter((p) => p.categoria === catFilter);
+            if (locFilter) f = f.filter((p) => p.ubicacion === locFilter);
+            serFiltered(f);
+            serActiveRow(0);
+        } catch (err) {
+            setFiltered([]);
+        }
     }, 300);
 
    }
