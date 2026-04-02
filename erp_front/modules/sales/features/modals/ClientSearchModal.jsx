@@ -22,6 +22,7 @@ import { getProductByQuery } from "../../services/saleService";
 export function ClientSearchModal({ open, onClose, clients, onSelect, onClientCreate }) {
   const [query, setQuery]       = useState("");
   const [filtered, setFiltered] = useState(clients);
+  const [clientsList, setClientsList] = useState([]);
   const [activeRow, setActiveRow] = useState(0);
   const newClientModal = useDisclosure();
   const inputRef = useRef();
