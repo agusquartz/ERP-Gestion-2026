@@ -21,13 +21,29 @@ import { getProductByQuery } from "../../services/saleService";
  */
 export function ClientSearchModal({ open, onClose, clients, onSelect, onClientCreate }) {
   const [query, setQuery]       = useState("");
-  const [filtered, setFiltered] = useState(clients);
+  const [filtered, setFiltered] = useState([]);
   const [clientsList, setClientsList] = useState([]);
   const [activeRow, setActiveRow] = useState(0);
   const newClientModal = useDisclosure();
   const inputRef = useRef();
 
-  // Reset al abrir
+ 
+ //Cargar clientes al abrir
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchClients = async () => {
+        try {
+            const data = await getClients();
+            setClientsList(data);
+        } catch (err){
+            console.error(err);
+        }
+    }
+    fetchClients();
+  }, [open]);
+
+ // Reset al abrir
   useEffect(() => {
     if (open) {
       setQuery("");
