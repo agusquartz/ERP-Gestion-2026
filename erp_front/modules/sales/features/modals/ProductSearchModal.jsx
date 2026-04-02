@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Modal }            from "@/shared/components/Modal";
 import { ChevronDownIcon }  from "@/shared/components/Icons";
 import { s }                from "../../styles/salesStyles";
-import { getProductByQuery } from "../../service/saleService";
+import { getProductByQuery } from "../../services/saleService";
 
 /**
  * Modal de búsqueda y selección de productos.
