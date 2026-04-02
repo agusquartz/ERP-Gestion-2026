@@ -37,30 +37,31 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
     }
   }, [open]);
 
-  // Filtro en vivo
+  // Busqueda con debounce
   useEffect(() => {
     if (query.length < 3) {
-        setFiltered([]);
-        return; // para aquí, no llama a la API     
+      setFiltered([]);
+      return;
     }
 
     const timer = setTimeout(async () => {
-        try {
-            let f = await getProductByQuery(query);
-            if (descFilter) f = f.filter((p) => 
-                p.descripcion.toLowerCase().includes(descFilter.toLowercase()) ||
-                p.sku.toLowerCase().includes(descFilter.toLowerCase()) 
-                );
-            if (catFilter) f = f.filter((p) => p.categoria === catFilter);
-            if (locFilter) f = f.filter((p) => p.ubicacion === locFilter);
-            serFiltered(f);
-            serActiveRow(0);
-        } catch (err) {
-            setFiltered([]);
-        }
+      try {
+        let f = await getProductByQuery(query);
+        if (descFilter) f = f.filter((p) =>
+          p.descripcion.toLowerCase().includes(descFilter.toLowerCase()) ||
+          p.sku.toLowerCase().includes(descFilter.toLowerCase())
+        );
+        if (catFilter) f = f.filter((p) => p.categoria === catFilter);
+        if (locFilter) f = f.filter((p) => p.ubicacion === locFilter);
+        setFiltered(f);
+        setActiveRow(0);
+      } catch (err) {
+        setFiltered([]);
+      }
     }, 300);
 
-   }
+    return () => clearTimeout(timer);
+  }, [query, descFilter, catFilter, locFilter]);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && filtered.length > 0) { onSelect(filtered[activeRow]); onClose(); }
