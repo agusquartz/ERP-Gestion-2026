@@ -1,5 +1,7 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
  
+
+/** ----------------- PRODUCTS ----------------- */
 /**
  * GET /products/:id
  */
@@ -11,6 +13,8 @@ export async function getProductByQuery(q) {
   return result;
 }
  
+/** ----------------- SALES ----------------- */
+
 /**
  * POST /sales
  * Body: { clienteId, vendedor, items: [{ productoId, cantidad, precio }] }
@@ -38,7 +42,35 @@ export async function createQuote(payload) {
   if (!res.ok) throw new Error("Error al crear el presupuesto");
   return res.json();
 }
- 
+
+/** ----------------- CLIENTS ----------------- */
+
+/**
+* GET: /clients?q=...
+*/
+export async function getClients(query = ""){
+    const url = query ?
+        `${BASE_URL}/clients?q=${encodeURIComponent(query)}` :
+        `${BASE_URL}/clients`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Error al obtener la lsita de clientes");
+    let result = await res.json();
+    return result;
+}
+
+/**
+* GET /clients/{id}
+*/
+
+export async function getClientById(id){
+    if (!id) throw new Error("ID de cliente requerido");
+    const res = await fetch(`${BASE_URL}/clients/${id}`);
+    if (!res.ok) throw new Error("Error al obtener los detalles del cliente");
+    let result = await res.json();
+    return result;
+}
+
+
 /**
  * POST /clients
  */
@@ -49,5 +81,25 @@ export async function createClient(payload) {
     body:    JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("Error al crear el cliente");
-  return res.json();
+  let result = await res.json();
+  return result;
 }
+
+/**
+* PATCH /clients/{id}
+*/
+
+export async function editClient(id, payload){
+    if(!id) throw new Error("ID de cliente requerido");
+
+    const res = await fetch(`${BASE_URL}/clients/${id}`, {
+            method:  "PATCH",
+            headers: { "Content-Type": "application/json"},
+            body:    JSON.stringify(payload), 
+        });
+
+    if (!res.ok) throw new Error("Error al editar el cliente");
+    let result = await res.json();
+    return result
+}
+
