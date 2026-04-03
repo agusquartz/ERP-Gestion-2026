@@ -35,12 +35,18 @@ export function NewClientModal({ open, onClose, onCreate }) {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
-    onCreate(form);
-    setForm(EMPTY);
-    setErrors({});
-    onClose();
+
+    try {
+        const newClient = await createClient(form);
+        onCreate(newClient);    //Devuelve el cliente recien creado al padre
+        setForm(EMPTY);
+        setErros({});
+        onClose();
+    } catch (err) {
+        console.error("Error al crear el cliente", err);
+    }
   };
 
   const handleClose = () => {
