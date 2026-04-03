@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Modal }          from "@/shared/components/Modal";
 import { NewClientModal } from "./NewClientModal";
+import { EditClientModal } from "./EditClientModal";
 import { EditIcon, PlusIcon } from "@/shared/components/Icons";
 import { useDisclosure }  from "@/shared/hooks/useDisclosure";
 import { s } from "../../styles/salesStyles";
@@ -24,7 +25,10 @@ export function ClientSearchModal({ open, onClose, onSelect, onClientCreate }) {
   const [filtered, setFiltered] = useState([]);
   const [clientsList, setClientsList] = useState([]);
   const [activeRow, setActiveRow] = useState(0);
+  const [selectedClient, setSelectedClient] = useState(null);
+  
   const newClientModal = useDisclosure();
+  const editClientModal = useDisclosure();
   const inputRef = useRef();
 
  
@@ -74,6 +78,11 @@ export function ClientSearchModal({ open, onClose, onSelect, onClientCreate }) {
   };
 
   const handleSelect = (client) => { onSelect(client); onClose(); };
+
+  const handleEdit = (client) => {
+    setSelectedClient(client);
+    editClientModal.open();
+  };
 
   const handleCreate = (data) => {
     onClientCreate(data);
@@ -135,7 +144,12 @@ export function ClientSearchModal({ open, onClose, onSelect, onClientCreate }) {
                   <td style={s.td}>{c.telefono}</td>
                   <td style={{ ...s.td, color: "#2563eb" }}>{c.email || "—"}</td>
                   <td style={s.td}>
-                    <button style={s.iconBtn} onClick={() => handleSelect(c)}>
+                    <button 
+                      style={s.iconBtn} 
+                      onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(c);
+                          }}>
                       <EditIcon />
                     </button>
                   </td>
@@ -162,6 +176,18 @@ export function ClientSearchModal({ open, onClose, onSelect, onClientCreate }) {
         open={newClientModal.isOpen}
         onClose={newClientModal.close}
         onCreate={handleCreate}
+      />
+
+      {/* Editar cliente */}
+      <EditClientModal
+        open={editClientModal.isOpen}
+        onClose={editClientModal.close}
+        client={selectedClient}
+        onUpdate={(updated) => {
+            setClientsList((prev) =>
+              prev.map((c) => (c.id === updated.id ? updated : c))
+            );
+        }} 
       />
     </>
   );
