@@ -6,7 +6,7 @@ import { NewClientModal } from "./NewClientModal";
 import { EditIcon, PlusIcon } from "@/shared/components/Icons";
 import { useDisclosure }  from "@/shared/hooks/useDisclosure";
 import { s } from "../../styles/salesStyles";
-import { getProductByQuery } from "../../services/saleService";
+import { getClients } from "../../services/saleService";
 
 
 /**
