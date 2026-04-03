@@ -19,7 +19,7 @@ import { getProductByQuery } from "../../services/saleService";
  *   onSelect       - (client) => void
  *   onClientCreate - (data) => void
  */
-export function ClientSearchModal({ open, onClose, clients, onSelect, onClientCreate }) {
+export function ClientSearchModal({ open, onClose, onSelect, onClientCreate }) {
   const [query, setQuery]       = useState("");
   const [filtered, setFiltered] = useState([]);
   const [clientsList, setClientsList] = useState([]);
@@ -43,21 +43,21 @@ export function ClientSearchModal({ open, onClose, clients, onSelect, onClientCr
     fetchClients();
   }, [open]);
 
- // Reset al abrir
+ // Reset al abrir y al actualizar la lista
   useEffect(() => {
     if (open) {
       setQuery("");
-      setFiltered(clients);
+      setFiltered(clientsList);
       setActiveRow(0);
       setTimeout(() => inputRef.current?.focus(), 60);
     }
-  }, [open, clients]);
+  }, [open, clientsList]);
 
   // Filtro en vivo
   useEffect(() => {
     const q = query.toLowerCase();
     setFiltered(
-      clients.filter(
+      clientsList.filter(
         (c) =>
           c.nombre.toLowerCase().includes(q) ||
           c.apellido.toLowerCase().includes(q) ||
@@ -65,7 +65,7 @@ export function ClientSearchModal({ open, onClose, clients, onSelect, onClientCr
       )
     );
     setActiveRow(0);
-  }, [query, clients]);
+  }, [query, clientsList]);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && filtered.length > 0) { onSelect(filtered[activeRow]); onClose(); }
@@ -107,7 +107,7 @@ export function ClientSearchModal({ open, onClose, clients, onSelect, onClientCr
         </div>
 
         <p style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 8 }}>
-          Mostrando {filtered.length} de {clients.length} resultados
+          Mostrando {filtered.length} de {clientsList.length} resultados
         </p>
 
         {/* Tabla */}
