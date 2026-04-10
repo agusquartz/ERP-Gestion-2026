@@ -87,3 +87,39 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<ClientAggregate> {
 
     map.into_values().collect() 
 }
+
+// ─────────────────────────────────────────────────────────────
+// GET /clients  y  GET /clients?contains=xxx
+// ─────────────────────────────────────────────────────────────
+pub async fn query_clients(
+    contains: Option<&str>,
+) -> Result<Vec<ClientAggregate>, db_config::DbError> {
+    let conn = db_config::get_client().await?;
+
+    let sql = format!(
+        "{} WHERE ($1::text IS NULL OR cl.name ILIKE '%' || $1 || '%' OR cl.surname ILIKE '%' || $1 || '%')
+         ORDER BY client_id, phone_id",
+        CLIENT_SELECT_BASE
+    );
+
+    let rows = conn.query(&sql, &[&contains]).await?;
+    Ok(rows_to_aggregates(rows))
+}
+
+// ─────────────────────────────────────────────────────────────
+// GET /clients/{id}
+// ─────────────────────────────────────────────────────────────
+pub async fn query_client_by_id(
+    id: i32,
+) -> Result<Option<ClientAggregate>, db_config::DbError> {
+    let conn = db_config::get_client().await?;
+
+    let sql = format!(
+        "{} WHERE cl.id = $1 ORDER BY client_id, phone_id",
+        CLIENT_SELECT_BASE
+    );
+
+    let rows = conn.query(&sql, &[&id]).await?;
+    let mut results = rows_to_aggregates(rows);
+    Ok(results.pop())
+}
