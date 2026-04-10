@@ -118,8 +118,8 @@ pub async fn patch_product(
     id: i32,
     patch: &PatchProductDto,
 ) -> Result<Option<model::ProductAggregate>, db_config::DbError> {
-    let client = db_config::get_client().await?;
-    let mut tx = client.transaction().await?;
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await?;
 
     let exists = tx
         .query_opt("SELECT 1 FROM products WHERE id = $1", &[&id])
