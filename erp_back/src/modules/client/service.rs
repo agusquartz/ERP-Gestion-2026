@@ -1,7 +1,5 @@
 // Orchestrates repository + mapper — does not touch SQL directly
 
-use rust_decimal::Decimal;
-
 use crate::modules::client::dto::create::CreateClientDto;
 use crate::modules::client::dto::response::{ClientResponseDto, PhoneResponseDto};
 use crate::modules::client::dto::update::PatchClientDto;
