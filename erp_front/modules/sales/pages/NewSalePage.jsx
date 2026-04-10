@@ -82,7 +82,7 @@ export default function NewSalePage() {
       <SaleHeader
         selectedClient={selectedClient}
         onBuscarCliente={clientModal.open}
-        saller={seller}
+        seller={seller}
      />
 
       {submitError && <div style={s.errorBanner}>{submitError}</div>}
