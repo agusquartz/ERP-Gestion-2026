@@ -1,0 +1,54 @@
+use axum::{
+    extract::{Path, Query},
+    http::StatusCode,
+    Json,
+};
+
+use crate::modules::product::dto::{
+    PatchProductDto, ProductListQuery, ProductResponse,
+};
+use crate::modules::product::service;
+
+/// GET /products
+/// GET /products?contains=string
+pub async fn list_products(
+    Query(query): Query<ProductListQuery>,
+) -> Result<Json<Vec<ProductResponse>>, StatusCode> {
+    let result = service::list_products(query.contains)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(result))
+}
+
+/// GET /products/{id}
+pub async fn get_product(
+    Path(id): Path<i32>,
+) -> Result<Json<ProductResponse>, StatusCode> {
+    let result = service::get_product(id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    match result {
+        Some(product) => Ok(Json(product)),
+        None => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+/// PATCH /products/{id}
+pub async fn patch_product(
+    Path(id): Path<i32>,
+    Json(payload): Json<PatchProductDto>,
+) -> Result<Json<ProductResponse>, StatusCode> {
+    let result = service::patch_product(id, payload)
+        .await
+        .map_err(|err| match err {
+            service::ServiceError::Validation(_) => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        })?;
+
+    match result {
+        Some(product) => Ok(Json(product)),
+        None => Err(StatusCode::NOT_FOUND),
+    }
+}
