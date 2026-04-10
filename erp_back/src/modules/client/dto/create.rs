@@ -12,7 +12,7 @@ pub struct CreateClientDto {
     pub address: String,
     pub email: String,
     pub birth_date: Option<NaiveDate>,
-    pub credit_limit: Decimal,
+    pub credit_limit: Option<Decimal>,
     pub phones: Vec<CreatePhoneDto>,
 }
 
