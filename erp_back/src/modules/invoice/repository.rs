@@ -36,13 +36,14 @@ FROM sales_invoices AS inv
 JOIN clients AS c ON inv.client_id = c.id 
 JOIN sale_conditions AS sale ON inv.sale_condition_id = sale.id 
 LEFT JOIN sale_invoice_details AS line ON inv.id = line.invoice_id 
-LEFT JOIN products AS p ON line.product_id = p.id
+LEFT JOIN products AS p ON line.product_id = p.id 
+ORDER BY invoice_id, detail_id
 "#;
 
 pub async fn query_invoice_by_id(id: i32) -> Result<Option<model::InvoiceAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
-    let sql = format!("{} WHERE inv.id = $1 ORDER BY invoice_id, detail_id", INVOICE_SELECT_BASE);
+    let sql = format!("{} WHERE inv.id = $1", INVOICE_SELECT_BASE);
 
     let rows = client.query(&sql, &[&id]).await?;
 
@@ -51,13 +52,28 @@ pub async fn query_invoice_by_id(id: i32) -> Result<Option<model::InvoiceAggrega
     Ok(invoices.pop())
 }
 
+pub async fn query_invoices(contains: Option<&str>) -> Result<Vec<model::InvoiceAggregate>, db_config::DbError> {
+    let client = db_config::get_client().await?;
+    if let Some(q) = contains {
+        let sql = format!("{} WHERE invoice_number ILIKE $1 OR c.name ILIKE $1 OR c.surname ILIKE $1", INVOICE_SELECT_BASE); 
+    
+        let rows = client.query(&sql, &[&q]).await?;
+        let aggregates = rows_to_aggregate(rows);
+        return Ok(aggregates)
+    }
+    let sql = INVOICE_SELECT_BASE.to_string();
+    let rows = client.query(&sql, &[]).await?;
+    Ok(rows_to_aggregate(rows))
+    
+}
+
 
 fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::InvoiceAggregate> {
     let mut map: BTreeMap<i32, model::InvoiceAggregate> = BTreeMap::new();
 
     for row in rows {
         let invoice_id: i32 = row.get("invoice_id");
-        
+
         let client = model::Client {
             id: row.get("client_id"),
             name: row.get("client_name"),
