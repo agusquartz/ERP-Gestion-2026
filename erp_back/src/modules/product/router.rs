@@ -3,11 +3,11 @@ use axum::{
     Router,
 };
 
-use crate::modules::product::handler::{
+use crate::modules::{auth::middleware::auth::protect_routes, product::handler::{
     get_product,
     list_products,
     patch_product,
-};
+}};
 
 /// Creates a router for product-related routes.
 ///
