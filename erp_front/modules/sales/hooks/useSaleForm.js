@@ -7,7 +7,7 @@ import { useState } from "react";
  * Centraliza: items, cliente, totales y validaciones.
  */
 export function useSaleForm() {
-  const [clients, setClients]           = useState(MOCK_CLIENTS);
+  const [clients, setClients]           = useState();
   const [selectedClient, setSelectedClient] = useState(null);
   const [items, setItems]               = useState([]);
   const [submitError, setSubmitError]   = useState("");
