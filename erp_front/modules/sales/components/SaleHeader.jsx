@@ -1,7 +1,6 @@
 "use client";
 
 import { s } from "../styles/salesStyles";
-import { VENDEDOR } from "../constants/mockData";
 
 /**
  * Fila superior: cliente seleccionado + botón buscar + vendedor.
