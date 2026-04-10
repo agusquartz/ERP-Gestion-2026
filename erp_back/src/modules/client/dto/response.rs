@@ -19,7 +19,7 @@ pub struct ClientResponseDto {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase"]
+#[serde(rename_all = "camelCase")]
 pub struct PhoneResponseDto {
     pub id: i32,
     pub phone_number: String,
