@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::modules::product::model;
 
+/// Category data returned inside ProductResponse
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CategoryResponse {
@@ -9,6 +10,7 @@ pub struct CategoryResponse {
     pub name: String,
 }
 
+/// Brand data returned inside ProductResponse (optional)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BrandResponse {
@@ -16,6 +18,7 @@ pub struct BrandResponse {
     pub name: String,
 }
 
+/// Tax data returned inside ProductResponse
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaxResponse {
@@ -24,6 +27,10 @@ pub struct TaxResponse {
     pub percentage: f64,
 }
 
+/// Main API response for a product.
+///
+/// This is a fully denormalized representation built from
+/// `ProductAggregate`, including category, brand, and taxes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductResponse {
@@ -38,6 +45,10 @@ pub struct ProductResponse {
     pub taxes: Vec<TaxResponse>,
 }
 
+/// Converts a ProductAggregate into a ProductResponse.
+///
+/// This mapping flattens database/domain structures into
+/// a clean API response format.
 impl From<model::ProductAggregate> for ProductResponse {
     fn from(value: model::ProductAggregate) -> Self {
         Self {
