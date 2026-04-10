@@ -7,6 +7,16 @@ use crate::modules::product::dto::update::PatchProductDto;
 use crate::modules::product::model;
 use crate::shared::db_config;
 
+
+/// Base SELECT used to retrieve products with all related data.
+///
+/// Includes:
+/// - Category (INNER JOIN)
+/// - Brand (LEFT JOIN)
+/// - Taxes (LEFT JOIN, many-to-many)
+///
+/// The result is a flattened row set that must be aggregated
+/// into domain structures (`ProductAggregate`).
 const PRODUCT_SELECT_BASE: &str = r#"
 SELECT
     p.id AS product_id,
@@ -33,6 +43,18 @@ LEFT JOIN taxes t
     ON t.id = pt.tax_id
 "#;
 
+
+/// Transforms a flat list of database rows into `ProductAggregate` structures.
+///
+/// This function:
+/// - Groups rows by `product_id`
+/// - Builds a single `ProductAggregate` per product
+/// - Deduplicates taxes (due to JOIN explosion)
+///
+/// # Notes
+///
+/// - Uses `BTreeMap` to preserve deterministic ordering
+/// - Assumes rows are ordered by `product_id`
 fn rows_to_aggregates(rows: Vec<Row>) -> Vec<model::ProductAggregate> {
     let mut map: BTreeMap<i32, model::ProductAggregate> = BTreeMap::new();
 
@@ -82,6 +104,21 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<model::ProductAggregate> {
     map.into_values().collect()
 }
 
+
+/// Retrieves all products or filters them by a search term.
+///
+/// # Arguments
+///
+/// - `contains`: Optional string used to filter by `code` or `description`
+///
+/// # Behavior
+///
+/// - If `contains` is `Some`, applies a case-insensitive filter (`ILIKE`)
+/// - If `None`, returns all products
+///
+/// # Returns
+///
+/// A list of fully populated `ProductAggregate`
 pub async fn query_products(
     contains: Option<&str>,
 ) -> Result<Vec<model::ProductAggregate>, db_config::DbError> {
@@ -98,6 +135,13 @@ pub async fn query_products(
     Ok(rows_to_aggregates(rows))
 }
 
+
+/// Retrieves a single product by its ID.
+///
+/// # Returns
+///
+/// - `Ok(Some(ProductAggregate))` if found
+/// - `Ok(None)` if no product exists with the given ID
 pub async fn query_product_by_id(
     id: i32,
 ) -> Result<Option<model::ProductAggregate>, db_config::DbError> {
@@ -114,6 +158,28 @@ pub async fn query_product_by_id(
     Ok(products.pop())
 }
 
+
+/// Partially updates a product and optionally its taxes.
+///
+/// This operation is transactional:
+/// - Updates product fields dynamically
+/// - Replaces tax relationships if provided
+///
+/// # Behavior
+///
+/// - Only updates fields present in `PatchProductDto`
+/// - If `tax_ids` is provided, replaces all existing taxes
+/// - If product does not exist, returns `Ok(None)`
+///
+/// # Returns
+///
+/// - `Ok(Some(ProductAggregate))` → updated product
+/// - `Ok(None)` → product not found
+///
+/// # Notes
+///
+/// - Uses dynamic SQL generation for partial updates
+/// - Uses boxed parameters to support heterogeneous types
 pub async fn patch_product(
     id: i32,
     patch: &PatchProductDto,
@@ -203,6 +269,7 @@ pub async fn patch_product(
         }
     }
 
+    // Fetch updated entity
     let sql = format!(
         "{} WHERE p.id = $1 ORDER BY product_id, tax_id",
         PRODUCT_SELECT_BASE
