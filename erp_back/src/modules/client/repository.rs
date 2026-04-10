@@ -123,3 +123,63 @@ pub async fn query_client_by_id(
     let mut results = rows_to_aggregates(rows);
     Ok(results.pop())
 }
+
+// ─────────────────────────────────────────────────────────────
+// POST /clients
+// Transaction — touches 3 tables: clients, phone_numbers, clients_phones
+// ─────────────────────────────────────────────────────────────
+pub async fn insert_client(
+    dto: &CreateClientDto,
+) -> Result<ClientAggregate, db_config::DbError> {
+    let conn = db_config::get_client().await?;
+    let mut tx = conn.transaction().await?;
+
+    // 1. Inserts the client
+    let row = tx.query_one(
+        r#"
+        INSERT INTO clients (name, surname, ruc, address, email, birth_date, credit_limit)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id
+        "#,
+        &[
+            &dto.name,
+            &dto.surname,
+            &dto.ruc,
+            &dto.address,
+            &dto.email,
+            &dto.birth_date,
+            &dto.credit_limit,
+        ],
+    ).await?;
+
+    let new_id: i32 = row.get("id");
+
+    // 2. For each phone: insert into phone_numbers then into the pivot table
+    for phone in &dto.phones {
+        // 2a. Inserts the number and retrieves its generated id
+        let phone_row = tx.query_one(
+            "INSERT INTO phone_numbers (phone_number, is_emergency) VALUES ($1, $2) RETURNING id",
+            &[&phone.phone_number, &phone.is_emergency],
+        ).await?;
+
+        let phone_id: i32 = phone_row.get("id");
+
+        // 2b. Links the phone to the client in the pivot table
+        tx.execute(
+            "INSERT INTO clients_phones (client_id, phone_id) VALUES ($1, $2)",
+            &[&new_id, &phone_id],
+        ).await?;
+    }
+
+    // 3. Re-query to return the full aggregate
+    let sql = format!(
+        "{} WHERE cl.id = $1 ORDER BY client_id, phone_id",
+        CLIENT_SELECT_BASE
+    );
+    let rows = tx.query(&sql, &[&new_id]).await?;
+    let mut results = rows_to_aggregates(rows);
+
+    tx.commit().await?;
+    Ok(results.pop().unwrap())
+}
+
