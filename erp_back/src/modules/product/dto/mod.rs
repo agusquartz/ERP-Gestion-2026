@@ -8,6 +8,10 @@ pub use update::PatchProductDto;
 
 use serde::{Deserialize, Serialize};
 
+/// Query parameters for listing products.
+///
+/// Used in `GET /products`.
+/// Supports optional filtering.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct ProductListQuery {
     pub contains: Option<String>,
