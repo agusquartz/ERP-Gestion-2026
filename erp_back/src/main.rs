@@ -17,6 +17,7 @@ mod modules {
     pub mod observability;
     pub mod user;
     pub mod product;
+    pub mod invoice;
 }
 
 mod shared {
