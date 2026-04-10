@@ -13,7 +13,7 @@ pub struct PatchClientDto {
     pub birth_date: Option<NaiveDate>,
     pub credit_limit: Option<Decimal>,
     pub current_credit: Option<Decimal>,
-    pub phones: Option<Vec<UpdatePhoneDto>>,
+    pub phones: Option<Vec<PatchPhoneDto>>,
 }
 
 
