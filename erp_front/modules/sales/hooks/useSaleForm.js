@@ -11,10 +11,11 @@ export function useSaleForm() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [items, setItems]               = useState([]);
   const [submitError, setSubmitError]   = useState("");
+  const [ivaRate] = useState(0.1); //10%
 
   // ── Totales ──────────────────────────────────────────────────────────────
   const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-  const iva      = subtotal * IVA_RATE;
+  const iva      = subtotal * ivaRate;
   const total    = subtotal + iva;
 
   // ── Items ────────────────────────────────────────────────────────────────
