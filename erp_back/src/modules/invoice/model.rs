@@ -8,6 +8,7 @@ pub struct Invoice {
     pub created_at: NaiveDate,
     pub date: NaiveDate,
     pub expiration_date: NaiveDate,
+    pub total: f64,
     pub total_paid: f64,
     pub quote_id: Option<u32>,
     pub client_id: u32,
@@ -31,14 +32,14 @@ pub struct SaleCondition {
 
 #[derive(Debug,Clone)]
 pub struct LineItem {
-    pub product: Product,
+    pub product: LineProduct,
     pub unit_cost: f64,
     pub tax: u8,
     pub quantity: u32,
 }
 
 #[derive(Debug,Clone)]
-pub struct Product {
+pub struct LineProduct {
     pub id: u32,
     pub description: String,
     pub code: String,
