@@ -11,8 +11,9 @@ export function useSaleForm() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [items, setItems]               = useState([]);
   const [submitError, setSubmitError]   = useState("");
+  
   const [ivaRate] = useState(0.1); //10%
-
+  const [seller] = useState("Juan Perez");
   // ── Totales ──────────────────────────────────────────────────────────────
   const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
   const iva      = subtotal * ivaRate;
@@ -104,6 +105,7 @@ export function useSaleForm() {
     items,
     subtotal, iva, total,
     submitError,
+    seller,
     // actions
     addItem,
     updateItemQty,
