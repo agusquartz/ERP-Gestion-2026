@@ -11,11 +11,13 @@ use crate::modules::{auth::middleware::auth::protect_routes, product::handler::{
 
 /// Creates a router for product-related routes.
 ///
+/// All routes are protected by authentication middleware.
+///
 /// # Routes
-/// - `GET /products`
-/// - `GET /products?contains=...`
-/// - `GET /products/{id}`
-/// - `PATCH /products/{id}`
+/// - `GET /products` → list all products
+/// - `GET /products?contains=...` → filtered search
+/// - `GET /products/:id` → get product by ID
+/// - `PATCH /products/:id` → partially update product
 pub fn product_router() -> Router {
     let protected =  Router::new()
         .route("/products", get(list_products))
