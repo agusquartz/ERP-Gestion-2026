@@ -1,6 +1,7 @@
 //Direct DB access
 
 use std::collections::BTreeMap;
+use rust_decimal::Decimal;
 
 use tokio_postgres::Row;
 use tokio_postgres::types::ToSql;
@@ -67,7 +68,7 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<ClientAggregate> {
                 address: row.get("client_address"),
                 email: row.get("client_email"),
                 birth_date: row.get("client_birth_date"),
-                curr_credit: row.get("client_curr_credit"),  
+                current_credit: row.get("client_curr_credit"),  
                 credit_limit: row.get("client_credit_limit"),
             },
             phones: Vec::new(),
