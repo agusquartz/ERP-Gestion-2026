@@ -1,5 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+/// DTO used to create a new product.
+///
+/// This structure represents the incoming request payload
+/// for `POST /products`.
+///
+/// All required business fields must be provided here.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateProductDto {
