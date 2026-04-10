@@ -148,7 +148,7 @@ pub async fn insert_client(
             &dto.address,
             &dto.email,
             &dto.birth_date,
-            &dto.credit_limit.unwrap(0.0),
+            &dto.credit_limit.unwrap_or(Decimal::ZERO),
         ],
     ).await?;
 
@@ -189,7 +189,7 @@ pub async fn insert_client(
 // ─────────────────────────────────────────────────────────────
 pub async fn patch_client(
     id: i32,
-    patch: &UpdateClientDto,
+    patch: &PatchClientDto,
 ) -> Result<Option<ClientAggregate>, db_config::DbError> {
     let conn = db_config::get_client().await?;
     let mut tx = conn.transaction().await?;
@@ -243,7 +243,7 @@ pub async fn patch_client(
         sets.push(format!("credit_limit = ${}", idx));
         params.push(Box::new(v));
     }
-    if let Some(v) = patch.curr_credit {
+    if let Some(v) = patch.current_credit {
         idx += 1;
         sets.push(format!("curr_credit = ${}", idx));
         params.push(Box::new(v));
