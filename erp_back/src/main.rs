@@ -17,6 +17,7 @@ mod modules {
     pub mod observability;
     pub mod user;
     pub mod client;
+    pub mod product;
 }
 
 mod shared {
@@ -94,6 +95,7 @@ async fn main() {
         .merge(modules::observability::router::observability_router())
         .merge(modules::auth::router::auth_router())
         .merge(modules::client::router::client_router())
+        .merge(modules::product::router::product_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
