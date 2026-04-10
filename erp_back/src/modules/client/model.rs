@@ -23,3 +23,8 @@ pub struct PhoneNumber {
     pub phone_number: String,
     pub is_emergency: bool,
 }
+
+pub struct ClientAggregate {
+    pub client: Client,
+    pub phones: Vec<Phone>,
+}
