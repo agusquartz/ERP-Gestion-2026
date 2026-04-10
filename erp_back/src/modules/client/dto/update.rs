@@ -10,16 +10,16 @@ pub struct PatchClientDto {
     pub surname: Option<String>,
     pub address: Option<String>,
     pub email: Option<String>,
-    pub birtd_date: Option<NaiveDate>,
+    pub birth_date: Option<NaiveDate>,
     pub credit_limit: Option<Decimal>,
     pub current_credit: Option<Decimal>,
-    pub phones: Option<Vec<UpdatePhotoDto>>,
+    pub phones: Option<Vec<UpdatePhoneDto>>,
 }
 
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PatchPhotoDto {
+pub struct PatchPhoneDto {
     pub id: i32,
     pub phone_number: String,
     pub is_emergency: bool,

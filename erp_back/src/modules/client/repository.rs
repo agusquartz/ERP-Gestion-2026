@@ -148,7 +148,7 @@ pub async fn insert_client(
             &dto.address,
             &dto.email,
             &dto.birth_date,
-            &dto.credit_limit,
+            &dto.credit_limit.unwrap(0.0),
         ],
     ).await?;
 
@@ -183,3 +183,117 @@ pub async fn insert_client(
     Ok(results.pop().unwrap())
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// PATCH /clients/{id}
+// ─────────────────────────────────────────────────────────────
+pub async fn patch_client(
+    id: i32,
+    patch: &UpdateClientDto,
+) -> Result<Option<ClientAggregate>, db_config::DbError> {
+    let conn = db_config::get_client().await?;
+    let mut tx = conn.transaction().await?;
+
+    let exists = tx
+        .query_opt("SELECT 1 FROM clients WHERE id = $1", &[&id])
+        .await?;
+
+    if exists.is_none() {
+        tx.rollback().await?;
+        return Ok(None);
+    }
+
+    // Builds dynamic SET — only Some(...) fields
+    let mut sets: Vec<String> = Vec::new();
+    let mut params: Vec<Box<dyn ToSql + Sync + Send + 'static>> = Vec::new();
+    let mut idx: i32 = 0;
+
+    if let Some(v) = patch.name.as_ref() {
+        idx += 1;
+        sets.push(format!("name = ${}", idx));
+        params.push(Box::new(v.clone()));
+    }
+    if let Some(v) = patch.surname.as_ref() {
+        idx += 1;
+        sets.push(format!("surname = ${}", idx));
+        params.push(Box::new(v.clone()));
+    }
+    if let Some(v) = patch.ruc.as_ref() {
+        idx += 1;
+        sets.push(format!("ruc = ${}", idx));
+        params.push(Box::new(v.clone()));
+    }
+    if let Some(v) = patch.address.as_ref() {
+        idx += 1;
+        sets.push(format!("address = ${}", idx));
+        params.push(Box::new(v.clone()));
+    }
+    if let Some(v) = patch.email.as_ref() {
+        idx += 1;
+        sets.push(format!("email = ${}", idx));
+        params.push(Box::new(v.clone()));
+    }
+    if let Some(v) = patch.birth_date {
+        idx += 1;
+        sets.push(format!("birth_date = ${}", idx));
+        params.push(Box::new(v));
+    }
+    if let Some(v) = patch.credit_limit {
+        idx += 1;
+        sets.push(format!("credit_limit = ${}", idx));
+        params.push(Box::new(v));
+    }
+    if let Some(v) = patch.curr_credit {
+        idx += 1;
+        sets.push(format!("curr_credit = ${}", idx));
+        params.push(Box::new(v));
+    }
+
+    if !sets.is_empty() {
+        idx += 1;
+        let sql = format!("UPDATE clients SET {} WHERE id = ${}", sets.join(", "), idx);
+        params.push(Box::new(id));
+
+        let mut param_refs: Vec<&(dyn ToSql + Sync)> = Vec::new();
+        for p in &params {
+            param_refs.push(&**p);
+        }
+
+        let stmt = tx.prepare(&sql).await?;
+        tx.execute(&stmt, &param_refs).await?;
+    }
+
+    // If PATCH includes phones → delete pivot links,
+    // insert new numbers and link them
+    if let Some(phones) = patch.phones.as_ref() {
+        // Deletes only the links, NOT orphan phone_numbers (conservative policy)
+        tx.execute(
+            "DELETE FROM clients_phones WHERE client_id = $1",
+            &[&id],
+        ).await?;
+
+        for phone in phones {
+            let phone_row = tx.query_one(
+                "INSERT INTO phone_numbers (phone_number, is_emergency) VALUES ($1, $2) RETURNING id",
+                &[&phone.phone_number, &phone.is_emergency],
+            ).await?;
+
+            let phone_id: i32 = phone_row.get("id");
+
+            tx.execute(
+                "INSERT INTO clients_phones (client_id, phone_id) VALUES ($1, $2)",
+                &[&id, &phone_id],
+            ).await?;
+        }
+    }
+
+    let sql = format!(
+        "{} WHERE cl.id = $1 ORDER BY client_id, phone_id",
+        CLIENT_SELECT_BASE
+    );
+    let rows = tx.query(&sql, &[&id]).await?;
+    let mut results = rows_to_aggregates(rows);
+
+    tx.commit().await?;
+    Ok(results.pop())
+}
