@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { IVA_RATE, MOCK_CLIENTS } from "../constants/mockData";
 
 /**
  * Hook central del módulo de ventas.
