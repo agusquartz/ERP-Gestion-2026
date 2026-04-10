@@ -95,6 +95,7 @@ async fn main() {
         .merge(modules::observability::router::observability_router())
         .merge(modules::auth::router::auth_router())
         .merge(modules::product::router::product_router())
+        .merge(modules::invoice::router::invoice_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
