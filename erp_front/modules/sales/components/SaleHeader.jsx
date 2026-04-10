@@ -1,7 +1,6 @@
 "use client";
 
 import { s } from "../styles/salesStyles";
-import { VENDEDOR } from "../constants/mockData";
 
 /**
  * Fila superior: cliente seleccionado + botón buscar + vendedor.
@@ -10,7 +9,7 @@ import { VENDEDOR } from "../constants/mockData";
  *   selectedClient   - objeto cliente | null
  *   onBuscarCliente  - () => void — abre el modal de clientes
  */
-export function SaleHeader({ selectedClient, onBuscarCliente}) {
+export function SaleHeader({ selectedClient, onBuscarCliente, seller}) {
   return(
     <div style={{background: "white", borderRadius: 5, border: "1px solid #E5E7EB", padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18}}>
       {/* Cliente */}
@@ -29,7 +28,7 @@ export function SaleHeader({ selectedClient, onBuscarCliente}) {
       {/* Vendedor */}
       <div style={{display: "flex", alignItems: "center", gap: 10}}>
         <span style={s.fieldLabel}>Vendedor</span>
-        <span style={{fontSize: 14, color: "#333"}}>{VENDEDOR}</span>
+        <span style={{fontSize: 14, color: "#333"}}>{seller}</span>
       </div>
     </div>
   );

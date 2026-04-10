@@ -33,6 +33,7 @@ export default function NewSalePage() {
     items,
     subtotal, iva, total,
     submitError,
+    seller,
     addItem,
     updateItemQty,
     removeItem,
@@ -81,13 +82,14 @@ export default function NewSalePage() {
       <SaleHeader
         selectedClient={selectedClient}
         onBuscarCliente={clientModal.open}
-      />
+        seller={seller}
+     />
 
       {submitError && <div style={s.errorBanner}>{submitError}</div>}
 
       <div style={s.contentLayout}>
         {/* Izquierda: tabla + acciones */}
-        <div styles={{ display: "flex", flexDirection: "column", gap: 12}}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12}}>
           <SaleItemsTable
             items={items}
             onQtyChange={updateItemQty}

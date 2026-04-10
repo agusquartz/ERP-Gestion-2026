@@ -1,21 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { IVA_RATE, MOCK_CLIENTS } from "../constants/mockData";
 
 /**
  * Hook central del módulo de ventas.
  * Centraliza: items, cliente, totales y validaciones.
  */
 export function useSaleForm() {
-  const [clients, setClients]           = useState(MOCK_CLIENTS);
+  const [clients, setClients]           = useState();
   const [selectedClient, setSelectedClient] = useState(null);
   const [items, setItems]               = useState([]);
   const [submitError, setSubmitError]   = useState("");
-
+  
+  const [ivaRate] = useState(0.1); //10%
+  const [seller] = useState("Juan Perez");
   // ── Totales ──────────────────────────────────────────────────────────────
   const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-  const iva      = subtotal * IVA_RATE;
+  const iva      = subtotal * ivaRate;
   const total    = subtotal + iva;
 
   // ── Items ────────────────────────────────────────────────────────────────
@@ -104,6 +105,7 @@ export function useSaleForm() {
     items,
     subtotal, iva, total,
     submitError,
+    seller,
     // actions
     addItem,
     updateItemQty,
