@@ -1,5 +1,5 @@
 //What the API returns - never the raw Model
-use chrono::NavieDate;
+use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
