@@ -9,7 +9,7 @@ pub struct CreateClientDto {
     pub name: String,
     pub surname: String,
     pub ruc: String,
-    pub address: String,
+    pub address: Option<String>,
     pub email: String,
     pub birth_date: Option<NaiveDate>,
     pub credit_limit: Option<Decimal>,
