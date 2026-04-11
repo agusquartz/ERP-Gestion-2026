@@ -21,6 +21,6 @@ pub struct PatchClientDto {
 #[serde(rename_all = "camelCase")]
 pub struct PatchPhoneDto {
     pub id: i32,
-    pub phone_number: String,
-    pub is_emergency: bool,
+    pub phone_number: Option< String>,
+    pub is_emergency: Option<bool>,
 }
