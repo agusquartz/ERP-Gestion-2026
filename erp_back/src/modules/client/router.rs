@@ -9,7 +9,7 @@ pub fn router() -> Router {
     Router::new()
         // /clients
         .route(
-            "clients",
+            "/clients",
             get(handler::get_clients)
                 .post(handler::create_client),
         )
