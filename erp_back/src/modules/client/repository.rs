@@ -1,7 +1,6 @@
 //Direct DB access
 
 use std::collections::BTreeMap;
-use rust_decimal::Decimal;
 
 use tokio_postgres::Row;
 use tokio_postgres::types::ToSql;
@@ -149,7 +148,7 @@ pub async fn insert_client(
             &dto.address,
             &dto.email,
             &dto.birth_date,
-            &dto.credit_limit.unwrap_or(Decimal::ZERO),
+            &dto.credit_limit.unwrap_or(0.0),
         ],
     ).await?;
 

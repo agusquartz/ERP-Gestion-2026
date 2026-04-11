@@ -1,7 +1,6 @@
 //What the API returns - never the raw Modeli
 use crate::modules::client::model::ClientAggregate;
 use chrono::NaiveDate;
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 impl From<ClientAggregate> for ClientResponseDto {
@@ -44,8 +43,8 @@ pub struct ClientResponseDto {
     pub address: Option<String>,
     pub email: String,
     pub birth_date: Option<NaiveDate>,
-    pub credit_limit: Decimal,
-    pub current_credit: Decimal,
+    pub credit_limit: f64,
+    pub current_credit: f64,
     pub phones: Vec<PhoneResponseDto>,
 }
 

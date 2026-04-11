@@ -1,6 +1,5 @@
 //What POST receives - no id, no currentCredit
 use chrono::NaiveDate;
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -12,7 +11,7 @@ pub struct CreateClientDto {
     pub address: Option<String>,
     pub email: String,
     pub birth_date: Option<NaiveDate>,
-    pub credit_limit: Option<Decimal>,
+    pub credit_limit: Option<f64>,
     pub phones: Vec<CreatePhoneDto>,
 }
 

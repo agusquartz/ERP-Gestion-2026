@@ -1,6 +1,5 @@
 //PATCH - everything is Option<T> because only sent fields are updates
 use chrono::NaiveDate;
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -12,8 +11,8 @@ pub struct PatchClientDto {
     pub ruc: Option<String>,
     pub email: Option<String>,
     pub birth_date: Option<NaiveDate>,
-    pub credit_limit: Option<Decimal>,
-    pub current_credit: Option<Decimal>,
+    pub credit_limit: Option<f64>,
+    pub current_credit: Option<f64>,
     pub phones: Option<Vec<PatchPhoneDto>>,
 }
 
