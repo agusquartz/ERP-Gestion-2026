@@ -93,7 +93,7 @@ async fn main() {
     let app = Router::new()
         .merge(modules::observability::router::observability_router())
         .merge(modules::auth::router::auth_router())
-        .merge(modules::client::router::router())
+        .merge(modules::client::router::client_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
