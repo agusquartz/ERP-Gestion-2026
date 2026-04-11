@@ -23,7 +23,7 @@ SELECT
     cl.id                       AS client_id,
     cl.name                     AS client_name,
     cl.surname                  AS client_surname,
-    cl.ruc                      AS client_ruc,
+    cl.document                 AS client_document,
     cl.address                  AS client_address,
     cl.email                    AS client_email,
     cl.birth_date               AS client_birth_date,
@@ -63,7 +63,7 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<ClientAggregate> {
                 id: client_id,
                 name: row.get("client_name"),
                 surname: row.get("client_surname"),
-                ruc: row.get("client_ruc"),
+                document: row.get("client_document"),
                 address: row.get("client_address"),
                 email: row.get("client_email"),
                 birth_date: row.get("client_birth_date"),
@@ -137,14 +137,14 @@ pub async fn insert_client(
     // 1. Inserts the client
     let row = tx.query_one(
         r#"
-        INSERT INTO clients (name, surname, ruc, address, email, birth_date, credit_limit)
+        INSERT INTO clients (name, surname, document, address, email, birth_date, credit_limit)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id
         "#,
         &[
             &dto.name,
             &dto.surname,
-            &dto.ruc,
+            &dto.document,
             &dto.address,
             &dto.email,
             &dto.birth_date,
@@ -218,9 +218,9 @@ pub async fn patch_client(
         sets.push(format!("surname = ${}", idx));
         params.push(Box::new(v.clone()));
     }
-    if let Some(v) = patch.ruc.as_ref() {
+    if let Some(v) = patch.document.as_ref() {
         idx += 1;
-        sets.push(format!("ruc = ${}", idx));
+        sets.push(format!("document = ${}", idx));
         params.push(Box::new(v.clone()));
     }
     if let Some(v) = patch.address.as_ref() {
