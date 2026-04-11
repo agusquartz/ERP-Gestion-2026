@@ -131,7 +131,7 @@ pub async fn query_client_by_id(
 pub async fn insert_client(
     dto: &CreateClientDto,
 ) -> Result<ClientAggregate, db_config::DbError> {
-    let conn = db_config::get_client().await?;
+    let mut conn = db_config::get_client().await?;
     let mut tx = conn.transaction().await?;
 
     // 1. Inserts the client
@@ -191,7 +191,7 @@ pub async fn patch_client(
     id: i32,
     patch: &PatchClientDto,
 ) -> Result<Option<ClientAggregate>, db_config::DbError> {
-    let conn = db_config::get_client().await?;
+    let mut conn = db_config::get_client().await?;
     let mut tx = conn.transaction().await?;
 
     let exists = tx
