@@ -12,7 +12,7 @@ use crate::db_config;
 const INVOICE_SELECT_BASE: &str = r#"
 SELECT 
 inv.id AS invoice_id,
-inv.invoice_number AS invoice_number,
+inv.invoice_nr AS invoice_number,
 inv.created_at AS created_at,
 inv.date AS date,
 inv.expiration_date AS expiration_date,
@@ -24,7 +24,7 @@ inv.quote_id AS quote_id,
 c.id AS client_id,
 c.name AS client_name,
 c.surname AS client_surname,
-c.ruc AS client_document,
+c.document AS client_document,
 line.id AS detail_id,
 line.product_id AS detail_product_id,
 p.description AS detail_product_description,
@@ -37,25 +37,26 @@ JOIN clients AS c ON inv.client_id = c.id
 JOIN sale_conditions AS sale ON inv.sale_condition_id = sale.id 
 LEFT JOIN sale_invoice_details AS line ON inv.id = line.invoice_id 
 LEFT JOIN products AS p ON line.product_id = p.id 
-ORDER BY invoice_id, detail_id
 "#;
 
 pub async fn query_invoice_by_id(id: i32) -> Result<Option<model::InvoiceAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
-    let sql = format!("{} WHERE inv.id = $1", INVOICE_SELECT_BASE);
+
+    let sql = format!("{} WHERE inv.id = $1 ORDER BY invoice_id, detail_id", INVOICE_SELECT_BASE);
 
     let rows = client.query(&sql, &[&id]).await?;
 
     let mut invoices = rows_to_aggregate(rows);
 
-    Ok(invoices.pop())
+
+    Ok(invoices.into_iter().next())
 }
 
 pub async fn query_invoices(contains: Option<&str>) -> Result<Vec<model::InvoiceAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
     if let Some(q) = contains {
-        let sql = format!("{} WHERE invoice_number ILIKE $1 OR c.name ILIKE $1 OR c.surname ILIKE $1", INVOICE_SELECT_BASE); 
+        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR invoice_nr ILIKE '%' || $1 || '%' OR c.name ILIKE '%' || $1 || '%' OR c.surname ILIKE '%' || $1 || '%') ORDER BY invoice_id, detail_id", INVOICE_SELECT_BASE); 
     
         let rows = client.query(&sql, &[&q]).await?;
         let aggregates = rows_to_aggregate(rows);
