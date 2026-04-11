@@ -16,6 +16,7 @@ mod modules {
     pub mod auth;
     pub mod observability;
     pub mod user;
+    pub mod client;
 }
 
 mod shared {
@@ -92,6 +93,7 @@ async fn main() {
     let app = Router::new()
         .merge(modules::observability::router::observability_router())
         .merge(modules::auth::router::auth_router())
+        .merge(modules::client::router::router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
