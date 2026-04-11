@@ -10,6 +10,7 @@ impl From<ClientAggregate> for ClientResponseDto {
             id: agg.client.id,
             name: agg.client.name,
             surname: agg.client.surname,
+            ruc: agg.client.ruc
             address: agg.client.address,
             email: agg.client.address,
             birth_date: agg.client.birth_date,
