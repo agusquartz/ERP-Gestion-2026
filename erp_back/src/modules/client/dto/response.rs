@@ -12,7 +12,7 @@ impl From<ClientAggregate> for ClientResponseDto {
             surname: agg.client.surname,
             ruc: agg.client.ruc
             address: agg.client.address,
-            email: agg.client.address,
+            email: agg.client.email,
             birth_date: agg.client.birth_date,
             current_credit: agg.client.curr_credit,
             credit_limit: agg.client.credit_limit,
