@@ -26,7 +26,7 @@ pub struct SaleConditionResponse {
 pub struct LineItemResponse {
     pub product: LineProductResponse,
     pub unit_cost: Decimal,
-    pub tax: i8,
+    pub tax: Decimal,
     pub quantity: i32,
 }
 
