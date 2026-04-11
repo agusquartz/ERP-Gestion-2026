@@ -16,7 +16,7 @@ impl From<ClientAggregate> for ClientResponseDto {
             current_credit: agg.client.curr_credit,
             credit_limit: agg.client.credit_limit,
             phones: agg.phones
-                .into_iter(),
+                .into_iter()
                 .map(PhoneResponseDto::from)
                 .collect(),
         }
