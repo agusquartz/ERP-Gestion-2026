@@ -13,7 +13,7 @@ impl From<ClientAggregate> for ClientResponseDto {
             address: agg.client.address,
             email: agg.client.email,
             birth_date: agg.client.birth_date,
-            current_credit: agg.client.curr_credit,
+            current_credit: agg.client.current_credit,
             credit_limit: agg.client.credit_limit,
             phones: agg.phones
                 .into_iter()
