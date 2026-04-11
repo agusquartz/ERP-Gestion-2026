@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct CreateClientDto {
     pub name: String,
     pub surname: String,
-    pub ruc: String,
+    pub document: String,
     pub address: String,
     pub email: String,
     pub birth_date: Option<NaiveDate>,

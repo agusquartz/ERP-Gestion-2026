@@ -8,7 +8,7 @@ pub struct PatchClientDto {
     pub name: Option<String>,
     pub surname: Option<String>,
     pub address: Option<String>,
-    pub ruc: Option<String>,
+    pub document: Option<String>,
     pub email: Option<String>,
     pub birth_date: Option<NaiveDate>,
     pub credit_limit: Option<f64>,
