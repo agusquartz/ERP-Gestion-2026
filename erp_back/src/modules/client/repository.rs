@@ -132,7 +132,7 @@ pub async fn insert_client(
     dto: &CreateClientDto,
 ) -> Result<ClientAggregate, db_config::DbError> {
     let mut conn = db_config::get_client().await?;
-    let mut tx = conn.transaction().await?;
+    let tx = conn.transaction().await?;
 
     // 1. Inserts the client
     let row = tx.query_one(
@@ -192,7 +192,7 @@ pub async fn patch_client(
     patch: &PatchClientDto,
 ) -> Result<Option<ClientAggregate>, db_config::DbError> {
     let mut conn = db_config::get_client().await?;
-    let mut tx = conn.transaction().await?;
+    let tx = conn.transaction().await?;
 
     let exists = tx
         .query_opt("SELECT 1 FROM clients WHERE id = $1", &[&id])
