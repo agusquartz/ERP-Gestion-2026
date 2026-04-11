@@ -1,7 +1,7 @@
 use axum::{
     routing::{get, post, patch},
     Router,
-}
+};
 
 use crate::modules::client::handler;
 
