@@ -18,7 +18,6 @@ mod modules {
     pub mod user;
     pub mod client;
     pub mod product;
-    pub mod client;
 }
 
 mod shared {
