@@ -18,6 +18,7 @@ mod modules {
     pub mod user;
     pub mod product;
     pub mod invoice;
+    pub mod credit_notes;
 }
 
 mod shared {
