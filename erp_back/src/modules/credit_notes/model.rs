@@ -23,6 +23,7 @@ pub struct CreditNoteLineItem {
     pub unit_cost: Decimal,
     pub tax: Decimal,
     pub quantity: i32,
+    pub subtotal: Decimal,
 }
 
 #[derive(Debug,Clone)]
