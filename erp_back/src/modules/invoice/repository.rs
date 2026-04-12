@@ -1,9 +1,10 @@
+
 use std::collections::BTreeMap;
 
 use tokio_postgres::types::ToSql;
 use tokio_postgres::Row;
 
-use crate::modules::invoice::model;
+use crate::modules::invoice::model::{self, NewInvoice, InvoiceAggregate};
 use crate::modules::invoice::dto::create;
 use crate::modules::invoice::dto::update;
 
@@ -125,3 +126,66 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::InvoiceAggregate> {
     map.into_values().collect()
 }
 
+pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, db_config::DbError> {
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await?;
+
+    println!("nr:{}\ndate:{}\nexp_date:{}\ntotal:{}\nclient:{}\ncond:{}", 
+        invoice.invoice_number,
+        invoice.date,
+        invoice.expiration_date,
+        invoice.total,
+        invoice.client_id,
+        invoice.sale_condition_id);
+    println!("The quote is {:?}", invoice.quote_id);
+
+    let row = match  tx.query_one(
+        "INSERT INTO sales_invoices 
+        (invoice_nr, date, expiration_date, total, quote_id, client_id, sale_condition_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id",
+        &[
+            &invoice.invoice_number,
+            &invoice.date,
+            &invoice.expiration_date,
+            &invoice.total,
+            &invoice.quote_id,
+            &invoice.client_id,
+            &invoice.sale_condition_id,
+        ],
+    ).await {
+        Ok(row) => row,
+        Err(e) => {
+            println!("Db Error: {:?}", e);
+            return Err(e.into());
+        }
+    };
+
+    let invoice_id: i32 = row.get(0);
+    println!("The invoice id is {invoice_id}");
+
+    for detail in invoice.details {
+        tx.execute(
+            "INSERT INTO sale_invoice_details 
+            (invoice_id, product_id, unit_cost, tax, quantity)
+            VALUES ($1, $2, $3, $4, $5)",
+            &[
+                &invoice_id,
+                &detail.product.id,
+                &detail.unit_cost,
+                &detail.tax,
+                &detail.quantity,
+            ],
+        ).await?;
+    }
+
+    tx.commit().await?;
+
+    let aggregate = query_invoice_by_id(invoice_id)
+        .await? 
+        .ok_or(db_config::DbError::NotFound);
+
+    aggregate
+
+
+}

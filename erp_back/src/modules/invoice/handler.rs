@@ -4,7 +4,7 @@ use axum::{
     Json,
 };
 
-use crate::modules::invoice::dto::{InvoiceListQuery, response::InvoiceResponse};
+use crate::modules::invoice::dto::{InvoiceListQuery, response::InvoiceResponse, create::CreateInvoiceDto};
 use crate::modules::invoice::service;
 
 ///GET /invoices
@@ -24,4 +24,14 @@ pub async fn get_invoice(
         Some(result) => Ok(Json(result)),
         None => Err(StatusCode::NOT_FOUND)
     }
+}
+
+pub async fn create_invoice(
+    Json(payload): Json<CreateInvoiceDto>,
+) -> Result<Json<InvoiceResponse>, StatusCode> {
+    let invoice = service::create_invoice(payload)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(invoice))
 }
