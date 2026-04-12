@@ -1,15 +1,34 @@
-
+//! Invoice repository layer
+//!
+//! This module handles all database interactions for invoices.
+//! It is responsible for:
+//! - Executing SQL queries
+//! - Mapping database rows into domain aggregates
+//! - Managing transactions for write operations
+//!
+//! # Responsibilities
+//! - Persist invoice data (`NewInvoice` → DB)
+//! - Retrieve invoice data (`DB → InvoiceAggregate`)
+//! - Handle joins across related tables (clients, sale conditions, products)
+//!
+//! # Design Principles
+//! - No business logic
+//! - No HTTP concerns
+//! - Pure persistence + mapping
+//! - Returns domain aggregates to service layer
 use std::collections::BTreeMap;
-
-use tokio_postgres::types::ToSql;
 use tokio_postgres::Row;
 
 use crate::modules::invoice::model::{self, NewInvoice, InvoiceAggregate};
-use crate::modules::invoice::dto::create;
-use crate::modules::invoice::dto::update;
-
 use crate::db_config;
 
+/// Base SQL query used for retrieving invoices with all related data.
+///
+/// Includes joins for:
+/// - client
+/// - sale condition
+/// - invoice line items
+/// - product data
 const INVOICE_SELECT_BASE: &str = r#"
 SELECT 
 inv.id AS invoice_id,
@@ -40,6 +59,11 @@ LEFT JOIN sale_invoice_details AS line ON inv.id = line.invoice_id
 LEFT JOIN products AS p ON line.product_id = p.id 
 "#;
 
+/// Retrieves a single invoice by ID.
+///
+/// # Returns
+/// - `Some(InvoiceAggregate)` if found
+/// - `None` if no invoice exists
 pub async fn query_invoice_by_id(id: i32) -> Result<Option<model::InvoiceAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
@@ -48,12 +72,16 @@ pub async fn query_invoice_by_id(id: i32) -> Result<Option<model::InvoiceAggrega
 
     let rows = client.query(&sql, &[&id]).await?;
 
-    let mut invoices = rows_to_aggregate(rows);
+    let invoices = rows_to_aggregate(rows);
 
 
     Ok(invoices.into_iter().next())
 }
 
+/// Retrieves invoices with optional filtering.
+///
+/// # Arguments
+/// - `contains`: optional search string
 pub async fn query_invoices(contains: Option<&str>) -> Result<Vec<model::InvoiceAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
     if let Some(q) = contains {
@@ -69,7 +97,12 @@ pub async fn query_invoices(contains: Option<&str>) -> Result<Vec<model::Invoice
     
 }
 
-
+/// Converts flat SQL rows into structured `InvoiceAggregate`s.
+///
+/// # Behavior
+/// - Groups rows by invoice_id
+/// - Reconstructs nested line items
+/// - Produces one aggregate per invoice
 fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::InvoiceAggregate> {
     let mut map: BTreeMap<i32, model::InvoiceAggregate> = BTreeMap::new();
 
@@ -126,6 +159,17 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::InvoiceAggregate> {
     map.into_values().collect()
 }
 
+/// Stores a new invoice and its associated line items.
+///
+/// # Workflow
+/// 1. Begin transaction
+/// 2. Insert invoice header
+/// 3. Insert invoice line items
+/// 4. Commit transaction
+/// 5. Re-query full aggregate
+///
+/// # Returns
+/// - Fully constructed `InvoiceAggregate`
 pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, db_config::DbError> {
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await?;
@@ -178,7 +222,6 @@ pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, 
             ],
         ).await?;
     }
-
     tx.commit().await?;
 
     let aggregate = query_invoice_by_id(invoice_id)
@@ -186,6 +229,4 @@ pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, 
         .ok_or(db_config::DbError::NotFound);
 
     aggregate
-
-
 }

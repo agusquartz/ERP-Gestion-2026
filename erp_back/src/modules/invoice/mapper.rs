@@ -1,6 +1,33 @@
+//! Invoice mapping utilities
+//!
+//! This module is responsible for transforming domain models into
+//! API response DTOs.
+//!
+//! It acts as a boundary layer between:
+//! - internal domain structures (`model::*`)
+//! - external representations (`dto::response::*`)
+//!
+//! # Design Principles
+//! - No business logic
+//! - Pure data transformation
+//! - One-way mapping (domain → response)
+//! - Keeps DTOs decoupled from domain models
+
 use crate::modules::invoice::model;
 use crate::modules::invoice::dto::response;
 
+/// Maps an `InvoiceAggregate` into an `InvoiceResponse`.
+///
+/// # Responsibilities
+/// - Flattens aggregate structure into API-friendly format
+/// - Converts nested domain models into response DTOs
+/// - Transforms naming differences (e.g., `document` → `ruc`)
+/// - Maps line items and embedded product projections
+///
+/// # Notes
+/// - Consumes the aggregate (`value`) to avoid unnecessary cloning
+/// - Assumes all domain data is already validated and consistent
+/// - Does not perform any computation or validation
 pub fn map_invoice(value: model::InvoiceAggregate) -> response::InvoiceResponse {
     response::InvoiceResponse {
         id: value.invoice.id,

@@ -1,3 +1,23 @@
+//! Invoice service layer
+//!
+//! This module contains the business logic for invoice operations.
+//! It orchestrates interactions between:
+//! - DTOs (input/output)
+//! - repository layer (persistence)
+//! - external modules (e.g., product service)
+//!
+//! # Responsibilities
+//! - Validate incoming data
+//! - Enrich data (e.g., fetch product info)
+//! - Compute derived values (totals, taxes)
+//! - Coordinate persistence via repository
+//! - Map domain aggregates into API responses
+//!
+//! # Design Principles
+//! - No direct SQL or database logic
+//! - No HTTP concerns
+//! - Central place for business rules
+
 use crate::modules::product;
 use crate::modules::product::dto::ProductResponse;
 use crate::modules::invoice::repository;
@@ -10,6 +30,9 @@ use std::collections::HashMap;
 use rust_decimal::{ Decimal,
                     prelude::FromPrimitive};
 
+/// Errors that can occur in the service layer.
+///
+/// Wraps lower-level errors and adds validation failures.
 #[derive(Debug)]
 pub enum ServiceError {
     Db(db_config::DbError),
@@ -17,6 +40,7 @@ pub enum ServiceError {
     Validation(String),
 }
 
+/// Conversion from product service errors.
 impl From<product::service::ServiceError> for ServiceError {
     fn from(err: product::service::ServiceError) -> Self {
         Self::Product(err)
@@ -45,16 +69,38 @@ impl std::fmt::Display for ServiceError {
 impl std::error::Error for ServiceError {}
 
 
+/// Retrieves a list of invoices with optional filtering.
+///
+/// # Arguments
+/// - `contains`: optional search term for filtering
+///
+/// # Returns
+/// - Vector of `InvoiceResponse`
 pub async fn list_invoices(contains: Option<String>) -> Result<Vec<InvoiceResponse>, ServiceError> {
     let rows= repository::query_invoices(contains.as_deref()).await?;
     Ok(rows.into_iter().map(|inv| InvoiceResponse::from(inv)).collect())
 }
 
+/// Retrieves a single invoice by ID.
+///
+/// # Returns
+/// - `Some(InvoiceResponse)` if found
+/// - `None` if not found
 pub async fn get_invoice(id: i32) -> Result<Option<InvoiceResponse>, ServiceError> {
     let invoice = repository::query_invoice_by_id(id).await?;
     Ok(invoice.map(|inv| InvoiceResponse::from(inv)))
 }
 
+/// Creates a new invoice.
+///
+/// # Workflow
+/// 1. Fetch products for each line item
+/// 2. Validate product existence
+/// 3. Build `LineItem`s with tax and pricing
+/// 4. Compute total amount
+/// 5. Construct `NewInvoice`
+/// 6. Persist via repository
+/// 7. Map result to `InvoiceResponse`
 pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, ServiceError> {
     //make a map with products
     let mut products: HashMap<i32,ProductResponse> = HashMap::new();
@@ -120,6 +166,10 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, Se
 
 }
 
+/// Computes the total invoice amount including taxes.
+///
+/// # Formula
+/// total = Σ (unit_cost × quantity) + tax_amount
 fn compute_invoice_total(details: &Vec<LineItem>) -> rust_decimal::Decimal {
     let mut acc: Decimal = Decimal::from(0);
 
