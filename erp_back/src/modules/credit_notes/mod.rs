@@ -1,3 +1,4 @@
 pub mod model;
-pub mod dto;
+pub mod dtos;
+pub mod mapper;
 
