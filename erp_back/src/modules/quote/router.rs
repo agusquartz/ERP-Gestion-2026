@@ -7,7 +7,7 @@ use crate::modules::quote::handler;
 use crate::modules::auth::middleware::auth::protect_routes;
 
 pub fn quote_router() -> Router {
-    let protected = Router()::new()
+    let protected = Router::new()
         // GET /quotes -> list all quotes (or filtered)
         // POST /quotes -> create new quote
         .route("/quotes", get(handler::get_quotes).post(handler::create_quote))
