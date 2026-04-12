@@ -20,7 +20,6 @@ mod modules {
     pub mod product;
     pub mod client;
     pub mod product;
-    pub mod client;
 }
 
 mod shared {
