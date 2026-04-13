@@ -5,11 +5,10 @@ use rust_decimal::Decimal;
 #[derive(Debug,Clone,Deserialize,Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCreditNoteDto {
-    pub client_id: i32,
     pub credit_note_number: String,
-    pub date: NaiveDate,
-    pub sale_invoice_id: Option<i32>,
-    pub details: Vec<CreateCreditNoteDto>,
+    pub created_at: NaiveDate,
+    pub sale_invoice_id: i32,
+    pub details: Vec<CreateCreditNoteLineDto>,
 }
 
 /// DTO representing a single line item in invoice creation.

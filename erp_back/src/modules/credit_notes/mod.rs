@@ -1,5 +1,6 @@
 pub mod model;
-pub mod dtos;
+pub mod dto;
 pub mod mapper;
 pub mod repository;
+
 
