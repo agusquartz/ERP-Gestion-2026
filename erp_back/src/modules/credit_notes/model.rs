@@ -23,7 +23,6 @@ pub struct CreditNoteLineItem {
     pub unit_cost: Decimal,
     pub tax: Decimal,
     pub quantity: i32,
-    pub subtotal: Decimal,
 }
 
 #[derive(Debug,Clone)]
@@ -49,4 +48,5 @@ pub struct NewCreditNote {
     pub sale_invoice_id: i32,
     pub created_at: NaiveDate,
     pub details: Vec<CreditNoteLineItem>,
+    pub total: Decimal,
 }
