@@ -3,7 +3,17 @@ use tokio_postgres::Row;
 
 use crate::modules::credit_notes::model;
 use crate::db_config;
-
+/// Base SQL query used to fetch credit notes with their related data.
+///
+/// # Includes
+/// - Credit note header
+/// - Associated invoice reference
+/// - Line items
+/// - Product projection
+///
+/// # Notes
+/// - Produces a flat result set (one row per line item)
+/// - Requires post-processing to reconstruct aggregates
 const CREDIT_NOTES_SELECT_BASE: &str = r#"
 SELECT
     cn.id AS credit_note_id,
@@ -27,6 +37,11 @@ INNER JOIN products AS p
     ON cnd.product_id = p.id
 "#;
 
+/// Retrieves a single credit note by ID.
+///
+/// # Returns
+/// - `Some(CreditNoteAggregate)` if found
+/// - `None` if no matching record exists
 pub async fn query_credit_note_by_id(id: i32) -> Result<Option<model::CreditNoteAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
@@ -35,20 +50,24 @@ pub async fn query_credit_note_by_id(id: i32) -> Result<Option<model::CreditNote
 
     let rows = client.query(&sql, &[&id]).await?;
 
-    let invoices = rows_to_aggregate(rows);
+    let notes = rows_to_aggregate(rows);
 
 
-    Ok(invoices.into_iter().next())
+    Ok(notes.into_iter().next())
 }
 
 /// Retrieves credit notes with optional filtering.
 ///
 /// # Arguments
 /// - `contains`: optional search string
+///
+/// # Behavior
+/// - Filters by credit note number or product fields
+/// - Returns full aggregates
 pub async fn query_credit_notes(contains: Option<&str>) -> Result<Vec<model::CreditNoteAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
     if let Some(q) = contains {
-        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR credit_note_number ILIKE '%' || $1 || '%' OR product_description ILIKE '%' || $1 || '%' OR product_code ILIKE '%' || $1 || '%') ORDER BY cn.id, cnd.id", CREDIT_NOTES_SELECT_BASE); 
+        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR credit_note_number ILIKE '%' || $1 || '%' OR detail_product_description ILIKE '%' || $1 || '%' OR detail_product_code ILIKE '%' || $1 || '%') ORDER BY cn.id, cnd.id", CREDIT_NOTES_SELECT_BASE); 
     
         let rows = client.query(&sql, &[&q]).await?;
         let aggregates = rows_to_aggregate(rows);
@@ -59,12 +78,16 @@ pub async fn query_credit_notes(contains: Option<&str>) -> Result<Vec<model::Cre
     Ok(rows_to_aggregate(rows))
 }
 
-/// Converts flat SQL rows into structured `InvoiceAggregate`s.
+/// Converts flat SQL rows into structured `CreditNoteAggregate`s.
 ///
 /// # Behavior
-/// - Groups rows by invoice_id
+/// - Groups rows by `credit_note_id`
 /// - Reconstructs nested line items
-/// - Produces one aggregate per invoice
+/// - Produces one aggregate per credit note
+///
+/// # Important
+/// This function is responsible for transforming relational data
+/// into a domain aggregate structure.
 fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::CreditNoteAggregate> {
     let mut map: BTreeMap<i32, model::CreditNoteAggregate> = BTreeMap::new();
 
@@ -106,17 +129,20 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::CreditNoteAggregate> {
     map.into_values().collect()
 }
 
-/// Stores a new invoice and its associated line items.
+/// Persists a new credit note and its associated line items.
 ///
 /// # Workflow
 /// 1. Begin transaction
-/// 2. Insert invoice header
-/// 3. Insert invoice line items
+/// 2. Insert credit note header
+/// 3. Insert line items
 /// 4. Commit transaction
 /// 5. Re-query full aggregate
 ///
 /// # Returns
-/// - Fully constructed `InvoiceAggregate`
+/// - Fully constructed `CreditNoteAggregate`
+///
+/// # Errors
+/// - Returns `DbError::NotFound` if re-query fails after insertion
 pub async fn store_new_credit_note(credit_note: model::NewCreditNote) -> Result<model::CreditNoteAggregate, db_config::DbError> {
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await?;

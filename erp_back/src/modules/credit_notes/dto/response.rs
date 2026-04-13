@@ -12,7 +12,8 @@ use crate::modules::credit_notes::mapper;
 ///
 /// # Notes
 /// - `subtotal` is derived (not stored in DB)
-/// - Includes tax impact#[derive(Debug,Clone,Serialize,Deserialize)]
+/// - Includes tax impact
+#[derive(Debug,Clone,Serialize,Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreditNoteLineItemResponse {
     pub product: LineProductResponse,

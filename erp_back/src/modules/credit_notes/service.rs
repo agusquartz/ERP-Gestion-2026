@@ -12,15 +12,17 @@ use rust_decimal::{ Decimal,
 
 /// Errors that can occur in the service layer.
 ///
-/// Wraps lower-level errors and adds validation failures.
+/// # Variants
+/// - `Db`: database-related failures
+/// - `Product`: errors from product service
+/// - `Validation`: business rule violations
 #[derive(Debug)]
 pub enum ServiceError {
     Db(db_config::DbError),
     Product(product::service::ServiceError),
     Validation(String),
 }
-
-/// Conversion from product service errors.
+/// Converts product service errors into service errors.
 impl From<product::service::ServiceError> for ServiceError {
     fn from(err: product::service::ServiceError) -> Self {
         Self::Product(err)
@@ -48,6 +50,7 @@ impl std::fmt::Display for ServiceError {
 
 impl std::error::Error for ServiceError {}
 
+/// Lists credit notes with optional filtering.
 pub async fn list_credit_notes(contains: Option<String>) -> Result<Vec<CreditNoteResponse>, ServiceError> {
     let rows= repository::query_credit_notes(contains.as_deref()).await?;
     Ok(rows.into_iter().map(|note| CreditNoteResponse::from(note)).collect())
@@ -57,12 +60,20 @@ pub async fn list_credit_notes(contains: Option<String>) -> Result<Vec<CreditNot
 ///
 /// # Returns
 /// - `Some(CreditNoteResponse)` if found
-/// - `None` if not found
+/// - `None` otherwise
 pub async fn get_credit_note(id: i32) -> Result<Option<CreditNoteResponse>, ServiceError> {
     let invoice = repository::query_credit_note_by_id(id).await?;
     Ok(invoice.map(|note| CreditNoteResponse::from(note)))
 }
 
+/// Creates a new credit note.
+///
+/// # Workflow
+/// 1. Resolve products from product service
+/// 2. Build domain line items
+/// 3. Compute total
+/// 4. Persist via repository
+/// 5. Map aggregate to response
 pub async fn create_credit_note(dto: CreateCreditNoteDto) -> Result<CreditNoteResponse, ServiceError> {
     //make a map with products
     let mut products: HashMap<i32,ProductResponse> = HashMap::new();
