@@ -57,3 +57,9 @@ impl From<model::CreditNoteAggregate> for CreditNoteResponse {
         mapper::map_credit_note(value)
     }
 }
+
+impl From<model::CreditNoteLineItem> for CreditNoteLineItemResponse {
+    fn from(value: model::CreditNoteLineItem) -> Self {
+        mapper::map_credit_note_line(value)
+    }
+}
