@@ -8,8 +8,11 @@ use crate::modules::credit_notes::mapper;
 
 /// Line item representation returned to clients.
 ///
-/// Contains fully computed values including tax and pricing.
-#[derive(Debug,Clone,Serialize,Deserialize)]
+/// Includes computed financial values.
+///
+/// # Notes
+/// - `subtotal` is derived (not stored in DB)
+/// - Includes tax impact#[derive(Debug,Clone,Serialize,Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreditNoteLineItemResponse {
     pub product: LineProductResponse,
@@ -30,6 +33,9 @@ pub struct LineProductResponse {
     pub code: String,
 }
 
+/// Minimal invoice reference returned to clients.
+///
+/// Used instead of embedding full invoice data.
 #[derive(Debug,Clone,Serialize,Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InvoiceReferenceResponse {
@@ -37,7 +43,12 @@ pub struct InvoiceReferenceResponse {
     pub invoice_number: String,
 }
 
-
+/// API response representing a credit note.
+///
+/// # Structure
+/// - Core metadata
+/// - Associated invoice reference
+/// - Fully expanded line items
 #[derive(Debug,Clone,Serialize,Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreditNoteResponse {
@@ -58,6 +69,9 @@ impl From<model::CreditNoteAggregate> for CreditNoteResponse {
     }
 }
 
+/// Converts a domain line item into a response DTO.
+///
+/// Delegates transformation logic to mapper.
 impl From<model::CreditNoteLineItem> for CreditNoteLineItemResponse {
     fn from(value: model::CreditNoteLineItem) -> Self {
         mapper::map_credit_note_line(value)

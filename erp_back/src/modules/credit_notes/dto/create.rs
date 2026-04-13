@@ -2,6 +2,14 @@ use serde::{Deserialize, Serialize};
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
 
+/// DTO used to create a new credit note.
+///
+/// Received from client (HTTP request).
+///
+/// # Responsibilities
+/// - Captures user input only
+/// - No derived or computed values
+/// - Enriched in service layer before persistence
 #[derive(Debug,Clone,Deserialize,Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCreditNoteDto {
@@ -11,12 +19,11 @@ pub struct CreateCreditNoteDto {
     pub details: Vec<CreateCreditNoteLineDto>,
 }
 
-/// DTO representing a single line item in invoice creation.
+/// DTO representing a single line item during creation.
 ///
 /// # Responsibilities
-/// - Captures minimal product reference and pricing input
-/// - Does not include product metadata (resolved later in service layer)
-/// - Used to build `LineItem` after enrichment
+/// - Contains minimal product reference and pricing input
+/// - Product details resolved later in service layer
 #[derive(Debug,Clone,Deserialize,Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCreditNoteLineDto {
