@@ -12,12 +12,12 @@ SELECT
     cn.total AS total,
     si.id AS invoice_id,
     si.invoice_nr AS invoice_number,
-    cnd.unit_cost AS unit_cost,
-    cnd.quantity AS quantity,
-    cnd.tax AS tax,
-    p.id AS product_id,
-    p.code AS product_code,
-    p.description AS product_description
+    cnd.unit_cost AS detail_unit_cost,
+    cnd.quantity AS detail_quantity,
+    cnd.tax AS detail_tax,
+    p.id AS detail_product_id,
+    p.code AS detail_product_code,
+    p.description AS detail_product_description
 FROM credit_notes AS cn
 INNER JOIN sales_invoices AS si
     ON cn.sale_invoice_id = si.id
