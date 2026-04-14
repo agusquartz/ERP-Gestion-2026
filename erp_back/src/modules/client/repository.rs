@@ -138,7 +138,7 @@ pub async fn insert_client(
     let row = tx.query_one(
         r#"
         INSERT INTO clients (name, surname, document, address, email, birth_date, credit_limit)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7::float8)
         RETURNING id
         "#,
         &[
