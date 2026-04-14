@@ -1,34 +1,32 @@
 "use client";
 
-import { s } from "../styles/salesStyles";
+export function SaleHeader({ selectedClient, onBuscarCliente, seller }) {
+  return (
+    <div className="mb-4 flex items-center justify-between rounded-[5px] border border-border px-4 py-3.5 shadow-panel">
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-foreground">Cliente:</span>
 
-/**
- * Fila superior: cliente seleccionado + botón buscar + vendedor.
- *
- * Props:
- *   selectedClient   - objeto cliente | null
- *   onBuscarCliente  - () => void — abre el modal de clientes
- */
-export function SaleHeader({ selectedClient, onBuscarCliente, seller}) {
-  return(
-    <div style={{background: "white", borderRadius: 5, border: "1px solid #E5E7EB", padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18}}>
-      {/* Cliente */}
-      <div style={{display: "flex", alignItems: "center", gap: 10}}>
-        <span style={s.fieldLabel}>Cliente: </span>
         {selectedClient ? (
-          <span style={s.clientName}>{selectedClient.nombre} {selectedClient.apellido}</span>
+          <span className="text-sm font-medium text-primary">
+            {selectedClient.nombre} {selectedClient.apellido}
+          </span>
         ) : (
-          <span style={{color: "#aaa", fontSize: 14}}>Sin cliente</span>
+          <span className="text-sm text-muted-foreground">Sin cliente</span>
         )}
-        <button style={s.btnBuscarCliente} onClick={onBuscarCliente}>
+
+        <button
+          type="button"
+          onClick={onBuscarCliente}
+          className="cursor-pointer rounded-[5px] px-3.5 py-1.5 text-sm font-medium border border-primary text-primary hover:bg-primary/5 transition-all duration-200 hover:bg-primary-hover active:translate-y-px"
+        >
           Buscar Cliente
         </button>
       </div>
 
-      {/* Vendedor */}
-      <div style={{display: "flex", alignItems: "center", gap: 10}}>
-        <span style={s.fieldLabel}>Vendedor</span>
-        <span style={{fontSize: 14, color: "#333"}}>{seller}</span>
+      {/* USERNAME */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-foreground">Vendedor</span>
+        <span className="text-sm text-foreground">{seller}</span>
       </div>
     </div>
   );
