@@ -24,7 +24,10 @@ pub async fn get_clients(
 ) -> impl IntoResponse {
     match service::get_clients(params.contains).await {
         Ok(clients) => (StatusCode::OK, Json(clients)).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(e) => {
+            eprintln!("Error: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
 }
 
@@ -34,8 +37,11 @@ pub async fn get_client_by_id(
 ) -> impl IntoResponse {
     match service::get_client_by_id(id).await {
         Ok(Some(client)) => (StatusCode::OK, Json(client)).into_response(),
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(None) => StatusCode::NOT_FOUND.into_response(), 
+        Err(e) => {
+            eprintln!("Error: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
 }
 
@@ -45,7 +51,10 @@ pub async fn create_client(
 ) -> impl IntoResponse {
     match service::create_client(dto).await {
         Ok(client) => (StatusCode::CREATED, Json(client)).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(e) => {
+            eprintln!("Error: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
 }
 
@@ -56,7 +65,10 @@ pub async fn patch_client(
 ) -> impl IntoResponse {
     match service::patch_client(id, dto).await {
         Ok(Some(client)) => (StatusCode::OK, Json(client)).into_response(),
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(None) => StatusCode::NOT_FOUND.into_response(), 
+        Err(e) => {
+            eprintln!("Error: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
 }
