@@ -1,63 +1,62 @@
 "use client";
 
-import { s } from "../styles/salesStyles";
 import { TrashIcon } from "@/shared/components/Icons";
 
-/**
- * Tabla de productos agregados a la venta.
- *
- * Props:
- *   items        - array de items
- *   onQtyChange  - (id, value) => void
- *   onRemove     - (id) => void
- */
 export function SaleItemsTable({ items, onQtyChange, onRemove }) {
   const totalUnidades = items.reduce((sum, i) => sum + i.cantidad, 0);
 
   return (
-    <div style={s.tableSection}>
-      <div style={s.tableWrap}>
-        <table style={{ ...s.table, tableLayout: "fixed" }}>
+    <div className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+      <div className="flex-1 min-h-0 overflow-auto">
+        <table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col style={{ width: 36 }} />
-            <col style={{ width: 130 }} />
+            <col className="w-9" />
+            <col className="w-[130px]" />
             <col />
-            <col style={{ width: 90 }} />
-            <col style={{ width: 70 }} />
-            <col style={{ width: 80 }} />
-            <col style={{ width: 56 }} />
+            <col className="w-[90px]" />
+            <col className="w-[70px]" />
+            <col className="w-[80px]" />
+            <col className="w-14" />
           </colgroup>
+
           <thead>
-           <tr style={{ background: "#F3F4F6" }}>
+            <tr className="bg-background">
               {["#", "Código", "Descripción", "Cantidad", "Precio", "Subtotal", "Acción"].map((h) => (
-                <th key={h} style={s.th}>{h}</th>
+                <th
+                  key={h}
+                  className="sticky top-0 border-b border-border bg-background px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground"
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
+
           <tbody>
             {items.map((item, i) => (
-              <tr key={item.id} style={s.tr}>
-                <td style={s.td}>{i + 1}</td>
-                <td style={s.td}>{item.codigo}</td>
-                <td
-                  style={{ ...s.td, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                  title={item.descripcion}
-                >
+              <tr key={item.id} className="border-b border-gray-100">
+                <td className="px-3 py-2.5 text-sm text-foreground">{i + 1}</td>
+                <td className="px-3 py-2.5 text-sm text-foreground">{item.codigo}</td>
+                <td className="truncate px-3 py-2.5 text-sm text-foreground" title={item.descripcion}>
                   {item.descripcion}
                 </td>
-                <td style={s.td}>
+                <td className="px-3 py-2.5">
                   <input
                     type="number"
                     min={1}
                     value={item.cantidad}
                     onChange={(e) => onQtyChange(item.id, e.target.value)}
-                    style={s.qtyInput}
+                    className="w-[60px] rounded-[5px] border border-border px-2 py-1 text-center text-sm outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/15"
                   />
                 </td>
-                <td style={s.td}>${item.precio}</td>
-                <td style={s.td}>${item.subtotal}</td>
-                <td style={s.td}>
-                  <button style={s.btnRemove} onClick={() => onRemove(item.id)}>
+                <td className="px-3 py-2.5 text-sm text-foreground">${item.precio}</td>
+                <td className="px-3 py-2.5 text-sm text-foreground">${item.subtotal}</td>
+                <td className="px-3 py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => onRemove(item.id)}
+                    className="inline-flex rounded-[5px] p-1 text-muted-foreground transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
+                  >
                     <TrashIcon />
                   </button>
                 </td>
@@ -66,7 +65,10 @@ export function SaleItemsTable({ items, onQtyChange, onRemove }) {
 
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ textAlign: "center", padding: "36px 0", color: "#bbb", fontSize: 13 }}>
+                <td
+                  colSpan={7}
+                  className="py-9 text-center text-sm text-muted-foreground"
+                >
                   No hay productos. Buscá uno desde el panel derecho.
                 </td>
               </tr>
@@ -75,7 +77,7 @@ export function SaleItemsTable({ items, onQtyChange, onRemove }) {
         </table>
       </div>
 
-      <div style={s.tableFooter}>
+      <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
         <span>Items: {items.length}</span>
         <span>Unidades totales: {totalUnidades}</span>
       </div>
