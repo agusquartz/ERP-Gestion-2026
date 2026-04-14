@@ -24,49 +24,11 @@ use crate::modules::invoice::repository;
 use crate::modules::invoice::model::{NewInvoice, LineProduct, LineItem};
 use crate::modules::invoice::dto::response::InvoiceResponse;
 use crate::modules::invoice::dto::create::{CreateInvoiceDto, CreateInvoiceLineItemDto};
-use crate::shared::db_config;
+use crate::modules::invoice::errors;
 
 use std::collections::HashMap;
 use rust_decimal::{ Decimal,
                     prelude::FromPrimitive};
-
-/// Errors that can occur in the service layer.
-///
-/// Wraps lower-level errors and adds validation failures.
-#[derive(Debug)]
-pub enum ServiceError {
-    Db(db_config::DbError),
-    Product(product::service::ServiceError),
-    Validation(String),
-}
-
-/// Conversion from product service errors.
-impl From<product::service::ServiceError> for ServiceError {
-    fn from(err: product::service::ServiceError) -> Self {
-        Self::Product(err)
-    }
-}
-
-/// Converts a database error into a service error.
-impl From<db_config::DbError> for ServiceError {
-    fn from(value: db_config::DbError) -> Self {
-        Self::Db(value)
-    }
-}
-
-/// Formats the error for user-facing messages or logs.
-impl std::fmt::Display for ServiceError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ServiceError::Db(_) => write!(f, "database error"),
-            ServiceError::Validation(msg) => write!(f, "validation error: {msg}"),
-            ServiceError::Product(product::service::ServiceError::Db(value)) => write!(f, "error getting product from the database: {value}"),
-            ServiceError::Product(product::service::ServiceError::Validation(msg)) => write!(f, "error in product validation: {msg}"),
-        }
-    }
-}
-
-impl std::error::Error for ServiceError {}
 
 
 /// Retrieves a list of invoices with optional filtering.
@@ -76,7 +38,7 @@ impl std::error::Error for ServiceError {}
 ///
 /// # Returns
 /// - Vector of `InvoiceResponse`
-pub async fn list_invoices(contains: Option<String>) -> Result<Vec<InvoiceResponse>, ServiceError> {
+pub async fn list_invoices(contains: Option<String>) -> Result<Vec<InvoiceResponse>, errors::ServiceError> {
     let rows= repository::query_invoices(contains.as_deref()).await?;
     Ok(rows.into_iter().map(|inv| InvoiceResponse::from(inv)).collect())
 }
@@ -86,7 +48,7 @@ pub async fn list_invoices(contains: Option<String>) -> Result<Vec<InvoiceRespon
 /// # Returns
 /// - `Some(InvoiceResponse)` if found
 /// - `None` if not found
-pub async fn get_invoice(id: i32) -> Result<Option<InvoiceResponse>, ServiceError> {
+pub async fn get_invoice(id: i32) -> Result<Option<InvoiceResponse>, errors::ServiceError> {
     let invoice = repository::query_invoice_by_id(id).await?;
     Ok(invoice.map(|inv| InvoiceResponse::from(inv)))
 }
@@ -101,7 +63,7 @@ pub async fn get_invoice(id: i32) -> Result<Option<InvoiceResponse>, ServiceErro
 /// 5. Construct `NewInvoice`
 /// 6. Persist via repository
 /// 7. Map result to `InvoiceResponse`
-pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, ServiceError> {
+pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, errors::ServiceError> {
     //make a map with products
     let mut products: HashMap<i32,ProductResponse> = HashMap::new();
 
@@ -109,8 +71,9 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, Se
         //Bring product from db
         let p: ProductResponse = product::service::get_product(line.product_id)
             .await?
-            .ok_or(ServiceError::Validation(
-                    format!("missing product {}", line.product_id)))?;
+            .ok_or(errors::ServiceError::Validation( errors::ValidationError{
+                    context: format!("missing product {}", line.product_id)
+            }))?;
         //insert to map
         products.insert(p.id, p);
     }
@@ -126,7 +89,8 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, Se
         let tax = product
             .taxes
             .first()
-            .expect("products should always have tax")
+            .ok_or(errors::ServiceError::Validation( errors::ValidationError { 
+                context: format!("product with id {} has no tax associated", product.id) }))?
             .percentage;
 
         let item = LineItem {
@@ -136,7 +100,9 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, Se
                 description: product.description.clone(),
             },
             unit_cost: line.unit_cost,
-            tax: Decimal::from_f64(tax).ok_or(ServiceError::Validation("invalid float".to_string()))?,
+            tax: Decimal::from_f64(tax).ok_or(errors::ServiceError::Validation( errors::ValidationError {
+                context: "invalid float tax value".to_string()
+            }))?,
             quantity: line.quantity
         };
         //store in details vector
@@ -160,7 +126,6 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, Se
 
     //now just send to repo and let that layer take charge
     let aggregate = repository::store_new_invoice(invoice).await?; 
-    println!("Do you think... Ah who am i kidding? Of course's the database!");
     let response = InvoiceResponse::from(aggregate);
     Ok(response)
 

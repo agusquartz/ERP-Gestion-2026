@@ -174,15 +174,6 @@ pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, 
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await?;
 
-    println!("nr:{}\ndate:{}\nexp_date:{}\ntotal:{}\nclient:{}\ncond:{}", 
-        invoice.invoice_number,
-        invoice.date,
-        invoice.expiration_date,
-        invoice.total,
-        invoice.client_id,
-        invoice.sale_condition_id);
-    println!("The quote is {:?}", invoice.quote_id);
-
     let row = match  tx.query_one(
         "INSERT INTO sales_invoices 
         (invoice_nr, date, expiration_date, total, quote_id, client_id, sale_condition_id)
@@ -206,7 +197,6 @@ pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, 
     };
 
     let invoice_id: i32 = row.get(0);
-    println!("The invoice id is {invoice_id}");
 
     for detail in invoice.details {
         tx.execute(
@@ -226,7 +216,6 @@ pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, 
 
     let aggregate = query_invoice_by_id(invoice_id)
         .await? 
-        .ok_or(db_config::DbError::NotFound);
-
+        .ok_or(db_config::DbError::InvariantViolation("Inserted invoice not found after commit".into()));
     aggregate
 }
