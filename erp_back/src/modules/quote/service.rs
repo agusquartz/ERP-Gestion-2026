@@ -1,11 +1,11 @@
-//! Quote Service Layer
-//!
-//! Responsibilities:
-//! - Business validation
-//! - Orchestration of repository calls
-//! - Mapping via mapper
-//!
-//! NO SQL, NO HTTP
+/// Quote Service Layer
+///
+/// Responsibilities:
+/// - Business validation
+/// - Orchestration of repository calls
+/// - Mapping via mapper
+///
+/// NO SQL, NO HTTP
 
 use crate::modules::quote::{
     dto::response::QuoteResponseDto,
@@ -35,7 +35,7 @@ pub async fn get_quote_by_id(id: i32) -> Result<QuoteResponseDto, String> {
     Ok(mapper::quote_with_details_to_response(quote))
 }
 
-//! Get list of quotes
+/// Get list of quotes
 pub async fn get_quotes(
     contains: Option<String>,
 ) -> Result<Vec<QuoteResponseDto>, crate::db_config::DbError> {

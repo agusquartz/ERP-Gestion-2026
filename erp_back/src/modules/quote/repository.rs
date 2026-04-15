@@ -1,13 +1,13 @@
-//! Quote Repository Layer
-//!
-//! Responsibilities:
-//! - Execute SQL queries
-//! - Build domain aggregates from raw rows
-//! - Manage transactions
-//!
-//! IMPORTANT:
-//! - NO business logic
-//! - ONLY persistence + mapping
+/// Quote Repository Layer
+///
+/// Responsibilities:
+/// - Execute SQL queries
+/// - Build domain aggregates from raw rows
+/// - Manage transactions
+///
+/// IMPORTANT:
+/// - NO business logic
+/// - ONLY persistence + mapping
 
 use tokio_postgres::Row;
 use crate::modules::quote::dto::create::CreateQuoteDto;
