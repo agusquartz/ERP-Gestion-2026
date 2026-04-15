@@ -61,5 +61,4 @@ pub struct QuoteDetail {
     pub unit_cost: f64,
     pub tax: f64,
     pub quantity: i32,
-    pub subtotal: f64,
 }
