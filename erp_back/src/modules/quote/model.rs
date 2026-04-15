@@ -1,37 +1,25 @@
-use serde::{Deserialize, Serialize};
+//! Quote domain models
+//!
+//! These structs represent the INTERNAL domain of the system.
+//! They are NOT exposed to the API.
+
 use chrono::NaiveDate;
 
-// ------------------------------------------------------------
-// Internal domain models
-// These models represent how the data exists inside the backend.
-// They are not the public API contract.
-// ------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Main quote entity stored in DB
+#[derive(Debug, Clone)]
 pub struct Quote {
     pub id: i32,
+
+    /// Date without timezone (recommended for business documents)
+    pub created_at: NaiveDate,
+
+    pub total: f64,
     pub client_id: i32,
     pub status_id: i32,
-    pub created_at: NaiveDate,
-    pub total: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct QuoteWithDetails {
-    // Main quote information
-    pub quote: Quote,
-
-    // Client information needed in the response
-    pub client: QuoteClient,
-
-    // Status information needed int the response
-    pub status: QuoteStatus,
-
-    // Quote line items
-    pub details: Vec<QuoteDetail>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Client snapshot inside quote aggregate
+#[derive(Debug, Clone)]
 pub struct QuoteClient {
     pub id: i32,
     pub name: String,
@@ -39,26 +27,38 @@ pub struct QuoteClient {
     pub document: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Status snapshot
+#[derive(Debug, Clone)]
 pub struct QuoteStatus {
     pub id: i32,
     pub status: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Product inside quote detail
+#[derive(Debug, Clone)]
 pub struct QuoteProduct {
     pub id: i32,
     pub description: String,
     pub code: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// Line item of a quote
+#[derive(Debug, Clone)]
 pub struct QuoteDetail {
     pub id: i32,
     pub quote_id: i32,
-    pub product_id: i32,
     pub product: QuoteProduct,
     pub unit_cost: f64,
     pub tax: f64,
     pub quantity: i32,
+    pub subtotal: f64,
+}
+
+/// Fully hydrated aggregate returned from repository
+#[derive(Debug, Clone)]
+pub struct QuoteWithDetails {
+    pub quote: Quote,
+    pub client: QuoteClient,
+    pub status: QuoteStatus,
+    pub details: Vec<QuoteDetail>,
 }
