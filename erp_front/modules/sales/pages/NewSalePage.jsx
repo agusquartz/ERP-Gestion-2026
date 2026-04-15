@@ -10,16 +10,16 @@ import { useSaleForm } from "../hooks/useSaleForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 
 // Components
-import { SaleHeader } from "../components/SaleHeader";
-import { SaleItemsTable } from "../components/SaleItemsTable";
-import { AddProductPanel } from "../components/AddProductPanel";
-import { SaleSummaryPanel } from "../components/SaleSummaryPanel";
-import { SaleActions } from "../components/SaleActions";
+import { SaleHeader } from "../components/newSales/SaleHeader";
+import { SaleItemsTable } from "../components/newSales/SaleItemsTable";
+import { AddProductPanel } from "../components/newSales/AddProductPanel";
+import { SaleSummaryPanel } from "../components/newSales/SaleSummaryPanel";
+import { SaleActions } from "../components/newSales/SaleActions";
 
 // Modals
-import { ClientSearchModal } from "../features/modals/ClientSearchModal";
-import { ProductSearchModal } from "../features/modals/ProductSearchModal";
-import { ConfirmModal } from "../features/modals/ConfirmModal";
+import { ClientSearchModal } from "../modals/ClientSearchModal";
+import { ProductSearchModal } from "../modals/ProductSearchModal";
+import { ConfirmModal } from "../modals/ConfirmModal";
 
 export default function NewSalePage() {
   const {
