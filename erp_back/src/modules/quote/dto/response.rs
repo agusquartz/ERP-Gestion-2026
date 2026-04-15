@@ -21,7 +21,7 @@ use crate::modules::quote::model::{
 #[serde(rename_all = "camelCase")]
 pub struct QuoteResponseDto {
     pub id: i32,
-    pub create_at: NaiveDate,
+    pub created_at: NaiveDate,
     pub status: QuoteStatusResponseDto,
     pub total: f64,
     pub client: QuoteClientResponseDto,
