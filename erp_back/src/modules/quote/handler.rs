@@ -46,9 +46,11 @@ pub async fn list_quotes_handler(
 
     let contains = params.get("contains").cloned();
 
-    let result = service::get_quotes(contains).await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e))?;
-
-    Ok(Json(result))
+    match service::get_quotes(contains).await {
+        Ok(data) => Ok(Json(data)),
+        Err(e) => ERR( 
+            (StatusCode::INTERNAL_SERVER_ERROR, 
+            e.to_string())
+        ),
+    }
 }
-
