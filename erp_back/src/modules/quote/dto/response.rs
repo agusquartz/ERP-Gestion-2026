@@ -66,9 +66,9 @@ pub struct QuoteClientResponseDto {
 pub struct QuoteDetailResponseDto {
     pub product: QuoteProductResponseDto,
     pub unit_cost: f64,
-    pub tax: f64,
+    pub tax: f64,       // < --percentage (NOT amount)
     pub quantity: i32,
-    pub subtotal: f64,
+    pub subtotal: f64,  // < -- calculated using tax %
 }
 
 

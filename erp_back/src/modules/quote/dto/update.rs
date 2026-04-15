@@ -27,5 +27,4 @@ pub struct PatchQuoteDto {
 pub struct PatchQuoteDetailDto {
     pub product_id: i32,
     pub quantity: i32,
-    pub unit_cost: f64,
 }

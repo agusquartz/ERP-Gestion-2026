@@ -38,7 +38,4 @@ pub struct CreateQuoteDetailDto {
 
     // Quantity requested
     pub quantity: i32,
-
-    // Unit cost used for the quote
-    pub unit_cost: f64,
 }
