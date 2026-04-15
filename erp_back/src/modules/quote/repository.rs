@@ -13,7 +13,7 @@ use tokio_postgres::Row;
 use crate::modules::quote::dto::create::CreateQuoteDto;
 use crate::db_config;
 use crate::modules::quote::model::*;
-
+use crate::modules::quote::mapper::rows_to_simple_quotes;
 
 /// Create a new quote with details
 ///
