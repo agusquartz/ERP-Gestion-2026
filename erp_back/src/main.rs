@@ -19,6 +19,7 @@ mod modules {
     pub mod client;
     pub mod product;
     pub mod client;
+    pub mod quote;
 }
 
 mod shared {
@@ -98,6 +99,7 @@ async fn main() {
         .merge(modules::client::router::client_router())
         .merge(modules::product::router::product_router())
         .merge(modules::client::router::client_router())
+        .merge(modules::quote::router::quote_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
