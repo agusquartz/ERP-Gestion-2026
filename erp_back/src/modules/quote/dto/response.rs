@@ -157,7 +157,7 @@ impl From<QuoteProduct> for QuoteProductResponseDto {
     fn from(value: QuoteProduct) -> Self {
         QuoteProductResponseDto {
             id: value.id,
-            descripcion: value.descripcion,
+            description: value.description,
             code: value.code,
         }
     }
