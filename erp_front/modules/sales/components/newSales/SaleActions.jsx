@@ -7,7 +7,7 @@ export function SaleActions({ onCancel, onQuote, onInvoice }) {
         <button
           type="button"
           onClick={onCancel}
-          className="cursor-pointer min-w-[200px] rounded-[5px] border border-primary bg-white px-5 py-2.5 text-sm font-semibold text-primary transition-all duration-200 hover:bg-primary/5 active:translate-y-px"
+          className="cursor-pointer min-w-[200px] rounded-[5px] border border-border px-5 py-2.5 text-sm font-semibold text-secondary transition hover:bg-background duration-200 active:translate-y-px"
         >
           Cancelar
         </button>

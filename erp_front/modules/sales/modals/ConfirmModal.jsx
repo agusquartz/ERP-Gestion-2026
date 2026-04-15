@@ -1,49 +1,69 @@
 "use client";
 
 import { Modal } from "@/shared/components/Modal";
-import { s }     from "../styles/salesStyles";
 
 const fmt = (n) => `$${Number(n).toFixed(0)}`;
 
-/**
- * Modal de confirmación tras crear factura o presupuesto.
- *
- * Props:
- *   open     - boolean
- *   onClose  - () => void
- *   type     - "factura" | "presupuesto"
- *   client   - objeto cliente
- *   subtotal, iva, total - numbers
- */
-export function ConfirmModal({ open, onClose, type, client, subtotal, iva, total }) {
+export function ConfirmModal({
+  open,
+  onClose,
+  type,
+  client,
+  subtotal,
+  iva,
+  total,
+}) {
   const isFactura = type === "factura";
   const label = isFactura ? "Factura" : "Presupuesto";
   const emoji = isFactura ? "🧾" : "📋";
 
   return (
     <Modal open={open} onClose={onClose} width={400}>
-      <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
-        <div style={{ fontSize: 44, marginBottom: 12 }}>{emoji}</div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>{label} creado</h2>
-        <p style={{ fontSize: 14, color: "#555", marginBottom: 20 }}>
+      <div className="text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-4xl">
+          {emoji}
+        </div>
+
+        <h2 className="mb-2 text-xl font-bold text-foreground">
+          {label} creado
+        </h2>
+
+        <p className="mb-6 text-sm leading-6 text-muted">
           {label} para{" "}
-          <strong>{client?.nombre} {client?.apellido}</strong>{" "}
-          por <strong>{fmt(total)}</strong> generado exitosamente.
+          <span className="font-semibold text-foreground">
+            {client?.nombre} {client?.apellido}
+          </span>{" "}
+          por{" "}
+          <span className="font-semibold text-foreground">
+            {fmt(total)}
+          </span>{" "}
+          generado exitosamente.
         </p>
 
-        <div style={{ background: "#F9FAFB", borderRadius: 8, padding: "12px 16px", textAlign: "left", marginBottom: 20, fontSize: 13 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span>Subtotal</span><span>{fmt(subtotal)}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span>IVA 10%</span><span>{fmt(iva)}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, borderTop: "1px solid #E5E7EB", paddingTop: 8, marginTop: 4 }}>
-            <span>Total</span><span>{fmt(total)}</span>
+        <div className="mb-6 rounded-xl border border-border bg-surface p-4 text-left shadow-panel">
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted">Subtotal</span>
+              <span className="font-medium text-foreground">{fmt(subtotal)}</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-muted">IVA 10%</span>
+              <span className="font-medium text-foreground">{fmt(iva)}</span>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-border pt-3">
+              <span className="text-base font-bold text-foreground">Total</span>
+              <span className="text-base font-bold text-primary">{fmt(total)}</span>
+            </div>
           </div>
         </div>
 
-        <button style={{ ...s.btnPrimary, width: "100%" }} onClick={onClose}>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+        >
           Aceptar
         </button>
       </div>
