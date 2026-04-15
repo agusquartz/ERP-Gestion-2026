@@ -12,7 +12,11 @@ use axum::{
 };
 use std::collections::HashMap;
 use crate::modules::quote::service;
-use crate::modules::quote::dto::create::CreateQuoteDto;
+use crate::modules::quote::dto::{
+    create::CreateQuoteDto,
+    response::QuoteResponseDto,
+};
+
 
 /// POST /quotes
 pub async fn create_quote_handler(
