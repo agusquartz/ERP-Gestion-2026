@@ -95,7 +95,7 @@ impl From<QuoteWithDetails> for QuoteResponseDto {
         QuoteResponseDto {
             id: value.quote.id,
             created_at: value.quote.created_at,
-            status: value.quote.into(),
+            status: value.status.into(),
             total: value.quote.total,
             client: value.client.into(),
             details: value.details.into_iter().map(Into::into).collect(),
