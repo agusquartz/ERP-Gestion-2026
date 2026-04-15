@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Modal } from "@/shared/components/Modal";
-import { s } from "../../styles/salesStyles";
-import { createClient } from "../../services/saleService"
+import { s } from "../styles/salesStyles";
+import { createClient } from "../services/saleService"
 
 const FIELDS = [
   { key: "nombre",   label: "Nombre",            placeholder: "Ingresa el nombre" },

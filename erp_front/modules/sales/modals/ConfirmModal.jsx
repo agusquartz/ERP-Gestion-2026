@@ -1,7 +1,7 @@
 "use client";
 
 import { Modal } from "@/shared/components/Modal";
-import { s }     from "../../styles/salesStyles";
+import { s }     from "../styles/salesStyles";
 
 const fmt = (n) => `$${Number(n).toFixed(0)}`;
 
