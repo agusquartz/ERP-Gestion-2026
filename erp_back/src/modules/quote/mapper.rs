@@ -8,7 +8,7 @@
 use crate::modules::quote::model::*;
 use crate::modules::quote::dto::response::*;
 
-fn rows_to_simple_quotes(rows: Vec<Row>) -> Vec<QuoteWithDetails> {
+pub fn rows_to_simple_quotes(rows: Vec<Row>) -> Vec<QuoteWithDetails> {
     use std::collections::BTreeMap;
 
     let mut map: BTreeMap<i32, QuoteWithDetails> = BTreeMap::new();
