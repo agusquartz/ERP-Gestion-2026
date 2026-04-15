@@ -38,7 +38,7 @@ pub async fn get_quote_by_id(id: i32) -> Result<QuoteResponseDto, String> {
 //! Get list of quotes
 pub async fn get_quotes(
     contains: Option<String>,
-) -> Result<Vec<QuoteResponseDto>, String> {
+) -> Result<Vec<QuoteResponseDto>, crate::db_config::DbError> {
 
     let quotes = repository::get_quotes(contains.as_deref()).await?;
 
