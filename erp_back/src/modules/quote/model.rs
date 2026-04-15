@@ -42,7 +42,7 @@ pub struct QuoteClient {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct QuoteStatus {
     pub id: i32,
-    pub name: String,
+    pub status: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
