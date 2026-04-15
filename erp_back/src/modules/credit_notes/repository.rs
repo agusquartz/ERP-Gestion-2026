@@ -187,7 +187,8 @@ pub async fn store_new_credit_note(credit_note: model::NewCreditNote) -> Result<
 
     let aggregate = query_credit_note_by_id(credit_note_id)
         .await? 
-        .ok_or(db_config::DbError::NotFound);
+        .ok_or(db_config::DbError::InvariantViolation(
+                "Inserted credit note not found after commit".to_string()));
 
     aggregate
 }
