@@ -28,6 +28,12 @@ pub enum DbError {
 
     #[error("pool already initialized")]
     AlreadyInitialized,
+    
+    #[error("not found")]
+    NotFound,
+
+    #[error("{0}")]
+    Other(String),
 }    
 
 //This struct simply groups all config params for the database
