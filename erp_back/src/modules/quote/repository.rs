@@ -128,7 +128,38 @@ SELECT
 
 
 pub async fn get_quotes(
-    contains: Option<&str>
+    contains: Option<String>,
+) -> Result<Vec<QuoteWithDetails>, crate::db_config::DbError> {
+    let client = db_config::get_client().await?;
+
+    let mut sql = BASE_QUERY.to_string();
+    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
+    let mut pattern = String::new();
+
+    if let Some(q) = contains {
+        pattern = format!("%{}%", q);
+
+        sql.push_str(
+            r#"
+            WHERE (
+                c.name ILIKE $1
+                OR c.surname ILIKE $1
+                OR c.document ILIKE $1
+                OR q.id::text ILIKE $1
+            )
+            ORDER BY q.id
+            "#,
+        );
+
+        params.push(&pattern);
+    }
+
+    let rows = client.query(&sql, &params).await?;
+    Ok(rows_to_aggregate(rows))
+}
+
+/*pub async fn get_quotes(
+    contains: Option<String>
 ) -> Result<Vec<QuoteWithDetails>, crate::db_config::DbError> {
 
     let client = db_config::get_client().await?;
@@ -140,23 +171,23 @@ pub async fn get_quotes(
                     r#"
                     {BASE_QUERY}
                     WHERE (
-                        c.name ILIKE '%' ⠵⠵⠵⠞ '%'
-                        OR c.surname ILIKE '%' ⠞⠺⠵⠺ '%'
-                        OR c.document ILIKE '%' ⠺⠞⠟⠞ '%'
-                        OR q.id::text ILIKE '%' ⠺⠟⠟⠞ '%'
+                        c.name ILIKE '%' || $1 || '%'
+                        OR c.surname ILIKE '%' || $1 || '%'
+                        OR c.document ILIKE '%' || $1 || '%'
+                        OR q.id::text ILIKE '%' || $1 || '%'
                     )
                     ORDER BY q.id
                     "#
                 ),
-                vec![&q],
+                vec![q],
             )
         } else {
             (BASE_QUERY.to_string(), vec![])
         };
 
     let rows = client.query(&sql, &params).await?;
-    Ok(rows_to_simple_quotes(rows))
-}
+    Ok(rows_to_aggregate(rows))
+}*/
 
 /// Get one quote
 pub async fn get_quote_by_id(id: i32) -> Result<Option<QuoteWithDetails>, db_config::DbError> {
