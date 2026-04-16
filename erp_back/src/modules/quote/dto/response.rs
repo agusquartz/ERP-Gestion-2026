@@ -3,9 +3,9 @@
 //! This is what the API returns to the client.
 //! It is independent of database schema.
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuoteResponseDto {
     pub id: i32,
@@ -16,13 +16,13 @@ pub struct QuoteResponseDto {
     pub details: Vec<QuoteDetailResponseDto>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QuoteStatusResponseDto {
     pub id: i32,
     pub name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QuoteClientResponseDto {
     pub id: i32,
     pub name: String,
@@ -30,14 +30,14 @@ pub struct QuoteClientResponseDto {
     pub document: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QuoteProductResponseDto {
     pub id: i32,
     pub description: String,
     pub code: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct QuoteDetailResponseDto {
     pub product: QuoteProductResponseDto,
     pub unit_cost: f64,
