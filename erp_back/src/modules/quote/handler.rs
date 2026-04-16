@@ -21,21 +21,30 @@ use crate::modules::quote::dto::{
 /// POST /quotes
 pub async fn create_quote_handler(
     Json(payload): Json<CreateQuoteDto>,
-) -> Result<Json<serde_json::Value>, String> {
+) -> Result<Json<QuoteResponseDto>, (StatusCode, String)> {
 
-    let result = service::create_quote(payload).await?;
-
-    Ok(Json(serde_json::json!(result)))
+    match service::create_quote(payload).await {
+        Ok(data) => Ok(Json(data)),
+        Err(e) => Err((
+             StatusCode::BAD_REQUEST,
+            e.to_string(),
+        ))    
+    }
 }
 
 /// GET /quotes/{id}
 pub async fn get_quote_handler(
     Path(id): Path<i32>,
-) -> Result<Json<serde_json::Value>, String> {
+) -> Result<Json<QuoteResponseDto>, (StatusCode, String)> {
 
-    let quote = service::get_quote_by_id(id).await?;
+    match service::get_quote_by_id(id).await {
+        Ok(data) => Ok(Json(data)),
+        Err(e) => Err((
+            StatusCode::NOT_FOUND,
+            e.to_string(),
+        )),
+    }
 
-    Ok(Json(serde_json::json!(quote)))
 }
 
 
@@ -48,9 +57,9 @@ pub async fn list_quotes_handler(
 
     match service::get_quotes(contains).await {
         Ok(data) => Ok(Json(data)),
-        Err(e) => ERR( 
-            (StatusCode::INTERNAL_SERVER_ERROR, 
-            e.to_string())
-        ),
-    }
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            e.to_string(),
+        )),
+   }
 }
