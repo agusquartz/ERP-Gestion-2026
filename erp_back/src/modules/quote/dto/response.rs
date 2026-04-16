@@ -4,6 +4,7 @@
 //! It is independent of database schema.
 
 use serde::{Serialize, Deserialize};
+use rust_decimal::Decimal;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -11,7 +12,7 @@ pub struct QuoteResponseDto {
     pub id: i32,
     pub created_at: String,
     pub status: QuoteStatusResponseDto,
-    pub total: f64,
+    pub total: Decimal,
     pub client: QuoteClientResponseDto,
     pub details: Vec<QuoteDetailResponseDto>,
 }
@@ -40,8 +41,8 @@ pub struct QuoteProductResponseDto {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QuoteDetailResponseDto {
     pub product: QuoteProductResponseDto,
-    pub unit_cost: f64,
-    pub tax: f64,
+    pub unit_cost: Decimal,
+    pub tax: Decimal,
     pub quantity: i32,
-    pub subtotal: f64,
+    pub subtotal: Decimal,
 }
