@@ -106,7 +106,7 @@ SELECT
     c.document      AS client_document,
 
     s.id            AS status_id,
-    s.name          AS status_name,
+    s.status        AS status_name,
 
     qd.id           AS detail_id,
     qd.product_id,
