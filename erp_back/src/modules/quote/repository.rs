@@ -14,6 +14,7 @@ use crate::modules::quote::dto::create::CreateQuoteDto;
 use crate::db_config;
 use crate::modules::quote::model::*;
 use crate::modules::quote::mapper::rows_to_simple_quotes;
+use rust_decimal::Decimal;
 
 /// Create a new quote with details
 ///
@@ -35,7 +36,7 @@ pub async fn create_quote(
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await?;
 
-    // 1. Insert quote
+   // 1. Insert quote
     let row = tx.query_one(
         r#"
         INSERT INTO quotes (client_id, status_id, created_at, total)
@@ -52,12 +53,11 @@ pub async fn create_quote(
     let quote_id: i32 = row.get("id");
 
     // 2. Insert details + calculate total
-    let mut total: f64 = 0.0;
+    let mut total = Decimal::ZERO;
 
     for d in dto.details {
-
-        let base = d.unit_cost * d.quantity as f64;
-        let tax_amount = base * d.tax / 100.0;
+        let base = d.unit_cost * Decimal::from(d.quantity);
+        let tax_amount = base * d.tax / Decimal::from(100);
         let subtotal = base + tax_amount;
 
         total += subtotal;
@@ -83,9 +83,8 @@ pub async fn create_quote(
         "UPDATE quotes SET total = $1 WHERE id = $2",
         &[&total, &quote_id],
     ).await?;
-
     tx.commit().await?;
-
+    
     // 4. Re-fetch aggregate
     crate::modules::quote::repository::get_quote_by_id(quote_id)
         .await?
@@ -158,37 +157,6 @@ pub async fn get_quotes(
     Ok(rows_to_aggregate(rows))
 }
 
-/*pub async fn get_quotes(
-    contains: Option<String>
-) -> Result<Vec<QuoteWithDetails>, crate::db_config::DbError> {
-
-    let client = db_config::get_client().await?;
-
-    let (sql, params): (String, Vec<&(dyn tokio_postgres::types::ToSql + Sync)>) =
-        if let Some(q) = contains {
-            (
-                format!(
-                    r#"
-                    {BASE_QUERY}
-                    WHERE (
-                        c.name ILIKE '%' || $1 || '%'
-                        OR c.surname ILIKE '%' || $1 || '%'
-                        OR c.document ILIKE '%' || $1 || '%'
-                        OR q.id::text ILIKE '%' || $1 || '%'
-                    )
-                    ORDER BY q.id
-                    "#
-                ),
-                vec![q],
-            )
-        } else {
-            (BASE_QUERY.to_string(), vec![])
-        };
-
-    let rows = client.query(&sql, &params).await?;
-    Ok(rows_to_aggregate(rows))
-}*/
-
 /// Get one quote
 pub async fn get_quote_by_id(id: i32) -> Result<Option<QuoteWithDetails>, db_config::DbError> {
     let client = db_config::get_client().await?;
@@ -243,12 +211,12 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<QuoteWithDetails> {
 
         if let Some(did) = detail_id {
 
-            let unit_cost: f64 = row.get("unit_cost");
-            let tax: f64 = row.get("tax");
+            let unit_cost: Decimal = row.get("unit_cost");
+            let tax: Decimal = row.get("tax");
             let quantity: i32 = row.get("quantity");
 
-            let base = unit_cost * quantity as f64;
-            let tax_amount = base * tax / 100.0;
+            let base = unit_cost *Decimal::from(quantity);
+            let tax_amount = base * tax / Decimal::from(100);
             let subtotal = base + tax_amount;
 
             entry.details.push(QuoteDetail {

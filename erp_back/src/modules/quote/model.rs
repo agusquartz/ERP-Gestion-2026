@@ -4,6 +4,7 @@
 //! They are NOT exposed to the API.
 
 use chrono::NaiveDate;
+use rust_decimal::Decimal;
 
 /// Main quote entity stored in DB
 #[derive(Debug, Clone)]
@@ -13,7 +14,7 @@ pub struct Quote {
     /// Date without timezone (recommended for business documents)
     pub created_at: NaiveDate,
 
-    pub total: f64,
+    pub total: Decimal,
     pub client_id: i32,
     pub status_id: i32,
 }
@@ -48,10 +49,10 @@ pub struct QuoteDetail {
     pub id: i32,
     pub quote_id: i32,
     pub product: QuoteProduct,
-    pub unit_cost: f64,
-    pub tax: f64,
+    pub unit_cost: Decimal,
+    pub tax: Decimal,
     pub quantity: i32,
-    pub subtotal: f64,
+    pub subtotal: Decimal,
 }
 
 /// Fully hydrated aggregate returned from repository

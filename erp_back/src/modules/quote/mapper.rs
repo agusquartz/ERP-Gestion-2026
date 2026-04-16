@@ -8,6 +8,7 @@
 use crate::modules::quote::model::*;
 use crate::modules::quote::dto::response::*;
 use tokio_postgres::Row;
+use rust_decimal::Decimal;
 
 pub fn rows_to_simple_quotes(rows: Vec<Row>) -> Vec<QuoteWithDetails> {
     use std::collections::BTreeMap;
