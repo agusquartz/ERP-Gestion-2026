@@ -7,13 +7,14 @@
 //! - Transport data from handler → service
 
 use serde::Deserialize;
+use chrono::NaiveDate;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateQuoteDto {
     pub client_id: i32,
     pub status_id: i32,
-    pub created_at: String,
+    pub created_at: NaiveDate,
 
     pub details: Vec<CreateQuoteDetailDto>,
 }
