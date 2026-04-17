@@ -10,6 +10,8 @@ use tower_cookies::Cookies;
 
 use crate::modules::auth::middleware::jwt::verify_jwt;
 
+
+const DISABLE_AUTH: bool = true;
 /// Middleware for authenticating requests using JWT and CSRF protection.
 ///
 /// This middleware performs:
@@ -26,6 +28,11 @@ pub async fn auth_middleware(
     mut request: Request<Body>,
     next: Next,
 ) -> Response {
+    if DISABLE_AUTH {
+        return next.run(request).await.into_response();
+    }
+
+    
     // -----------------------------
     // 1. Verify JWT cookie
     // -----------------------------
