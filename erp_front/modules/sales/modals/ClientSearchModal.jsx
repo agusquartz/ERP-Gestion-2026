@@ -52,13 +52,19 @@ export function ClientSearchModal({
     const q = query.toLowerCase().trim();
 
     setFiltered(
-      clientsList.filter(
-        (c) =>
-          c.nombre.toLowerCase().includes(q) ||
-          c.apellido.toLowerCase().includes(q) ||
-          c.ruc.includes(q)
-      )
+      clientsList.filter((c) => {
+        const nombre = (c?.nombre ?? "").toLowerCase();
+        const apellido = (c?.apellido ?? "").toLowerCase();
+        const ruc = (c?.ruc ?? "").toString();
+
+        return (
+          nombre.includes(q) ||
+          apellido.includes(q) ||
+          ruc.includes(q)
+        );
+      })
     );
+
     setActiveRow(0);
   }, [query, clientsList]);
 
