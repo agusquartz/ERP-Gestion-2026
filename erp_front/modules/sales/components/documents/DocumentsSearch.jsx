@@ -26,10 +26,10 @@ export function DocumentsSearch({ onSearch }) {
 
   return (
     <div className="w-full space-y-4 py-4">
-      {/* CONTENEDOR DE FILTROS */}
+  
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1.5fr_auto_auto_auto] lg:items-end">
         
-        {/* INPUT: BUSQUEDA */}
+     
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-bold text-slate-800 ml-1">Busqueda</label>
           <input
@@ -40,7 +40,7 @@ export function DocumentsSearch({ onSearch }) {
           />
         </div>
 
-        {/* INPUT: FILTRAR RESULTADOS */}
+      
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-bold text-slate-800 ml-1">Filtrar resultados</label>
           <input
@@ -51,7 +51,7 @@ export function DocumentsSearch({ onSearch }) {
           />
         </div>
 
-        {/* DROPDOWN: CATEGORIA */}
+   
         <div className="relative">
           <button
             type="button"
@@ -83,7 +83,7 @@ export function DocumentsSearch({ onSearch }) {
           )}
         </div>
 
-        {/* DROPDOWN: FECHA */}
+ 
         <div className="relative">
           <button
             type="button"
@@ -109,7 +109,7 @@ export function DocumentsSearch({ onSearch }) {
           )}
         </div>
 
-        {/* BOTON: LIMPIAR TODO */}
+ 
         <button
           type="button"
           className="rounded-[8px] border border-slate-300 px-6 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-50 hover:shadow-sm transition-all active:scale-95"
@@ -119,7 +119,7 @@ export function DocumentsSearch({ onSearch }) {
         </button>
       </div>
 
-      {/* TEXTO DE APOYO (COMO EN TU IMAGEN) */}
+ 
       <div className="flex items-center justify-between px-1">
          <span className="text-[12px] text-slate-400">Mostrando resultados de búsqueda...</span>
          <span className="text-[11px] text-slate-400 italic">
