@@ -1,0 +1,131 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronDownIcon } from "@/shared/components/Icons";
+
+export function DocumentsSearch({ onSearch }) {
+  const [query, setQuery] = useState("");
+  const [filterTotal, setFilterTotal] = useState("");
+  const [catFilter, setCatFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  
+  const [showCatDrop, setShowCatDrop] = useState(false);
+  const [showDateDrop, setShowDateDrop] = useState(false);
+
+  const categories = ["Contado", "Crédito", "Notas de Crédito"];
+  const dates = ["Hoy", "Esta Semana", "Este Mes", "Personalizado"];
+
+  const clearAll = () => {
+    setQuery("");
+    setFilterTotal("");
+    setCatFilter("");
+    setDateFilter("");
+    setShowCatDrop(false);
+    setShowDateDrop(false);
+  };
+
+  return (
+    <div className="w-full space-y-4 py-4">
+      {/* CONTENEDOR DE FILTROS */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1.5fr_auto_auto_auto] lg:items-end">
+        
+        {/* INPUT: BUSQUEDA */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-bold text-slate-800 ml-1">Busqueda</label>
+          <input
+            className="w-full rounded-[8px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
+            placeholder="Buscar por nombre de cliente"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+
+        {/* INPUT: FILTRAR RESULTADOS */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-bold text-slate-800 ml-1">Filtrar resultados</label>
+          <input
+            className="w-full rounded-[8px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
+            placeholder="filtrar por total, factura"
+            value={filterTotal}
+            onChange={(e) => setFilterTotal(e.target.value)}
+          />
+        </div>
+
+        {/* DROPDOWN: CATEGORIA */}
+        <div className="relative">
+          <button
+            type="button"
+            className="flex min-w-[150px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+            onClick={() => { setShowCatDrop(!showCatDrop); setShowDateDrop(false); }}
+          >
+            <span>{catFilter || "Categoria"}</span>
+            <ChevronDownIcon className={`w-4 h-4 transition-transform ${showCatDrop ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showCatDrop && (
+            <div className="absolute z-20 mt-2 w-full rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
+              <button
+                className="w-full rounded-md px-3 py-2 text-left text-[14px] text-slate-600 hover:bg-slate-50 transition-colors"
+                onClick={() => { setCatFilter(""); setShowCatDrop(false); }}
+              >
+                Todas
+              </button>
+              {categories.map((c) => (
+                <button
+                  key={c}
+                  className="w-full rounded-md px-3 py-2 text-left text-[14px] font-medium text-slate-700 hover:bg-[#f0f7ff] hover:text-[#2b6df5] transition-colors"
+                  onClick={() => { setCatFilter(c); setShowCatDrop(false); }}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* DROPDOWN: FECHA */}
+        <div className="relative">
+          <button
+            type="button"
+            className="flex min-w-[130px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+            onClick={() => { setShowDateDrop(!showDateDrop); setShowCatDrop(false); }}
+          >
+            <span>{dateFilter || "Fecha"}</span>
+            <ChevronDownIcon className={`w-4 h-4 transition-transform ${showDateDrop ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showDateDrop && (
+            <div className="absolute z-20 mt-2 w-full rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
+              {dates.map((d) => (
+                <button
+                  key={d}
+                  className="w-full rounded-md px-3 py-2 text-left text-[14px] font-medium text-slate-700 hover:bg-[#f0f7ff] hover:text-[#2b6df5] transition-colors"
+                  onClick={() => { setDateFilter(d); setShowDateDrop(false); }}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* BOTON: LIMPIAR TODO */}
+        <button
+          type="button"
+          className="rounded-[8px] border border-slate-300 px-6 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-50 hover:shadow-sm transition-all active:scale-95"
+          onClick={clearAll}
+        >
+          Clear All
+        </button>
+      </div>
+
+      {/* TEXTO DE APOYO (COMO EN TU IMAGEN) */}
+      <div className="flex items-center justify-between px-1">
+         <span className="text-[12px] text-slate-400">Mostrando resultados de búsqueda...</span>
+         <span className="text-[11px] text-slate-400 italic">
+           Usa <span className="font-bold">↑ y ↓</span> para navegar y <span className="font-bold">Enter</span> para seleccionar.
+         </span>
+      </div>
+    </div>
+  );
+}
