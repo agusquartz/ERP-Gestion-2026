@@ -4,7 +4,7 @@ use axum::{
 };
 use dotenvy::from_filename;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::{CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use axum::http::{Method, header, HeaderName};
 use axum::http::HeaderValue;
 use axum::serve;
@@ -73,7 +73,11 @@ async fn main() {
         .expect("CORS_ALLOWED_ORIGIN must be set");
 
     let cors = CorsLayer::new()
-        .allow_origin(cors_origin.parse::<HeaderValue>().unwrap())
+        // .allow_origin(cors_origin.parse::<HeaderValue>().unwrap())
+        .allow_origin(AllowOrigin::list([
+            "https://wxqzb.xyz".parse().unwrap(),
+            "https://www.wxqzb.xyz".parse().unwrap(),
+        ]))
         .allow_methods([
             Method::GET,
             Method::POST,
