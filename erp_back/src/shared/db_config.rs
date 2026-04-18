@@ -28,6 +28,12 @@ pub enum DbError {
 
     #[error("pool already initialized")]
     AlreadyInitialized,
+    
+    #[error("not found")]
+    NotFound,
+
+    #[error("{0}")]
+    Other(String),
 
     //This error comes up when the state of the database doesn't 
     //match with what it should be. E.g.: If I just inserted an invoice
