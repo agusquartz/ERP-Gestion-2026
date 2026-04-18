@@ -104,7 +104,6 @@ async fn main() {
         .merge(modules::client::router::client_router())
         .merge(modules::product::router::product_router())
         .merge(modules::quote::router::quote_router())
-        .merge(modules::product::router::product_router())
         .merge(modules::invoice::router::invoice_router())
         .merge(modules::credit_notes::router::credit_note_router())
         .layer(CookieManagerLayer::new())
