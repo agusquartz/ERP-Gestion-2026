@@ -13,6 +13,7 @@ pub struct CreateProductDto {
     pub description: String,
     pub cost: f64,
     pub price: f64,
+    pub stock: i32,
     pub category_id: i32,
     pub brand_id: Option<i32>,
     pub tax_ids: Option<Vec<i32>>,
