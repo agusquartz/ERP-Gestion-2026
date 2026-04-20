@@ -6,7 +6,7 @@ import { NewClientModal } from "./NewClientModal";
 import { EditClientModal } from "./EditClientModal";
 import { EditIcon, PlusIcon } from "@/shared/components/Icons";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
-import { getClients } from "../../services/saleService";
+import { getClients } from "../services/saleService";
 
 export function ClientSearchModal({
   open,
