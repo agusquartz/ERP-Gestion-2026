@@ -4,6 +4,7 @@ import { useState } from "react";
 import { DocumentsHeader } from "../components/documents/DocumentsHeader";
 import { DocumentsSearch } from "../components/documents/DocumentsSearch";
 import { DocumentsTable } from "../components/documents/DocumentsTable";
+import { ActionButton } from "../components/documents/ButtonActions";
 
 
 const DOCUMENT_TYPES = {
@@ -15,7 +16,7 @@ const DOCUMENT_TYPES = {
 
 export default function DocumentsPage() {
 const [activeTab, setActiveTab] = useState(DOCUMENT_TYPES.FACTURAS);
-
+//clients data examples: 
  const [documents, setDocuments] = useState([
     {
       id: 1,
@@ -61,7 +62,7 @@ const filteredDocuments = documents.filter((doc) => doc.tipo === activeTab);
 
     
   return (
-
+    
      <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
       <div className="mb-5">
         <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
@@ -79,6 +80,19 @@ const filteredDocuments = documents.filter((doc) => doc.tipo === activeTab);
         documents={filteredDocuments}
         onRemove={handleRemove}
       />
+
+        <div className= "flex justify-end items-center h-20">
+            {activeTab!== DOCUMENT_TYPES.NOTA_CREDITO && (
+                <ActionButton type= {activeTab}/>
+
+            )}
+            
+
+
+        </div>
+    
+
+      
       
     </div>
    
