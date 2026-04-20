@@ -2,6 +2,8 @@
 "use client";
 
 import { useState } from "react";
+import { login } from "@/lib/http/client/auth";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -11,6 +13,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const router = useRouter();
 
   const validate = () => {
     const nextErrors = {};
@@ -26,7 +30,7 @@ export default function LoginPage() {
     return nextErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const nextErrors = validate();
@@ -40,10 +44,25 @@ export default function LoginPage() {
     setLoading(true);
     setSuccess(false);
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await login(username, password);
+
       setSuccess(true);
-    }, 1800);
+
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 800);
+
+    } catch (err) {
+      console.error(err);
+
+      setErrors({
+        general: err.message || "Error al iniciar sesión",
+      });
+
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputBase =
@@ -111,6 +130,14 @@ export default function LoginPage() {
                 Login exitoso. Redirigiendo…
               </div>
             )}
+
+
+            {errors.general && (
+              <div className="mb-4 text-sm text-destructive">
+                {errors.general}
+              </div>
+            )}
+
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
