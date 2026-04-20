@@ -7,6 +7,7 @@ use axum::{
     extract::Extension,
 };
 use serde::Deserialize;
+use serde_json::json;
 use tower_cookies::cookie::time;
 use tower_cookies::{Cookies, Cookie};
 
@@ -78,11 +79,21 @@ pub async fn login(
     // -----------------------------
     // 1. Validate credentials
     // -----------------------------
-    let is_valid = verify_password(&payload.password, &user.password_hash)
-    .map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({"error": "Password verification failed"}))
-    ))?;
+    match verify_password(&payload.password, &user.password_hash) {
+        Ok(true) => {},
+        Ok(false) => {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(json!({ "error": "Invalid credentials" }))
+            ));
+        }
+        Err(_) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Password verification failed" }))
+            ));
+        }
+    }
 
     // -----------------------------
     // 2. Create JWT
