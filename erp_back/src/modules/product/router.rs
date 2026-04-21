@@ -21,7 +21,7 @@ use crate::modules::{auth::middleware::auth::protect_routes, product::handler::{
 pub fn product_router() -> Router {
     let protected =  Router::new()
         .route("/products", get(list_products))
-        .route("/products/:id", get(get_product).patch(patch_product));
+        .route("/products/{id}", get(get_product).patch(patch_product));
 
     protect_routes(protected)
 }

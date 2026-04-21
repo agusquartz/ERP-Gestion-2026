@@ -28,6 +28,19 @@ pub enum DbError {
 
     #[error("pool already initialized")]
     AlreadyInitialized,
+    
+    #[error("not found")]
+    NotFound,
+
+    #[error("{0}")]
+    Other(String),
+
+    //This error comes up when the state of the database doesn't 
+    //match with what it should be. E.g.: If I just inserted an invoice
+    //and the DB returned an id without errors, but then it says there's 
+    //no such entry, this comes up. 
+    #[error("invariant violation: {0}")]
+    InvariantViolation(String),
 }    
 
 //This struct simply groups all config params for the database
