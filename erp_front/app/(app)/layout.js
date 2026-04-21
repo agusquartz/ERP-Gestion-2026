@@ -1,4 +1,3 @@
-
 'use client'
 import { useState } from "react";
 
@@ -58,8 +57,6 @@ export default function AppLayout({ children }) {
         <div className="min-h-screen h-full p-6">
           {children}
         </div>
-
-      
       </main>
     </div>
   );
