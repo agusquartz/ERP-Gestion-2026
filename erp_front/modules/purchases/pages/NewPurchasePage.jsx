@@ -3,14 +3,11 @@ import { useState } from "react";
 import { usePurchaseForm } from "../hooks/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 
-
 // Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales)
 import { PurchaseHeader } from "../components/newPurchases/PurchaseHeader";
-import { PurchaseItemsTable } from "../components/NewPurchases/PurchaseItemsTable"; 
-import { AddPurchaseProductPanel } from "../components/NewPurchases/AddPurchaseProductPanel.jsx";
-import { PurchaseSummaryPanel } from "../components/NewPurchases/PurchaseSummaryPanel";
-import { PurchaseActions } from "../components/NewPurchases/PurchaseActions";
-import { s } from "../styles/NewPurchase/NewPurchasesStyles";
+import { SaleItemsTable } from "../../sales/components/SaleItemsTable"; 
+import { AddProductPanel } from "../../sales/components/AddProductPanel.jsx";
+import { SaleSummaryPanel } from "../../sales/components/SaleSummaryPanel";
 
 export default function NewPurchasePage() {
   const {
@@ -24,28 +21,37 @@ export default function NewPurchasePage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
-    <div style={{ ...s.container, display: 'flex', flexDirection: 'column', height: '100%', gap: '8px'}}>
-      <div style={{...s.headerSection}}>
-        <h1 style={s.pageTitle}>Nuevo Pedido de Compra</h1>
-        <div style={s.divider} />
+      <div className="mb-5">
+        <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
+          Nuevo Pedido de Compra
+        </h1>
+        <div className="mt-2 h-px w-full bg-foreground/80" />
       </div>
 
-      <PurchaseHeader />
+      <PurchaseHeader 
+        selectedProvider={selectedProvider} 
+        onBuscarProveedor={providerModal.open} 
+      />
 
-      <div style={s.contentLayout}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{...s.tableSection, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
-            <PurchaseItemsTable items={items} />
-          </div>
-          <PurchaseActions />
+      <div className="grid flex-1 min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="flex min-w-0 min-h-0 flex-col gap-4">
+          <SaleItemsTable items={items} onQtyChange={updateItemQty} onRemove={removeItem} />
+          <button className="w-full bg-primary text-white py-3 rounded-[5px] font-bold uppercase tracking-wider hover:bg-primary-hover transition-colors">
+            Guardar Pedido
+          </button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <AddPurchaseProductPanel />
-          <PurchaseSummaryPanel />
+        <div className="flex flex-col gap-4">
+          <AddProductPanel 
+            onAdd={addItem} 
+            onOpenSearch={productModal.open}
+            selectedProduct={pendingProduct}
+            onClearProduct={() => setPendingProduct(null)}
+          />
+          <SaleSummaryPanel subtotal={subtotal} iva={iva} total={total} />
         </div>
       </div>
-    </div>
+      {/* Aquí irían los modales similares a los de NewSalePage */}
     </div>
   );
 }
