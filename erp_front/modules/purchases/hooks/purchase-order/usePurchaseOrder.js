@@ -4,19 +4,21 @@
  *
  * @description
  * Custom hook that centralizes all state and business logic for the
- * Purchase Order page. Components only call handlers from here —
- * they never manage state directly.
+ * Purchase Order page. Components only receive handlers from here —
+ * they never manage state or call services directly.
  *
  * Responsibilities:
- *  - Fetching purchase order data (header, items, suppliers).
- *  - Deriving the categories summary from order items.
- *  - Managing modal open/close state.
+ *  - Fetching purchase order data (header, items, suppliers) on mount.
+ *  - Deriving the categories summary table from order items.
+ *  - Managing QuotationModal and SupplierSearchModal open/close state.
  *  - Handling quotation save and supplier status transitions.
- *  - Handling "Generar Todos" and "Agregar Proveedores" actions.
+ *  - Tracking whether "Generar Todos" has been fired, so SuppliersTable
+ *    can swap the button label to "Imprimir Todos". The label resets to
+ *    "Generar Todos" whenever a new supplier is added.
  *
  * @param {string} orderId - The ID of the purchase order to load.
  *
- * @returns {Object} All state and handlers needed by PurchaseOrderPage and its children.
+ * @returns {Object} All state and handlers consumed by PurchaseOrderPage and its children.
  */
 
 "use client";
@@ -28,6 +30,7 @@ import {
   getPurchaseOrderSuppliers,
   saveQuotation,
   generateAllQuotations,
+  printAllQuotations,
   addSuppliers,
 } from "../../services/purchaseOrderService";
 
@@ -39,25 +42,44 @@ export function usePurchaseOrder(orderId) {
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
 
-  // ── Modal state ─────────────────────────────────────────────────────────────
 
-  /** Supplier currently open in the QuotationModal (null = closed) */
+  // ── Modal visibility ────────────────────────────────────────────────────────
+  
+  /** The supplier whose QuotationModal is currently open. null = modal closed. */
   const [activeSupplier, setActiveSupplier] = useState(null);
 
-  /** Controls visibility of the SupplierSearchModal */
+  /** Whether the SupplierSearchModal is visible. */
   const [isSupplierSearchOpen, setIsSupplierSearchOpen] = useState(false);
+
+  // ── "Generar Todos" / "Imprimir Todos" toggle ────────────────────────────────
+  /**
+   * Tracks whether "Generar Todos" has been executed at least once for this order.
+   * - false → button reads "Generar Todos"
+   * - true  → button reads "Imprimir Todos"
+   *
+   * Resets to false whenever the user adds a new supplier, because there is now
+   * at least one supplier in "generar" status that hasn't been notified yet.
+   */
+  const [allGenerated, setAllGenerated] = useState(false);
+
 
   // ── Data fetching ───────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!orderId) return;
 
+
+    /**
+     * Loads all purchase order data in parallel.
+     * Falls back to an error state if any request fails.
+     */
+
     async function fetchAll() {
       setLoading(true);
       setError(null);
       try {
-        // TODO: These run in parallel — if your backend supports it, keep Promise.all.
         // If there are dependencies between calls, switch to sequential awaits.
+        // TODO: These run in parallel — if your backend supports it, keep Promise.all.
         const [order, items, sups] = await Promise.all([
           getPurchaseOrder(orderId),
           getPurchaseOrderItems(orderId),
@@ -66,6 +88,12 @@ export function usePurchaseOrder(orderId) {
         setPurchaseOrder(order);
         setOrderItems(items);
         setSuppliers(sups);
+        
+
+        // If all existing suppliers are already past "generar", show "Imprimir Todos"
+        const allPast = sups.every((s) => s.status !== "generar");
+        setAllGenerated(allPast && sups.length > 0);
+
       } catch (err) {
         // TODO: Replace with your app's error handling / toast system
         console.error("Error loading purchase order:", err);
@@ -78,16 +106,20 @@ export function usePurchaseOrder(orderId) {
     fetchAll();
   }, [orderId]);
 
-  // ── Derived data ─────────────────────────────────────────────────────────────
+
+  // ── Derived: categories summary ──────────────────────────────────────────────
 
   /**
-   * Unique categories derived from order items.
-   * Each entry includes product count and how many suppliers are already assigned
-   * (status is not "generar").
+   * Builds the category summary rows shown in CategoriesTable.
+   * Derived from orderItems so it always stays in sync without an extra API call.
    *
-   * TODO: "assignedSuppliers" count may come directly from the backend in the future.
-   *       If so, remove this derivation and use the API value instead.
+   * Each row: { category: string, productCount: number, assignedSuppliers: number }
+   *
+   * TODO: Replace `assignedSuppliers` with a per-category count once the backend
+   *       provides that breakdown. Currently it counts all non-"generar" suppliers
+   *       across the whole order, which is an approximation.
    */
+
   const categories = useMemo(() => {
     const map = {};
     orderItems.forEach((item) => {
@@ -106,7 +138,10 @@ export function usePurchaseOrder(orderId) {
     }));
   }, [orderItems, suppliers]);
 
-  /** Unique category names — passed to SupplierSearchModal and service layer */
+  /**
+   * Flat list of unique category name strings.
+   * Passed to SupplierSearchModal and the service layer for backend filtering.
+   */
   const categoryNames = useMemo(
     () => [...new Set(orderItems.map((i) => i.category))],
     [orderItems]
@@ -121,14 +156,18 @@ export function usePurchaseOrder(orderId) {
   const handleCloseQuotation = () => setActiveSupplier(null);
 
   /**
-   * Saves the filled-in quotation and advances the supplier's status.
+   * Persists a supplier's filled-in quotation and advances its status.
+   *
+   * Optimistic update: UI updates immediately; backend call fires in background.
+   * If the backend fails, the error is logged — add a toast + state revert here
+   * once your notification system is in place.
    *
    * Status transitions:
-   *   "generar"   → "pendiente"  (quotation generated for the first time)
-   *   "pendiente" → "listo"      (supplier responded, data filled in)
+   *   "generar"   → "pendiente"  (first time the quotation is sent)
+   *   "pendiente" → "listo"      (supplier confirmed quantities and prices)
    *
-   * @param {number} supplierId    - Supplier being updated.
-   * @param {Array}  updatedRows   - New quotation rows from the modal.
+   * @param {number} supplierId   - ID of the supplier being updated.
+   * @param {Array}  updatedRows  - Quotation rows from the modal form.
    */
   const handleSaveQuotation = async (supplierId, updatedRows) => {
     try {
@@ -148,45 +187,78 @@ export function usePurchaseOrder(orderId) {
     }
   };
 
-  // ── Generate all handler ─────────────────────────────────────────────────────
+
+  // ── "Generar Todos" / "Imprimir Todos" ───────────────────────────────────────
 
   /**
-   * Transitions all "generar" suppliers to "pendiente" and notifies the backend.
+   * Handles the main action button in SuppliersTable, which toggles between
+   * "Generar Todos" and "Imprimir Todos" depending on `allGenerated`.
    *
-   * TODO: After backend call, re-fetch suppliers to get server-confirmed statuses.
+   * When label is "Generar Todos":
+   *   - Transitions all "generar" suppliers to "pendiente" (optimistic).
+   *   - Calls generateAllQuotations() on the backend.
+   *   - Sets allGenerated = true → button switches to "Imprimir Todos".
+   *
+   * When label is "Imprimir Todos":
+   *   - Calls printAllQuotations() on the backend.
+   *   - TODO: Handle the print URL/blob returned by the backend (open in new tab, etc.)
    */
-  const handleGenerateAll = async () => {
-    try {
-      setSuppliers((prev) =>
-        prev.map((s) => (s.status === "generar" ? { ...s, status: "pendiente" } : s))
-      );
-      await generateAllQuotations(orderId);
-    } catch (err) {
-      // TODO: Show error toast and revert
-      console.error("Error generating all quotations:", err);
+  const handleGenerateOrPrintAll = async () => {
+      if (!allGenerated) {
+      // ── Generar Todos ──
+      try {
+        setSuppliers((prev) =>
+          prev.map((s) => (s.status === "generar" ? { ...s, status: "pendiente" } : s))
+        );
+        await generateAllQuotations(orderId);
+        setAllGenerated(true);
+      } catch (err) {
+        // TODO: Show error toast and revert supplier statuses
+        console.error("Error generating all quotations:", err);
+      }
+    } else {
+      // ── Imprimir Todos ──
+      try {
+        const result = await printAllQuotations(orderId);
+        // TODO: Handle result — e.g. open result.printUrl in a new tab:
+        // window.open(result.printUrl, "_blank");
+        console.log("Print result:", result);
+      } catch (err) {
+        // TODO: Show error toast
+        console.error("Error printing all quotations:", err);
+      }
     }
-  };
+  }
 
   // ── Supplier search modal handlers ───────────────────────────────────────────
 
   /** Opens the SupplierSearchModal. */
   const handleOpenSupplierSearch = () => setIsSupplierSearchOpen(true);
 
-  /** Closes the SupplierSearchModal. */
+  /** Closes the SupplierSearchModal without adding anyone. */
   const handleCloseSupplierSearch = () => setIsSupplierSearchOpen(false);
 
+
   /**
-   * Adds one or more selected suppliers to the order.
-   * Closes the modal and refreshes the supplier list.
+   * Adds one or more suppliers selected in SupplierSearchModal to the order.
+   *
+   * The backend returns the newly created supplier entries; we append them
+   * directly to local state to avoid a full re-fetch.
+   *
+   * Resets allGenerated to false because the new supplier(s) are in "generar"
+   * status and haven't been notified yet, so "Generar Todos" becomes relevant again.
    *
    * @param {Array} selectedSuppliers - Supplier objects chosen in the modal.
+   *   Each: { id: number, name: string, categories: string[] }
    */
   const handleAddSuppliers = async (selectedSuppliers) => {
     try {
       const ids = selectedSuppliers.map((s) => s.id);
       await addSuppliers(orderId, ids);
 
-      // Append new suppliers in "generar" status with empty quotation rows
+      // Build new supplier entries in "generar" status with empty quotation rows.
+      // TODO: If your backend returns fully-formed supplier objects in the response
+      //       of addSuppliers(), use those directly instead of constructing them here.
       const newSuppliers = selectedSuppliers.map((s) => ({
         id: s.id,
         name: s.name,
@@ -199,7 +271,12 @@ export function usePurchaseOrder(orderId) {
       }));
 
       setSuppliers((prev) => [...prev, ...newSuppliers]);
+
+      // New suppliers haven't been notified yet → reset button to "Generar Todos"
+      setAllGenerated(false);
+      
       setIsSupplierSearchOpen(false);
+    
     } catch (err) {
       // TODO: Show error toast
       console.error("Error adding suppliers:", err);
@@ -211,10 +288,10 @@ export function usePurchaseOrder(orderId) {
   /** Triggers browser print for the current quotation. */
   const handlePrint = () => window.print();
 
-  // ── Return ───────────────────────────────────────────────────────────────────
+  // ── Exposed API ──────────────────────────────────────────────────────────────
 
   return {
-    // Data
+    // Remote data
     purchaseOrder,
     orderItems,
     suppliers,
@@ -236,7 +313,8 @@ export function usePurchaseOrder(orderId) {
     handleCloseSupplierSearch,
     handleAddSuppliers,
 
-    // Page actions
-    handleGenerateAll,
+    // SuppliersTable header button
+    allGenerated,           // true → show "Imprimir Todos", false → show "Generar Todos"
+    handleGenerateOrPrintAll,
   };
 }
