@@ -152,7 +152,7 @@ export default function PurchaseOrderPage({
           suppliers={suppliers}
           allGenerated={allGenerated}
           onOpenQuotation={handleOpenQuotation}
-          onGenerateOrPrintAll={onGenerateOrPrintAll}
+          onGenerateOrPrintAll={handleGenerateOrPrintAll}
           onOpenSupplierSearch={handleOpenSupplierSearch}
         />
       </div>
