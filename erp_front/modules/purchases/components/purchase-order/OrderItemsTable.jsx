@@ -30,7 +30,7 @@ export default function OrderItemsTable({ items = [] }) {
       <div className={`${card.base} shadow-panel flex flex-col min-h-0`} style={{ borderRadius: "5px" }}>
 
         {/* Fixed header — stays visible while body scrolls */}
-        <table className={table.base}>
+        <table className={`${table.base} table-fixed w-full`}>
           <thead>
             <tr className={table.head}>
               <th className={`${table.th} w-8`}>#</th>
@@ -47,7 +47,7 @@ export default function OrderItemsTable({ items = [] }) {
          * max-h controls how many rows are visible before scrolling kicks in.
          */}
         <div className="overflow-y-auto max-h-48">
-          <table className={table.base}>
+          <table className={`${table.base} table-fixed w-full`}>
             <tbody>
               {items.map((item, index) => (
                 <tr key={item.id} className={table.row}>

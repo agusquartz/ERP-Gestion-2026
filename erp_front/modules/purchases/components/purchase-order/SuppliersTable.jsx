@@ -75,7 +75,7 @@ export default function SuppliersTable({
       <div className={`${card.base} shadow-panel flex flex-col min-h-0`}>
 
         {/* Fixed header — never scrolls */}
-        <table className={table.base}>
+        <table className={`${table.base} table-fixed w-full`}>
           <thead>
             <tr className={table.head}>
               <th className={`${table.th} w-8`}>#</th>
@@ -88,7 +88,7 @@ export default function SuppliersTable({
 
         {/* Scrollable body — add max-h here to control how tall the table gets */}
         <div className="overflow-y-auto max-h-48">
-          <table className={table.base}>
+          <table className={`${table.base} table-fixed w-full`}>
             <tbody>
               {suppliers.map((supplier, index) => (
                 <tr key={supplier.id} className={table.row}>
@@ -115,7 +115,7 @@ export default function SuppliersTable({
                   </td>
 
                   {/* Status badge — empty cell for "generar" */}
-                  <td clasName="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center">
                     {supplier.status === "pendiente" && (
                       <span className={badge.pendiente}>• Pendiente</span>
                     )}
