@@ -1,7 +1,7 @@
 "use client";
 import { TrashIcon } from "@/shared/components/Icons";
 
-export function DocumentsTable({ documents = [], onRemove, type = "Factura" }) {
+export function DocumentsTable({ documents = [], onSelect, onRemove, type = "Factura" }) {
   
 
   const columnConfig = {
@@ -31,7 +31,10 @@ export function DocumentsTable({ documents = [], onRemove, type = "Factura" }) {
 
           <tbody>
             {documents.map((doc) => (
-              <tr key={doc.id} className="group border-b border-slate-50 hover:bg-[#f0f7ff] transition-colors">
+              <tr key={doc.id} 
+                  onClick = {() => onSelect(doc.id)} 
+                  
+                  className="group border-b border-slate-50 hover:bg-[#f0f7ff] transition-colors">
                 
                 <td className="px-4 py-3.5 text-[14px] text-slate-600 font-medium">{doc.fecha}</td>
                 

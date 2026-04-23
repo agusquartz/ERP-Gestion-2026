@@ -6,21 +6,22 @@ import { ChevronDownIcon } from "@/shared/components/Icons";
 export function DocumentsSearch({ onSearch }) {
   const [query, setQuery] = useState("");
   const [filterTotal, setFilterTotal] = useState("");
-  const [catFilter, setCatFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   
-  const [showCatDrop, setShowCatDrop] = useState(false);
+  const [showStatusDrop, setShowStatusDrop] = useState(false);
   const [showDateDrop, setShowDateDrop] = useState(false);
 
-  const categories = ["Contado", "Crédito", "Notas de Crédito"];
+
   const dates = ["Hoy", "Esta Semana", "Este Mes", "Personalizado"];
+  const status = ["Activo", "Expirado"];
 
   const clearAll = () => {
     setQuery("");
     setFilterTotal("");
-    setCatFilter("");
+    setStatusFilter("");
     setDateFilter("");
-    setShowCatDrop(false);
+    setShowStatusDrop(false);
     setShowDateDrop(false);
   };
 
@@ -56,25 +57,25 @@ export function DocumentsSearch({ onSearch }) {
           <button
             type="button"
             className="flex min-w-[150px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-            onClick={() => { setShowCatDrop(!showCatDrop); setShowDateDrop(false); }}
+            onClick={() => {setShowStatusDrop(!showStatusDrop); setShowDateDrop(false); }}
           >
-            <span>{catFilter || "Categoria"}</span>
-            <ChevronDownIcon className={`w-4 h-4 transition-transform ${showCatDrop ? 'rotate-180' : ''}`} />
+            <span>{statusFilter || "Estado"}</span>
+            <ChevronDownIcon className={`w-4 h-4 transition-transform ${showStatusDrop ? 'rotate-180' : ''}`} />
           </button>
 
-          {showCatDrop && (
+          {showStatusDrop && (
             <div className="absolute z-20 mt-2 w-full rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
               <button
                 className="w-full rounded-md px-3 py-2 text-left text-[14px] text-slate-600 hover:bg-slate-50 transition-colors"
-                onClick={() => { setCatFilter(""); setShowCatDrop(false); }}
+                onClick={() => { setStatusFilter(""); setShowStatusDrop(false); }}
               >
                 Todas
               </button>
-              {categories.map((c) => (
+              {status.map((c) => (
                 <button
                   key={c}
                   className="w-full rounded-md px-3 py-2 text-left text-[14px] font-medium text-slate-700 hover:bg-[#f0f7ff] hover:text-[#2b6df5] transition-colors"
-                  onClick={() => { setCatFilter(c); setShowCatDrop(false); }}
+                  onClick={() => { setStatusFilter(c); setShowStatusDrop(false); }}
                 >
                   {c}
                 </button>
@@ -115,7 +116,7 @@ export function DocumentsSearch({ onSearch }) {
           className="rounded-[8px] border border-slate-300 px-6 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-50 hover:shadow-sm transition-all active:scale-95"
           onClick={clearAll}
         >
-          Clear All
+          Limpiar todo
         </button>
       </div>
 

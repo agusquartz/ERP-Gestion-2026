@@ -9,13 +9,13 @@ export function ActionButton({onClick, variant = "secondary" ,type,  className =
   const variants = {
     primary: "bg-[#2b6df5] text-white hover:bg-[#1e56c8] shadow-sm",
     secondary: "cursor-pointer rounded-[5px] px-3.5 py-1.5 text-sm font-medium border border-primary text-primary hover:bg-primary/5 transition-all duration-200 hover:bg-primary-hover active:translate-y-px",
+    tertiary: "cursor-pointer rounded-[5px] px-3.5 py-1.5 text-sm font-medium border border-[#64748b] text-[#64748b] hover:bg-[#64748b]/5 transition-all duration-200 active:translate-y-px",
     danger: "bg-red-50 text-red-600 hover:bg-red-100"
   };
   //Key text, a value that represents text that could go in the dynamic button
   const buttonText = {
     "Presupuesto" : "Crear Factura",
     "Facturas" : "Crear Nota de Credito",
-    "Notas de Credito" : 0
   }
   return (
     <button
