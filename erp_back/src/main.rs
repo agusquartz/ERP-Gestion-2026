@@ -21,6 +21,7 @@ mod modules {
     pub mod quote;
     pub mod invoice;
     pub mod credit_notes;
+    pub mod purchase_order;
 }
 
 mod shared {
