@@ -8,7 +8,6 @@ pub struct CreatePurchaseOrderDto {
     pub purchase_request_id: i32,
     pub created_at: NaiveDate,
     pub supplier_id: i32,
-    pub status_id: i32,
     pub details: Vec<CreatePurchaseOrderLineDto>,
 }
 
@@ -23,5 +22,4 @@ pub struct CreatePurchaseOrderDto {
 pub struct CreatePurchaseOrderLineDto {
     pub product_id: i32,
     pub ordered_quantity: i32,
-    pub received_quantity: i32,
 }
