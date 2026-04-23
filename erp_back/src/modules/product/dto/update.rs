@@ -11,6 +11,7 @@ pub struct PatchProductDto {
     pub description: Option<String>,
     pub cost: Option<f64>,
     pub price: Option<f64>,
+    pub stock: Option<i32>,
     pub category_id: Option<i32>,
 
     /// Optional nested option:
@@ -36,6 +37,7 @@ impl PatchProductDto {
             && self.description.is_none()
             && self.cost.is_none()
             && self.price.is_none()
+            && self.stock.is_none()
             && self.category_id.is_none()
             && self.brand_id.is_none()
             && self.tax_ids.is_none()

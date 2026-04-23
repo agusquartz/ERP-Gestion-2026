@@ -1,69 +1,55 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { CloseIcon } from "./Icons";
 
-/**
- * Modal genérico reutilizable para todos los módulos.
- *
- * Props:
- *   open     - boolean
- *   onClose  - () => void
- *   width    - número (max-width en px, default 560)
- *   children - contenido
- */
 export function Modal({ open, onClose, children, width = 560 }) {
-  // Bloquear scroll del body mientras el modal está abierto
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
 
-  if (!open) return null;
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open, mounted]);
 
-  return (
-    <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ ...styles.modal, maxWidth: width }}>
-        <button style={styles.closeBtn} onClick={onClose} aria-label="Cerrar">
+  const portalTarget =
+    typeof window !== "undefined" ? document.body : null;
+
+  if (!open || !mounted || !portalTarget) return null;
+
+  return createPortal(
+    <div
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+    >
+      <div
+        style={{
+          "--modal-width":
+            typeof width === "number" ? `${width}px` : width,
+        }}
+        className="relative max-h-[90vh] w-full max-w-[var(--modal-width)] overflow-y-auto rounded-[5px] border border-border bg-surface p-6 shadow-panel"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar modal"
+          className="cursor-pointer absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-[5px] text-muted transition hover:bg-background hover:text-foreground"
+        >
           <CloseIcon />
         </button>
-        {children}
+
+        <div className="pr-6">{children}</div>
       </div>
-    </div>
+    </div>,
+    portalTarget
   );
 }
-
-const styles = {
-  overlay: {
-    position:       "fixed",
-    inset:          0,
-    background:     "rgba(0,0,0,0.45)",
-    display:        "flex",
-    alignItems:     "center",
-    justifyContent: "center",
-    zIndex:         1000,
-    padding:        20,
-  },
-  modal: {
-    background:  "white",
-    borderRadius: 12,
-    padding:     "28px 32px",
-    width:       "100%",
-    position:    "relative",
-    maxHeight:   "90vh",
-    overflowY:   "auto",
-    boxShadow:   "0 8px 32px rgba(0,0,0,0.18)",
-  },
-  closeBtn: {
-    position:   "absolute",
-    top:        14,
-    right:      14,
-    background: "none",
-    border:     "none",
-    cursor:     "pointer",
-    color:      "#9CA3AF",
-    display:    "flex",
-    padding:    4,
-    borderRadius: 4,
-  },
-};

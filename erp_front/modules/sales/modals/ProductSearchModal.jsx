@@ -1,0 +1,276 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Modal } from "@/shared/components/Modal";
+import { ChevronDownIcon } from "@/shared/components/Icons";
+import { getProductByQuery } from "../services/saleService";
+
+/**
+ * Modal de búsqueda y selección de productos.
+ *
+ * Props:
+ *   open     - boolean
+ *   onClose  - () => void
+ *   onSelect - (product) => void
+ */
+export function ProductSearchModal({ open, onClose, onSelect }) {
+  const [query, setQuery] = useState("");
+  const [descFilter, setDescFilter] = useState("");
+  const [catFilter, setCatFilter] = useState("");
+  const [filtered, setFiltered] = useState([]);
+  const [activeRow, setActiveRow] = useState(0);
+  const [showCatDrop, setShowCatDrop] = useState(false);
+  const inputRef = useRef(null);
+
+  const categories = [...new Set(filtered.map((p) => p.categoria))];
+
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      setDescFilter("");
+      setCatFilter("");
+      setFiltered([]);
+      setActiveRow(0);
+      setShowCatDrop(false);
+      setTimeout(() => inputRef.current?.focus(), 60);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (query.length < 3) {
+      setFiltered([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        let f = await getProductByQuery(query);
+
+        if (descFilter) {
+          f = f.filter(
+            (p) =>
+              p.descripcion.toLowerCase().includes(descFilter.toLowerCase()) ||
+              p.sku.toLowerCase().includes(descFilter.toLowerCase()) ||
+              p.codigo.toLowerCase().includes(descFilter.toLowerCase())
+          );
+        }
+
+        if (catFilter) f = f.filter((p) => p.categoria === catFilter);
+
+        setFiltered(f);
+        setActiveRow(0);
+      } catch (err) {
+        setFiltered([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [query, descFilter, catFilter]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && filtered.length > 0) {
+      onSelect(filtered[activeRow]);
+      onClose();
+    } else if (e.key === "ArrowDown") {
+      setActiveRow((r) => Math.min(r + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      setActiveRow((r) => Math.max(r - 1, 0));
+    }
+  };
+
+  const handleSelect = (product) => {
+    onSelect(product);
+    onClose();
+  };
+
+  const clearAll = () => {
+    setQuery("");
+    setDescFilter("");
+    setCatFilter("");
+    setShowCatDrop(false);
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} width="80%">
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-foreground">
+          Buscar Productos
+        </h2>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
+          <div>
+            <p className="mb-1 text-xs font-semibold text-secondary">
+              Buscar
+            </p>
+            <input
+              ref={inputRef}
+              className="w-full rounded-[5px] border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:bg-surface"
+              placeholder="Buscar por Código, SKU, Descripción..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs font-semibold text-secondary">
+              Filtrar Resultados
+            </p>
+            <input
+              className="w-full rounded-[5px] border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:bg-surface"
+              placeholder="Filtrar por Descripción, SKU, Código..."
+              value={descFilter}
+              onChange={(e) => setDescFilter(e.target.value)}
+            />
+          </div>
+
+          <div className="relative">
+            <p className="mb-1 text-xs text-transparent">-</p>
+            <button
+              type="button"
+              className="cursor-pointer flex min-w-[140px] items-center justify-between gap-2 rounded-[5px] border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-background"
+              onClick={() => setShowCatDrop(!showCatDrop)}
+            >
+              <span>{catFilter || "Categoría"}</span>
+              <ChevronDownIcon />
+            </button>
+
+            {showCatDrop && (
+              <div className="absolute z-20 mt-2 w-full rounded-[5px] border border-border bg-surface p-1 shadow-panel">
+                <button
+                  type="button"
+                  className="block w-full cursor-pointer rounded-[5px] px-3 py-2 text-left text-sm text-foreground transition hover:bg-background"
+                  onClick={() => {
+                    setCatFilter("");
+                    setShowCatDrop(false);
+                  }}
+                >
+                  Todas
+                </button>
+
+                {categories.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={`block w-full cursor-pointer rounded-[5px] px-3 py-2 text-left text-sm transition ${
+                      catFilter === c
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-background"
+                    }`}
+                    onClick={() => {
+                      setCatFilter(c);
+                      setShowCatDrop(false);
+                    }}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <p className="mb-1 text-xs text-transparent">-</p>
+            <button
+              type="button"
+              className="cursor-pointer rounded-[5px] border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-secondary transition hover:bg-background"
+              onClick={clearAll}
+            >
+              Limpiar
+            </button>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted">
+          Mostrando {filtered.length} resultados
+        </p>
+
+        <div className="overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+          <div className="max-h-[420px] overflow-auto">
+            <table className="min-w-full table-fixed border-collapse text-sm">
+              <thead className="bg-background">
+                <tr>
+                  <th className="w-[12%] border-b border-border px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-secondary">
+                    Código
+                  </th>
+                  <th className="w-[14%] border-b border-border px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-secondary">
+                    SKU
+                  </th>
+                  <th className="w-[36%] border-b border-border px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-secondary">
+                    Descripción
+                  </th>
+                  <th className="w-[16%] border-b border-border px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-secondary">
+                    Categoría
+                  </th>
+                  <th className="w-[10%] border-b border-border px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-secondary">
+                    Stock
+                  </th>
+                  <th className="w-[12%] border-b border-border px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-secondary">
+                    Precio
+                  </th>
+                  <th className="w-[12%] border-b border-border px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-secondary">
+                    Acción
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filtered.map((p, i) => (
+                  <tr
+                    key={p.id}
+                    className={`cursor-pointer border-b border-border transition hover:bg-background ${
+                      activeRow === i ? "bg-blue-50" : "bg-surface"
+                    }`}
+                    onClick={() => setActiveRow(i)}
+                    onDoubleClick={() => handleSelect(p)}
+                  >
+                    <td className="px-4 py-3 text-foreground">{p.codigo}</td>
+                    <td className="px-4 py-3 text-foreground">{p.sku}</td>
+                    <td
+                      className="px-4 py-3 text-foreground"
+                      title={p.descripcion}
+                    >
+                      <div className="line-clamp-2 break-words">
+                        {p.descripcion}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-foreground">{p.categoria}</td>
+                    <td className="px-4 py-3 text-foreground">{p.stock}</td>
+                    <td className="px-4 py-3 text-foreground">{p.precio}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        className="rounded-[5px] bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelect(p);
+                        }}
+                      >
+                        Seleccionar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {filtered.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-4 py-8 text-center text-sm text-muted"
+                    >
+                      Sin resultados
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <p className="text-center text-xs text-muted">
+          Usá ↑ y ↓ para navegar y Enter para seleccionar.
+        </p>
+      </div>
+    </Modal>
+  );
+}
