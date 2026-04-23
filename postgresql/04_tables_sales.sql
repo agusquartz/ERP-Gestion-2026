@@ -44,6 +44,7 @@ create table products (
 	brand_id INT REFERENCES brands(id) ON DELETE RESTRICT,	
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
 	description TEXT NOT NULL
+	last_acquisition_cost DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
 
