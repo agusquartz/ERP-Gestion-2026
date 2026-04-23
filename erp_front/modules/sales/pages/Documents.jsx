@@ -16,6 +16,7 @@ const DOCUMENT_TYPES = {
 
 export default function DocumentsPage() {
 const [activeTab, setActiveTab] = useState(DOCUMENT_TYPES.FACTURAS);
+const [selectedId, setSelectedId] = useState(null);
 //clients data examples: 
  const [documents, setDocuments] = useState([
     {
@@ -70,30 +71,32 @@ const filteredDocuments = documents.filter((doc) => doc.tipo === activeTab);
         </h1>
         <div className="mt-2 h-px w-full bg-foreground/80" />
       </div>
+      <DocumentsHeader 
+        activeTab={activeTab} 
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setSelectedId(null); // Resetea la selección al cambiar de pestaña
+        }}
+/>
 
-      <DocumentsHeader activeTab={activeTab} setActiveTab={setActiveTab}/>
-      <DocumentsSearch activeTab={activeTab}/>
-
-
+      <DocumentsSearch activeTab={activeTab} setActiveTab={setActiveTab}/>
       <DocumentsTable
         type= {activeTab}
         documents={filteredDocuments}
         onRemove={handleRemove}
+        //selectedId= {selectedId}
+        onSelect={(id) => setSelectedId(id ==selectedId ? null : id) }
       />
+      <div className= "flex justify-end items-center h-20">
+          {activeTab!== DOCUMENT_TYPES.NOTA_CREDITO && (
+              <ActionButton 
+                //if something is selected: blue, if nothing is selected: gray
+                variant={selectedId  !== null ? "secondary" : "tertiary"} 
+                type= {activeTab}
+              />
 
-        <div className= "flex justify-end items-center h-20">
-            {activeTab!== DOCUMENT_TYPES.NOTA_CREDITO && (
-                <ActionButton type= {activeTab}/>
-
-            )}
-            
-
-
-        </div>
-    
-
-      
-      
+          )}
+      </div>  
     </div>
    
   );
