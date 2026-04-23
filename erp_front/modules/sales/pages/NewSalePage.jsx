@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -9,29 +10,25 @@ import { useSaleForm } from "../hooks/useSaleForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 
 // Components
-import { SaleHeader }      from "../components/SaleHeader";
-import { SaleItemsTable }  from "../components/SaleItemsTable";
-import { AddProductPanel } from "../components/AddProductPanel";
-import { SaleSummaryPanel } from "../components/SaleSummaryPanel";
-import { SaleActions }     from "../components/SaleActions";
+import { SaleHeader } from "../components/newSales/SaleHeader";
+import { SaleItemsTable } from "../components/newSales/SaleItemsTable";
+import { AddProductPanel } from "../components/newSales/AddProductPanel";
+import { SaleSummaryPanel } from "../components/newSales/SaleSummaryPanel";
+import { SaleActions } from "../components/newSales/SaleActions";
 
 // Modals
-import { ClientSearchModal }  from "../features/modals/ClientSearchModal";
-import { ProductSearchModal } from "../features/modals/ProductSearchModal";
-import { ConfirmModal }       from "../features/modals/ConfirmModal";
-
-// Styles
-import { s } from "../styles/salesStyles";
-
-// Services — descomentar cuando tengas la API lista
-// import { createSale, createQuote } from "../services/salesService";
+import { ClientSearchModal } from "../modals/ClientSearchModal";
+import { ProductSearchModal } from "../modals/ProductSearchModal";
+import { ConfirmModal } from "../modals/ConfirmModal";
 
 export default function NewSalePage() {
   const {
     clients,
     selectedClient,
     items,
-    subtotal, iva, total,
+    subtotal,
+    iva,
+    total,
     submitError,
     seller,
     addItem,
@@ -41,32 +38,18 @@ export default function NewSalePage() {
     addClient,
     validate,
     reset,
-    buildPayload,
   } = useSaleForm();
 
-  // Modales
-  const clientModal  = useDisclosure();
+  const clientModal = useDisclosure();
   const productModal = useDisclosure();
   const confirmModal = useDisclosure();
-  const [confirmType, setConfirmType] = useState("factura");
 
-  // Producto pendiente seleccionado desde el modal
+  const [confirmType, setConfirmType] = useState("factura");
   const [pendingProduct, setPendingProduct] = useState(null);
 
-  // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (type) => {
     if (!validate()) return;
     setConfirmType(type);
-
-    // Con API real:
-    // try {
-    //   const payload = buildPayload();
-    //   type === "factura" ? await createSale(payload) : await createQuote(payload);
-    // } catch (err) {
-    //   console.error(err);
-    //   return;
-    // }
-
     confirmModal.open();
   };
 
@@ -76,25 +59,35 @@ export default function NewSalePage() {
   };
 
   return (
-    <div style={{ padding: "28px 32px" }}>
-      <h1 style={s.pageTitle}>Nueva Venta</h1>
+    <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
+      <div className="mb-5">
+        <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
+          Nueva Venta
+        </h1>
+        <div className="mt-2 h-px w-full bg-foreground/80" />
+      </div>
 
       <SaleHeader
         selectedClient={selectedClient}
         onBuscarCliente={clientModal.open}
         seller={seller}
-     />
+      />
 
-      {submitError && <div style={s.errorBanner}>{submitError}</div>}
+      {submitError && (
+        <div className="mb-4 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {submitError}
+        </div>
+      )}
 
-      <div style={s.contentLayout}>
-        {/* Izquierda: tabla + acciones */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12}}>
+      <div className="grid flex-1 min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        {/* Left column */}
+        <div className="flex min-w-0 min-h-0 flex-col gap-4">
           <SaleItemsTable
             items={items}
             onQtyChange={updateItemQty}
             onRemove={removeItem}
           />
+
           <SaleActions
             onCancel={reset}
             onQuote={() => handleSubmit("presupuesto")}
@@ -102,19 +95,19 @@ export default function NewSalePage() {
           />
         </div>
 
-        {/* Derecha: agregar producto + resumen */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* Right column */}
+        <div className="flex flex-col gap-4">
           <AddProductPanel
             onAdd={addItem}
             onOpenSearch={productModal.open}
             selectedProduct={pendingProduct}
             onClearProduct={() => setPendingProduct(null)}
           />
+
           <SaleSummaryPanel subtotal={subtotal} iva={iva} total={total} />
         </div>
       </div>
 
-      {/* Modales */}
       <ClientSearchModal
         open={clientModal.isOpen}
         onClose={clientModal.close}
@@ -126,7 +119,10 @@ export default function NewSalePage() {
       <ProductSearchModal
         open={productModal.isOpen}
         onClose={productModal.close}
-        onSelect={(p) => setPendingProduct(p)}
+        onSelect={(p) => {
+          setPendingProduct(p);
+          productModal.close();
+        }}
       />
 
       <ConfirmModal
@@ -139,5 +135,6 @@ export default function NewSalePage() {
         total={total}
       />
     </div>
+    
   );
 }

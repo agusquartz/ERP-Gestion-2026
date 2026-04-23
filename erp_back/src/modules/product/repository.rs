@@ -24,6 +24,7 @@ SELECT
     p.description AS product_description,
     p.cost::float8 AS product_cost,
     p.price::float8 AS product_price,
+    p.stock AS product_stock,
     p.is_active AS product_is_active,
     p.category_id AS category_id,
     c.name AS category_name,
@@ -80,6 +81,7 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<model::ProductAggregate> {
                 description: row.get("product_description"),
                 cost: row.get("product_cost"),
                 price: row.get("product_price"),
+                stock: row.get("product_stock"),
                 category_id: row.get("category_id"),
                 brand_id,
                 is_active: row.get("product_is_active"),
@@ -279,4 +281,61 @@ pub async fn patch_product(
 
     tx.commit().await?;
     Ok(products.pop())
+}
+
+
+pub async fn set_stock(
+    tx: &tokio_postgres::Transaction<'_>,
+    product_id: i32,
+    new_stock: i32,
+) -> Result<(), db_config::DbError> {
+    tx.execute(
+        "UPDATE products SET stock = $1 WHERE id = $2",
+        &[&new_stock, &product_id],
+    )
+    .await?;
+
+    Ok(())
+}
+
+pub async fn get_stock(
+    tx: &tokio_postgres::Transaction<'_>,
+    product_id: i32,
+) -> Result<i32, db_config::DbError> {
+    let row = tx
+        .query_one("SELECT stock FROM products WHERE id = $1", &[&product_id])
+        .await?;
+
+    Ok(row.get("stock"))
+}
+
+pub async fn decrease_stock(
+    tx: &tokio_postgres::Transaction<'_>,
+    product_id: i32,
+    amount: i32,
+) -> Result<bool, db_config::DbError> {
+    let rows = tx.execute(
+        "UPDATE products
+         SET stock = stock - $1
+         WHERE id = $2 AND stock >= $1",
+        &[&amount, &product_id],
+    ).await?;
+
+    Ok(rows == 1)
+}
+
+pub async fn increase_stock(
+    tx: &tokio_postgres::Transaction<'_>,
+    product_id: i32,
+    amount: i32,
+) -> Result<(), db_config::DbError> {
+    tx.execute(
+        "UPDATE products
+         SET stock = stock + $1
+         WHERE id = $2",
+        &[&amount, &product_id],
+    )
+    .await?;
+
+    Ok(())
 }

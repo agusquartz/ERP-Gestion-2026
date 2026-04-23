@@ -75,3 +75,35 @@ pub async fn patch_product(
     let product = repository::patch_product(id, &patch).await?;
     Ok(product.map(ProductResponse::from))
 }
+
+pub async fn decrease_stock(
+    tx: &tokio_postgres::Transaction<'_>,
+    product_id: i32,
+    amount: i32,
+) -> Result<(), db_config::DbError> {
+    if amount <= 0 {
+        return Err(db_config::DbError::Other("amount must be > 0".into()));
+    }
+
+    let ok = repository::decrease_stock(tx, product_id, amount).await?;
+
+    if !ok {
+        return Err(db_config::DbError::Other("insufficient stock".into()));
+    }
+
+    Ok(())
+}
+
+pub async fn increase_stock(
+    tx: &tokio_postgres::Transaction<'_>,
+    product_id: i32,
+    amount: i32,
+) -> Result<(), db_config::DbError> {
+    if amount <= 0 {
+        return Err(db_config::DbError::Other("amount must be > 0".into()));
+    }
+
+    repository::increase_stock(tx, product_id, amount).await?;
+
+    Ok(())
+}

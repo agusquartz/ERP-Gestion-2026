@@ -4,7 +4,7 @@ use axum::{
 };
 use dotenvy::from_filename;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::{CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use axum::http::{Method, header, HeaderName};
 use axum::http::HeaderValue;
 use axum::serve;
@@ -17,6 +17,8 @@ mod modules {
     pub mod observability;
     pub mod user;
     pub mod product;
+    pub mod client;
+    pub mod quote;
     pub mod invoice;
     pub mod credit_notes;
 }
@@ -73,7 +75,11 @@ async fn main() {
         .expect("CORS_ALLOWED_ORIGIN must be set");
 
     let cors = CorsLayer::new()
-        .allow_origin(cors_origin.parse::<HeaderValue>().unwrap())
+        // .allow_origin(cors_origin.parse::<HeaderValue>().unwrap())
+        .allow_origin(AllowOrigin::list([
+            "https://wxqzb.xyz".parse().unwrap(),
+            "https://www.wxqzb.xyz".parse().unwrap(),
+        ]))
         .allow_methods([
             Method::GET,
             Method::POST,
@@ -95,7 +101,9 @@ async fn main() {
     let app = Router::new()
         .merge(modules::observability::router::observability_router())
         .merge(modules::auth::router::auth_router())
+        .merge(modules::client::router::client_router())
         .merge(modules::product::router::product_router())
+        .merge(modules::quote::router::quote_router())
         .merge(modules::invoice::router::invoice_router())
         .merge(modules::credit_notes::router::credit_note_router())
         .layer(CookieManagerLayer::new())

@@ -39,6 +39,7 @@ pub struct ProductResponse {
     pub description: String,
     pub cost: f64,
     pub price: f64,
+    pub stock: i32,
     pub is_active: bool,
     pub category: CategoryResponse,
     pub brand: Option<BrandResponse>,
@@ -57,6 +58,7 @@ impl From<model::ProductAggregate> for ProductResponse {
             description: value.product.description,
             cost: value.product.cost,
             price: value.product.price,
+            stock: value.product.stock,
             is_active: value.product.is_active,
             category: CategoryResponse {
                 id: value.category.id,
