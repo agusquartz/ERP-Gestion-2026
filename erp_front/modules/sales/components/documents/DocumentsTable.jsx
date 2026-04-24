@@ -7,7 +7,7 @@ export function DocumentsTable({ documents = [], onSelect, onRemove, type = "Fac
   const columnConfig = {
     "Facturas": ["Fecha", "Nro. Factura", "Cliente", "Total", "Acción"],
     "Presupuesto": ["Fecha", "Nro. Factura", "Cliente", "Estado", "Total", "Acción"],
-    "Notas de Credito": ["Fecha", "Nro. Nota Credito", "Nro. Factura", "Categoria", "Cliente", "Total", "Acción"]
+    "Notas de Credito": ["Fecha", "Nro. Nota Credito", "Nro. Factura", "Cliente", "Total", "Acción"]
   };
 
   const headers = columnConfig[type] || columnConfig["Facturas"];
@@ -36,28 +36,24 @@ export function DocumentsTable({ documents = [], onSelect, onRemove, type = "Fac
                   
                   className="group border-b border-slate-50 hover:bg-[#f0f7ff] transition-colors">
                 
-                <td className="px-4 py-3.5 text-[14px] text-slate-600 font-medium">{doc.fecha}</td>
+                <td className="px-4 py-3.5 text-[14px] text-slate-600 font-medium">{doc.date}</td>
                 
              
                 {type === "Notas de Credito" && (
-                  <td className="px-4 py-3.5 text-[14px] font-bold text-slate-700">{doc.numeroNotaCredito}</td>
+                  <td className="px-4 py-3.5 text-[14px] font-bold text-slate-700">{doc.number_credite_note}</td>
                 )}
 
             
-                <td className="px-4 py-3.5 text-[14px] font-bold text-[#2b6df5]">{doc.numeroFactura}</td>
+                <td className="px-4 py-3.5 text-[14px] font-bold text-[#2b6df5]">{doc.invoice_number}</td>
 
-          
-                {type === "Notas de Credito" && (
-                  <td className="px-4 py-3.5 text-[14px] text-slate-600 italic">{doc.categoria}</td>
-                )}
 
-                <td className="truncate px-4 py-3.5 text-[14px] text-slate-700 font-semibold">{doc.cliente}</td>
+                <td className="truncate px-4 py-3.5 text-[14px] text-slate-700 font-semibold">{doc.client}</td>
 
-        
+
                 {type === "Presupuesto" && (
                   <td className="px-4 py-3.5 text-[14px]">
                     <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-[12px] font-bold uppercase">
-                      {doc.estado || 'Pendiente'}
+                      {doc.status || 'Pendiente'}
                     </span>
                   </td>
                 )}
