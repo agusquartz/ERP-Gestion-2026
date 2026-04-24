@@ -5,13 +5,14 @@ import { usePurchaseForm } from "../hooks/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 
 
-// Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales)
-import { PurchaseHeader } from "../components/newPurchases/PurchaseHeader";
+// Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales);
 import { PurchaseItemsTable } from "../components/NewPurchases/PurchaseItemsTable"; 
 import { AddPurchaseProductPanel } from "../components/NewPurchases/AddPurchaseProductPanel.jsx";
 import { PurchaseSummaryPanel } from "../components/NewPurchases/PurchaseSummaryPanel";
 import { PurchaseActions } from "../components/NewPurchases/PurchaseActions";
+import { PurchaseInformation } from "../components/NewPurchases/PurchaseInformation";
 import { s } from "../styles/NewPurchase/NewPurchasesStyles";
+import { mock_items } from "../services/mock";
 
 export default function NewPurchasePage() {
   const {
@@ -24,29 +25,36 @@ export default function NewPurchasePage() {
   const [pendingProduct, setPendingProduct] = useState(null);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
-    <div style={{ ...s.container, display: 'flex', flexDirection: 'column', height: '100%', gap: '8px'}}>
-      <div style={{...s.headerSection}}>
-        <h1 style={s.pageTitle}>Nuevo Pedido de Compra</h1>
-        <div style={s.divider} />
+    <div className={s.container}>
+      <div className={s.titleSection}>
+        <h1 className={s.pageTitle}>Nuevo Pedido</h1>
       </div>
 
-      <PurchaseHeader />
-
-      <div style={s.contentLayout}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{...s.tableSection, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
-            <PurchaseItemsTable items={items} />
+      <div className={s.contentLayout}>
+        {/* COLUMNA IZQUIERDA: Tabla y Botón Guardar */}
+        <div className="flex flex-col min-h-0">
+          <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+             <PurchaseItemsTable 
+              items={mock_items} 
+              onQtyChange={updateItemQty} 
+              onRemove={removeItem}/>
           </div>
-          <PurchaseActions />
+          
+          {/* Botón Guardar centrado abajo como el Figma */}
+          <div className="flex justify-center py-6">
+            <button className="bg-[#2563eb] text-white px-12 py-2.5 rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors shadow-md">
+              GUARDAR
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* COLUMNA DERECHA: Paneles de control */}
+        <div className="flex flex-col gap-4 overflow-y-auto pr-1">
           <AddPurchaseProductPanel />
           <PurchaseSummaryPanel />
+          <PurchaseInformation />
         </div>
       </div>
-    </div>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 import { useState } from "react";
+import { mock_items } from "../services/mock";
 
 export function usePurchaseForm() {
   const [selectedProvider, setSelectedProvider] = useState(null);
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(mock_items);
   const [submitError, setSubmitError] = useState("");
   const [ivaRate] = useState(0.1); 
 
