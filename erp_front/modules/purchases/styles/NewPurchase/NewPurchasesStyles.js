@@ -3,11 +3,18 @@
 
 export const s = {
   // ── Página ────────────────────────────────────────────────────────────────
-  titleSection: {marginBottom: 24},
-  pageTitle:     { fontSize: 26, fontWeight: 700, marginBottom: 4, color: "#111827" },
-  contentLayout: { display: "grid", gridTemplateColumns: "1fr 224px", gap: 16 },
+  container: "h-screen flex flex-col bg-[#f3f4f6] p-6 overflow-hidden",
+  titleSection: "mb-4",
+  pageTitle: "text-3xl font-bold text-[#1e293b]",
+  contentLayout: "grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 flex-1 min-h-0",
+  
+  
   errorBanner:   { background: "#FEE2E2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 13 },
   divider:       { borderBottom: "1px solid #E5E7EB", marginTop: "4px", marginBottom: "12px"},
+
+  // Nuevo estilo para el panel de información (Figma inferior derecha)
+  infoPanel: "bg-gray-50 border border-gray-200 rounded-xl p-4 mt-4 flex items-start gap-3",
+  infoText: "text-[13px] text-gray-500 leading-relaxed",
 
   // ── Header row (Proveedor) ────────────────────────────────────────────────
   headerRow:  { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, color: "#e6e9e8"},
@@ -15,13 +22,7 @@ export const s = {
   providerName: { fontWeight: 500, color: "#059669", fontSize: 14 }, // Verde para diferenciar de ventas
 
   // ── Tabla de Neumáticos ───────────────────────────────────────────────────
-  container: { 
-    padding: "12px",
-    display: "flex", 
-    flexDirection: "column", 
-    gap: 10,
-    minHeight: "calc(100vh - 64px)" // Ajusta según el alto de tu navbar
-  },
+
   // Contenedor de la izquierda (Tabla + Botones)
   mainColumn: {
     display: "flex",

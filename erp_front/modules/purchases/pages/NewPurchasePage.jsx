@@ -1,13 +1,18 @@
+
 "use client";
 import { useState } from "react";
 import { usePurchaseForm } from "../hooks/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 
-// Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales)
-import { PurchaseHeader } from "../components/newPurchases/PurchaseHeader";
-import { SaleItemsTable } from "../../sales/components/SaleItemsTable"; 
-import { AddProductPanel } from "../../sales/components/AddProductPanel.jsx";
-import { SaleSummaryPanel } from "../../sales/components/SaleSummaryPanel";
+
+// Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales);
+import { PurchaseItemsTable } from "../components/NewPurchases/PurchaseItemsTable"; 
+import { AddPurchaseProductPanel } from "../components/NewPurchases/AddPurchaseProductPanel.jsx";
+import { PurchaseSummaryPanel } from "../components/NewPurchases/PurchaseSummaryPanel";
+import { PurchaseActions } from "../components/NewPurchases/PurchaseActions";
+import { PurchaseInformation } from "../components/NewPurchases/PurchaseInformation";
+import { s } from "../styles/NewPurchase/NewPurchasesStyles";
+import { mock_items } from "../services/mock";
 
 export default function NewPurchasePage() {
   const {
@@ -20,38 +25,36 @@ export default function NewPurchasePage() {
   const [pendingProduct, setPendingProduct] = useState(null);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
-      <div className="mb-5">
-        <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
-          Nuevo Pedido de Compra
-        </h1>
-        <div className="mt-2 h-px w-full bg-foreground/80" />
+    <div className={s.container}>
+      <div className={s.titleSection}>
+        <h1 className={s.pageTitle}>Nuevo Pedido</h1>
       </div>
 
-      <PurchaseHeader 
-        selectedProvider={selectedProvider} 
-        onBuscarProveedor={providerModal.open} 
-      />
-
-      <div className="grid flex-1 min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="flex min-w-0 min-h-0 flex-col gap-4">
-          <SaleItemsTable items={items} onQtyChange={updateItemQty} onRemove={removeItem} />
-          <button className="w-full bg-primary text-white py-3 rounded-[5px] font-bold uppercase tracking-wider hover:bg-primary-hover transition-colors">
-            Guardar Pedido
-          </button>
+      <div className={s.contentLayout}>
+        {/* COLUMNA IZQUIERDA: Tabla y Botón Guardar */}
+        <div className="flex flex-col min-h-0">
+          <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+             <PurchaseItemsTable 
+              items={mock_items} 
+              onQtyChange={updateItemQty} 
+              onRemove={removeItem}/>
+          </div>
+          
+          {/* Botón Guardar centrado abajo como el Figma */}
+          <div className="flex justify-center py-6">
+            <button className="bg-[#2563eb] text-white px-12 py-2.5 rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors shadow-md">
+              GUARDAR
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <AddProductPanel 
-            onAdd={addItem} 
-            onOpenSearch={productModal.open}
-            selectedProduct={pendingProduct}
-            onClearProduct={() => setPendingProduct(null)}
-          />
-          <SaleSummaryPanel subtotal={subtotal} iva={iva} total={total} />
+        {/* COLUMNA DERECHA: Paneles de control */}
+        <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+          <AddPurchaseProductPanel />
+          <PurchaseSummaryPanel />
+          <PurchaseInformation />
         </div>
       </div>
-      {/* Aquí irían los modales similares a los de NewSalePage */}
     </div>
   );
 }
