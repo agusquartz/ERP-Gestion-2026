@@ -28,16 +28,28 @@ export default function QuotationModal({
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
-    if (supplier) {
-      setRows(
-        supplier.quotationItems.map((qi) => ({
-          ...qi,
-          confirmedQty: qi.confirmedQty ?? 0,
-          unitPrice: qi.unitPrice ?? 0,
-        }))
+    if (!supplier) return;
+
+    //1. Filter items by supplier category. 
+    const itemsForSupplier = orderItems.filter(item => 
+      supplier.categories?.includes(item.category)
+    );
+
+    //2. Build rows by combining with quotation items(If they exist)
+    const buildRows = itemsForSupplier.map(item => {
+      const existing = supplier.quotationItems?.find(
+        qi => qi.orderItemId === item.id
       );
-    }
-  }, [supplier]);
+
+      return {
+        orderItemId: item.id,
+        confirmedQty: existing?.confirmedQty ?? 0,
+        unitPrice: existing?.unitPrice ?? 0,
+      };
+    }); 
+
+    setRows(buildRows);
+  }, [supplier, orderItems]);
 
   const isReadOnly = supplier?.status === "listo";
 
