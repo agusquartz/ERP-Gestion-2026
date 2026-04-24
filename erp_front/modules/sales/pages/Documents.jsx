@@ -5,53 +5,55 @@ import { DocumentsHeader } from "../components/documents/DocumentsHeader";
 import { DocumentsSearch } from "../components/documents/DocumentsSearch";
 import { DocumentsTable } from "../components/documents/DocumentsTable";
 import { ActionButton } from "../components/documents/ButtonActions";
+import { NewCreditNoteTable } from "../modals/documents/NewCreditNoteModal";
+
 
 
 const DOCUMENT_TYPES = {
-    FACTURAS: "Facturas",
-    PRESUPUESTO: "Presupuesto",
-    NOTA_CREDITO: "Notas de Credito"
+    INVOICE: "Facturas",
+    QUOTE: "Presupuesto",
+    CREDIT_NOTE: "Notas de Credito"
 }
 
 
 export default function DocumentsPage() {
-const [activeTab, setActiveTab] = useState(DOCUMENT_TYPES.FACTURAS);
+const [activeTab, setActiveTab] = useState(DOCUMENT_TYPES.INVOICE);
 const [selectedId, setSelectedId] = useState(null);
+const [isCreatingCreditNote, setIsCreatingCreditNote] = useState(false);
 //clients data examples: 
  const [documents, setDocuments] = useState([
     {
       id: 1,
-      tipo: "Facturas",
-      fecha: "2026-04-17",
-      numeroFactura: "F-001",
-      cliente: "Juan Pérez",
+      type: "Facturas",
+      date: "2026-04-17",
+      invoice_number: "F-001",
+      client: "Juan Pérez",
       total: 150000,
     },
      {
       id: 2,
-      tipo: "Facturas",
-      fecha: "2026-04-17",
-      numeroFactura: "F-001",
-      cliente: "Juan Pérez",
+      type: "Facturas",
+      date: "2026-04-17",
+      invoice_number: "F-001",
+      client: "Pablito Pérez",
       total: 150000,
     },
     {
       id: 3,
-      tipo: "Presupuesto",
-      fecha: "2026-04-16",
-      numeroFactura: "P-001",
-      cliente: "María Gómez",
-      estado: "Pendiente",
+      type: "Presupuesto",
+      date: "2026-04-16",
+      invoice_number: "P-001",
+      client: "María Gómez",
+      status: "Pendiente",
       total: 250000,
     },
     {
       id: 4,
-      tipo: "Notas de Credito",
-      fecha: "2026-04-15",
-      numeroNotaCredito: "NC-001",
-      numeroFactura: "F-001",
-      categoria: "Devolución",
-      cliente: "Juan Pérez",
+      type: "Notas de Credito",
+      date: "2026-04-15",
+      number_credite_note: "NC-001",
+      invoice_number: "F-001",
+      client: "Juan Pérez",
       total: 50000,
     },
   ]);
@@ -59,7 +61,14 @@ const [selectedId, setSelectedId] = useState(null);
 const handleRemove = (id) => {
     setDocuments((prev) => prev.filter((doc) => doc.id !== id));
 };
-const filteredDocuments = documents.filter((doc) => doc.tipo === activeTab);
+const handleAction = () => {
+    if (activeTab === DOCUMENT_TYPES.INVOICE && selectedId) {
+      setIsCreatingCreditNote(true);
+    }
+  };
+
+
+const filteredDocuments = documents.filter((doc) => doc.type === activeTab);
 
     
   return (
@@ -88,11 +97,12 @@ const filteredDocuments = documents.filter((doc) => doc.tipo === activeTab);
         onSelect={(id) => setSelectedId(id ==selectedId ? null : id) }
       />
       <div className= "flex justify-end items-center h-20">
-          {activeTab!== DOCUMENT_TYPES.NOTA_CREDITO && (
+          {activeTab!== DOCUMENT_TYPES.CREDIT_NOTE && (
               <ActionButton 
                 //if something is selected: blue, if nothing is selected: gray
                 variant={selectedId  !== null ? "primary" : "tertiary"} 
                 type= {activeTab}
+                onClick={handleAction}
               />
 
           )}
