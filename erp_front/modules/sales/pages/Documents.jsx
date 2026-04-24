@@ -91,7 +91,7 @@ const filteredDocuments = documents.filter((doc) => doc.tipo === activeTab);
           {activeTab!== DOCUMENT_TYPES.NOTA_CREDITO && (
               <ActionButton 
                 //if something is selected: blue, if nothing is selected: gray
-                variant={selectedId  !== null ? "secondary" : "tertiary"} 
+                variant={selectedId  !== null ? "primary" : "tertiary"} 
                 type= {activeTab}
               />
 
