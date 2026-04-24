@@ -11,7 +11,7 @@ use tower_cookies::Cookies;
 use crate::modules::auth::middleware::jwt::verify_jwt;
 
 
-const DISABLE_AUTH: bool = true;
+const DISABLE_AUTH: bool = false;
 /// Middleware for authenticating requests using JWT and CSRF protection.
 ///
 /// This middleware performs:
@@ -32,6 +32,25 @@ pub async fn auth_middleware(
         return next.run(request).await.into_response();
     }
 
+    //println!("auth middleware hit: {}", request.uri());
+
+    // println!(
+    //     "jwt cookie exists: {}",
+    //     cookies.get("jwt").is_some()
+    // );
+
+    // println!(
+    //     "csrf cookie exists: {}",
+    //     cookies.get("csrfToken").is_some()
+    // );
+
+    // println!(
+    //     "x-csrf-token header: {:?}",
+    //     request
+    //         .headers()
+    //         .get("x-csrf-token")
+    //         .and_then(|h| h.to_str().ok())
+    // );
     
     // -----------------------------
     // 1. Verify JWT cookie
@@ -42,8 +61,14 @@ pub async fn auth_middleware(
     };
 
     let jwt_claims = match verify_jwt(jwt_cookie.value()) {
-        Ok(claims) => claims,
-        Err(_) => return (StatusCode::UNAUTHORIZED, "Invalid JWT").into_response(),
+        Ok(claims) => {
+            //println!("JWT OK: {:#?}", claims);
+            claims
+        }
+        Err(err) => {
+            //println!("JWT ERROR: {:?}", err);
+            return (StatusCode::UNAUTHORIZED, "Invalid JWT").into_response();
+        }
     };
 
     // -----------------------------
@@ -84,6 +109,7 @@ pub async fn auth_middleware(
     // -----------------------------
     // 3. Attach JWT claims to request
     // -----------------------------
+    //println!("Inserting claims and continuing to handler");
     request.extensions_mut().insert(jwt_claims);
 
     // -----------------------------
