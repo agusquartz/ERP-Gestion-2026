@@ -60,6 +60,8 @@ pub struct Claims {
     pub iat: usize,
     /// Expiration: UNIX timestamp when the token expires
     pub exp: usize,
+    pub role: String,
+    pub permissions: Vec<String>,
 }
 
 /// Creates and signs a JWT token.
@@ -82,6 +84,8 @@ pub struct Claims {
 /// ```
 pub fn create_jwt(
     subject: &str,
+    role: &str,
+    permissions: Vec<String>,
     ttl_seconds: u64,
 ) -> Result<String, jsonwebtoken::errors::Error> {
     // Current UNIX timestamp
@@ -93,6 +97,8 @@ pub fn create_jwt(
     // Build the claims (payload)
     let jwt_claims = Claims {
         sub: subject.to_owned(),
+        role: role.to_owned(),
+        permissions,
         iat: current_timestamp as usize,
         exp: (current_timestamp + ttl_seconds) as usize,
     };
