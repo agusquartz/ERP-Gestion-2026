@@ -40,6 +40,7 @@ create table products (
 	code TEXT UNIQUE NOT NULL,
 	cost DECIMAL(17,2) NOT NULL,
 	price DECIMAL(17,2) NOT NULL,
+	stock INT NOT NULL DEFAULT 0 CHECK (stock > 0),
 	category_id INT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
 	brand_id INT REFERENCES brands(id) ON DELETE RESTRICT,	
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
