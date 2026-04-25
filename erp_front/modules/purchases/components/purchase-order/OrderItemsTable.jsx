@@ -23,7 +23,7 @@ import { card, table, badge, label, } from "../../styles/purchase-order/purchase
 export default function OrderItemsTable({ items = [] }) {
   
   return (
-    <section className="mb-6 flex flex-col min-h-0">
+    <section className="shrink-0">
       <p className={label.section}>Items del pedido</p>
 
       {/* Card wrapper — rounded-[5px] matches the design border radius spec */}
