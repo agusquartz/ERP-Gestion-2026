@@ -126,15 +126,27 @@ export function usePurchaseOrder(orderId) {
       if (!map[item.category]) {
         map[item.category] = { category: item.category, productCount: 0 };
       }
-      map[item.category].productCount += 1;
+      map[item.category].productCount++;
     });
-
-    const assignedCount = suppliers.filter((s) => s.status !== "generar").length;
-
+      
     return Object.values(map).map((cat) => ({
       ...cat,
-      // TODO: ideally per-category assigned count — simplify once backend provides it
-      assignedSuppliers: assignedCount,
+      assignedSuppliers: suppliers.filter((s) => {
+        if (s.status === "generar") return false;
+
+        const itemIdsForCategory = orderItems
+          .filter((item) => item.category === cat.category)
+          .map((item) => item.id);
+
+        // Guard: if no quotationItems, check the supplier's categories array instead
+        if (!s.quotationItems || s.quotationItems.length === 0) {
+          return s.categories?.some((c) => c === cat.category) ?? false;
+        }
+
+        return s.quotationItems.some((qi) =>
+          itemIdsForCategory.includes(qi.orderItemId)
+        );
+      }).length,
     }));
   }, [orderItems, suppliers]);
 
@@ -256,29 +268,19 @@ export function usePurchaseOrder(orderId) {
       const ids = selectedSuppliers.map((s) => s.id);
       await addSuppliers(orderId, ids);
 
-      // Build new supplier entries in "generar" status with empty quotation rows.
-      // TODO: If your backend returns fully-formed supplier objects in the response
-      //       of addSuppliers(), use those directly instead of constructing them here.
       const newSuppliers = selectedSuppliers.map((s) => ({
         id: s.id,
         name: s.name,
         status: "generar",
-        quotationItems: orderItems.map((item) => ({
-          orderItemId: item.id,
-          confirmedQty: 0,
-          unitPrice: 0,
-        })),
+        quotationItems: [],
+        categories: s.categories ?? [],
       }));
 
       setSuppliers((prev) => [...prev, ...newSuppliers]);
 
-      // New suppliers haven't been notified yet → reset button to "Generar Todos"
       setAllGenerated(false);
-      
       setIsSupplierSearchOpen(false);
-    
     } catch (err) {
-      // TODO: Show error toast
       console.error("Error adding suppliers:", err);
     }
   };
