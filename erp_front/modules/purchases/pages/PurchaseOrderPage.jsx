@@ -119,15 +119,13 @@ export default function PurchaseOrderPage({
      * - shadow-panel applies the 2px/2px/5px design shadow.
      */
 
-   //<div className="min-h-screen bg-background px-8 py-8 font-sans text-foreground">
-    
     <div
       className="h-full overflow-hidden flex flex-col bg-surface p-6 shadow-panel border border-border" 
       style={{ borderRadius: "5px"}}
     >
       
       {/* ── Page header ── */}
-      <div className="mb-6 shrink-0">
+      <div className="shrink-0 mb-4">
         <h1 className="text-2xl font-bold tracking-tight">
           Pedido de compra{" "}
           <span className="text-primary">#{purchaseOrder?.id}</span>
@@ -140,26 +138,30 @@ export default function PurchaseOrderPage({
         </p>
       </div>
 
+      {/*
+       * Flexible container — takes all remaining height between header and footer.
+       * overflow-hidden prevents any child from leaking outside.
+       * Each child manages its own internal scroll.
+       */}
       {/* ── Items table (scrollable) ── */}
-      <OrderItemsTable items={orderItems} />
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden gap-4">
+        <OrderItemsTable items={orderItems} />
 
-      {/* ── Categories + Suppliers (two columns, each scrollable) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
-        
-        <CategoriesTable categories={categories} />
-
-        <SuppliersTable
-          suppliers={suppliers}
-          allGenerated={allGenerated}
-          onOpenQuotation={handleOpenQuotation}
-          onGenerateOrPrintAll={handleGenerateOrPrintAll}
-          onOpenSupplierSearch={handleOpenSupplierSearch}
-        />
+        {/* ── Categories + Suppliers (two columns, each scrollable) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
+          <CategoriesTable categories={categories} />
+          <SuppliersTable
+            suppliers={suppliers}
+            allGenerated={allGenerated}
+            onOpenQuotation={handleOpenQuotation}
+            onGenerateOrPrintAll={handleGenerateOrPrintAll}
+            onOpenSupplierSearch={handleOpenSupplierSearch}
+          />
+        </div>
       </div>
 
-
       {/* ── Footer actions ── */}
-      <div className="flex justify-end gap-3 mt-6 shrink-0">
+      <div className="flex justify-end gap-3 mt-4 shrink-0">
         <button
           onClick={onBack}
           className={`${btn.secondary} shadow-panel`}
