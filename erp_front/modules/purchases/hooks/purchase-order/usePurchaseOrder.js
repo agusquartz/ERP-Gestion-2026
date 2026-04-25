@@ -181,15 +181,19 @@ export function usePurchaseOrder(orderId) {
    * @param {number} supplierId   - ID of the supplier being updated.
    * @param {Array}  updatedRows  - Quotation rows from the modal form.
    */
-  const handleSaveQuotation = async (supplierId, updatedRows) => {
+  const handleSaveQuotation = async (supplierId, updatedRows, isComplete) => {
     try {
       // TODO: Remove optimistic update if your backend is slow or unreliable.
       // Currently we update UI immediately and fire the API in background.
       setSuppliers((prev) =>
         prev.map((s) => {
           if (s.id !== supplierId) return s;
-          const nextStatus = s.status === "generar" ? "pendiente" : "listo";
-          return { ...s, status: nextStatus, quotationItems: updatedRows };
+          
+          return {
+            ...s,
+            status: isComplete ? "reading" : "pending",
+            quotationItems: updatedRows,
+          };
         })
       );
       await saveQuotation(orderId, supplierId, updatedRows);
@@ -220,7 +224,7 @@ export function usePurchaseOrder(orderId) {
       // ── Generar Todos ──
       try {
         setSuppliers((prev) =>
-          prev.map((s) => (s.status === "generar" ? { ...s, status: "pendiente" } : s))
+          prev.map((s) => (s.status === "created" ? { ...s, status: "unsend" } : s))
         );
         await generateAllQuotations(orderId);
         setAllGenerated(true);
@@ -271,7 +275,8 @@ export function usePurchaseOrder(orderId) {
       const newSuppliers = selectedSuppliers.map((s) => ({
         id: s.id,
         name: s.name,
-        status: "generar",
+        // Newly added, not yet generated or printed.
+        status: "created",
         quotationItems: [],
         categories: s.categories ?? [],
       }));
@@ -290,6 +295,18 @@ export function usePurchaseOrder(orderId) {
   /** Triggers browser print for the current quotation. */
   const handlePrint = () => window.print();
 
+  const handlePrintQuotation = async (supplierId) => {
+    try {
+      setSuppliers((prev) =>
+        prev.map((s) => (s.id === supplierId ? {...s, status: "pending"} : s))
+      );
+
+      // The modal prints using window.print(), so here we're only synchronizing the state.
+      // If the backend then returns a PDF, this is the point to open it.
+    } catch (err) {
+      console.error("Error preparing print:", err);
+    }
+  };
   // ── Exposed API ──────────────────────────────────────────────────────────────
 
   return {
@@ -307,6 +324,7 @@ export function usePurchaseOrder(orderId) {
     handleOpenQuotation,
     handleCloseQuotation,
     handleSaveQuotation,
+    handlePrint: handlePrintQuotation,
     handlePrint,
 
     // Supplier search modal
