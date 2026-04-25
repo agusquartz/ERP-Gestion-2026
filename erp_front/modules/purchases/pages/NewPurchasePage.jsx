@@ -35,7 +35,7 @@ export default function NewPurchasePage() {
         <div className="flex flex-col min-h-0">
           <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
              <PurchaseItemsTable 
-              items={mock_items} 
+              items={items} 
               onQtyChange={updateItemQty} 
               onRemove={removeItem}/>
           </div>
