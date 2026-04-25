@@ -97,7 +97,7 @@ export default function SuppliersTable({
 
                   {/* Quotation action button */}
                   <td className="px-4 py-3 text-center">
-                    {supplier.status === "generar" ? (
+                    {supplier.status === "created" ? (
                       <button 
                         onClick={() => onOpenQuotation(supplier)}
                         className={`${btn.primarySm} shadow-panel`}
@@ -116,10 +116,10 @@ export default function SuppliersTable({
 
                   {/* Status badge — empty cell for "generar" */}
                   <td className="px-4 py-3 text-center">
-                    {supplier.status === "pendiente" && (
+                    {supplier.status === "pending" && (
                       <span className={badge.pendiente}>• Pendiente</span>
                     )}
-                    {supplier.status === "listo" && (
+                    {supplier.status === "reading" && (
                       <span className={badge.listo}>• Listo</span>
                     )}
                   </td>
