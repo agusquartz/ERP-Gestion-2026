@@ -1,53 +1,56 @@
 "use client";
 
-import { TrashIcon } from "@/shared/components/Icons";
+import { TrashIcon, PackageIcon } from "@/shared/components/Icons";
 
-export function PurchaseItemsTable({ items, onQtyChange, onRemove }) {
-  const totalUnidades = items.reduce((sum, i) => sum + (Number(i.cantidad) || 0), 0);
+export function PurchaseItemsTable({ items = [], onQtyChange, onRemove }) {
+  const categoryStyles = {
+    CAMIONES: "bg-blue-100 text-blue-700",
+    AUTOS: "bg-emerald-100 text-emerald-700",
+    DEFAULT: "bg-gray-100 text-gray-700"
+  };
 
   return (
-    <div className="flex flex-1 min-h-[380px] flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
-      <div className="flex-1 min-h-0 overflow-auto">
-        <table className="w-full table-fixed border-collapse">
-          <colgroup>
-            <col className="w-9" />
-            <col className="w-[130px] transition-all" />
-            <col />
-            <col className="w-[90px]" />
-            <col className="w-[80px]" />
-            <col className="w-[80px]" />
-            <col className="w-14" />
-          </colgroup>
-
+    <div className="flex flex-col h-full bg-white">
+      {/* Contenedor con scroll: La clave es 'overflow-auto' aquí */}
+      <div className="flex-1 overflow-auto min-h-0">
+        <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-background">
-              {["#", "Código", "Descripción", "Cantidad", "Precio", "Subtotal", "Acción"].map((h) => (
-                <th key={h} className="sticky top-0 border-b border-border bg-background px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">
-                  {h}
-                </th>
-              ))}
+            {/* 'sticky top-0' mantiene la cabecera fija arriba mientras haces scroll */}
+            <tr className="sticky top-0 z-10 bg-[#f8fafc] border-b border-gray-200">
+              {/* Bajamos el padding (py-2) para que sea más fina */}
+              <th className="w-10 px-4 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">#</th>
+              <th className="w-24 px-2 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">Codigo</th>
+              <th className="px-2 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">Producto</th>
+              <th className="w-32 px-2 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">Categoria</th>
+              <th className="w-20 px-2 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">Cant</th>
+              <th className="w-24 px-2 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">Precio</th>
+              <th className="w-24 px-2 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">Sub Total</th>
+              <th className="w-16 px-2 py-2 text-center text-[11px] font-bold text-slate-500 uppercase">Accion</th>
             </tr>
           </thead>
-
-          <tbody>
-            {items.map((item, i) => (
-              <tr key={item.id} className="border-b border-gray-100">
-                <td className="px-3 py-2.5 text-sm text-foreground">{i + 1}</td>
-                <td className="px-3 py-2.5 text-sm text-foreground">{item.codigo}</td>
-                <td className="truncate px-3 py-2.5 text-sm text-foreground" title={item.descripcion}>{item.descripcion}</td>
-                <td className="px-3 py-2.5">
+          <tbody className="divide-y divide-gray-100">
+            {items.map((item, index) => (
+              <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                <td className="px-4 py-3 text-sm text-gray-400">{index + 1}</td>
+                <td className="px-2 py-3 text-sm font-medium text-gray-700">{item.codigo}</td>
+                <td className="px-2 py-3 text-sm text-gray-600 truncate">{item.descripcion}</td>
+                <td className="px-2 py-3">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase">
+                    {item.categoria}
+                  </span>
+                </td>
+                <td className="px-2 py-3">
                   <input
                     type="number"
-                    min={1}
                     value={item.cantidad}
                     onChange={(e) => onQtyChange(item.id, e.target.value)}
-                    className="w-[60px] rounded-[5px] border border-border px-2 py-1 text-center text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/15"
+                    className="w-full bg-transparent border-none text-sm text-center focus:ring-0 outline-none"
                   />
                 </td>
-                <td className="px-3 py-2.5 text-sm text-foreground">${item.precio}</td>
-                <td className="px-3 py-2.5 text-sm text-foreground">${item.subtotal}</td>
-                <td className="px-3 py-2.5">
-                  <button type="button" onClick={() => onRemove(item.id)} className="inline-flex rounded-[5px] p-1 text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive">
+                <td className="px-2 py-3 text-sm text-gray-600">${item.precio}</td>
+                <td className="px-2 py-3 text-sm font-semibold text-gray-800">${item.subtotal}</td>
+                <td className="px-2 py-3 text-center">
+                  <button onClick={() => onRemove(item.id)} className="text-gray-400 hover:text-red-500">
                     <TrashIcon />
                   </button>
                 </td>
@@ -55,10 +58,6 @@ export function PurchaseItemsTable({ items, onQtyChange, onRemove }) {
             ))}
           </tbody>
         </table>
-      </div>
-      <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-        <span>Items: {items.length}</span>
-        <span>Unidades totales: {totalUnidades}</span>
       </div>
     </div>
   );

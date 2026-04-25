@@ -16,22 +16,9 @@ export const s = {
   infoPanel: "bg-gray-50 border border-gray-200 rounded-xl p-4 mt-4 flex items-start gap-3",
   infoText: "text-[13px] text-gray-500 leading-relaxed",
 
-  // ── Header row (Proveedor) ────────────────────────────────────────────────
-  headerRow:  { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, color: "#e6e9e8"},
-  fieldLabel: { fontWeight: 600, color: "#374151", fontSize: 13 },
-  providerName: { fontWeight: 500, color: "#059669", fontSize: 14 }, // Verde para diferenciar de ventas
 
   // ── Tabla de Neumáticos ───────────────────────────────────────────────────
-
-  // Contenedor de la izquierda (Tabla + Botones)
-  mainColumn: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
-    height: "100%"
-  },
-
-  tableSection: { background: "white", borderRadius: 10, border: "1px solid #E5E7EB", flexGrow: 1, display: "flex", flexDirection: "column", overflow: 'hidden'},
+  tableSection: "flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden",
   tableWrap:    { overflowX: "auto", flexGrow: 1, minHeight: '500px' },
   table:        { width: "100%", borderCollapse: "collapse" },
   th:           { padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6B7280", borderBottom: "1px solid #E5E7EB", background: "#F9FAFB", whiteSpace: "nowrap" },
