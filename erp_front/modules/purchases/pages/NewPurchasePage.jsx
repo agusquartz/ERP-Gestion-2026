@@ -1,7 +1,7 @@
 
 "use client";
 import { useState } from "react";
-import { usePurchaseForm } from "../hooks/usePurchaseForm";
+import { usePurchaseForm } from "../hooks/NewPurchase/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 
 
@@ -16,7 +16,7 @@ import { mock_items } from "../services/mock";
 
 export default function NewPurchasePage() {
   const {
-    selectedProvider, items, subtotal, iva, total, submitError,
+    selectedProvider, items, totalItems, totalUnidades, subtotal, iva, total, submitError,
     addItem, updateItemQty, removeItem, selectProvider, reset
   } = usePurchaseForm();
 
@@ -32,7 +32,7 @@ export default function NewPurchasePage() {
 
       <div className={s.contentLayout}>
         {/* COLUMNA IZQUIERDA: Tabla y Botón Guardar */}
-        <div className="flex flex-col min-h-0">
+        <div className="flex flex-col min-h-0 h-full">
           <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
              <PurchaseItemsTable 
               items={items} 
@@ -41,7 +41,7 @@ export default function NewPurchasePage() {
           </div>
           
           {/* Botón Guardar centrado abajo como el Figma */}
-          <div className="flex justify-center py-6">
+          <div className="flex justify-start pt-4 pb-2">
             <button className="bg-[#2563eb] text-white px-12 py-2.5 rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors shadow-md">
               GUARDAR
             </button>
@@ -49,9 +49,12 @@ export default function NewPurchasePage() {
         </div>
 
         {/* COLUMNA DERECHA: Paneles de control */}
-        <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+        <div className="flex flex-col gap-4 min-h-0">
           <AddPurchaseProductPanel />
-          <PurchaseSummaryPanel />
+          <PurchaseSummaryPanel 
+            totalItems={totalItems} 
+            totalUnidades={totalUnidades} 
+            subtotal={subtotal}/>
           <PurchaseInformation />
         </div>
       </div>
