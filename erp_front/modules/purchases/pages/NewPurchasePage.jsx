@@ -9,10 +9,9 @@ import { useDisclosure } from "@/shared/hooks/useDisclosure";
 import { PurchaseItemsTable } from "../components/NewPurchases/PurchaseItemsTable"; 
 import { AddPurchaseProductPanel } from "../components/NewPurchases/AddPurchaseProductPanel.jsx";
 import { PurchaseSummaryPanel } from "../components/NewPurchases/PurchaseSummaryPanel";
-import { PurchaseActions } from "../components/NewPurchases/PurchaseActions";
 import { PurchaseInformation } from "../components/NewPurchases/PurchaseInformation";
 import { s } from "../styles/NewPurchase/NewPurchasesStyles";
-import { mock_items } from "../services/mock";
+import { PurchaseSearchModal } from "../modals/NewPurchase/PurchaseSearchModal";
 
 export default function NewPurchasePage() {
   const {
@@ -20,8 +19,8 @@ export default function NewPurchasePage() {
     addItem, updateItemQty, removeItem, selectProvider, reset
   } = usePurchaseForm();
 
-  const providerModal = useDisclosure();
-  const productModal = useDisclosure();
+
+  const productSearchModal = useDisclosure();
   const [pendingProduct, setPendingProduct] = useState(null);
 
   return (
@@ -42,15 +41,26 @@ export default function NewPurchasePage() {
           
           {/* Botón Guardar centrado abajo como el Figma */}
           <div className="flex justify-start pt-4 pb-2">
-            <button className="bg-[#2563eb] text-white px-12 py-2.5 rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors shadow-md">
-              GUARDAR
+            <button className={s.btnPrimary}>
+              Guardar
             </button>
           </div>
         </div>
 
         {/* COLUMNA DERECHA: Paneles de control */}
         <div className="flex flex-col gap-4 min-h-0">
-          <AddPurchaseProductPanel />
+          <AddPurchaseProductPanel onOpenSearch={productSearchModal.onOpen} />
+          <PurchaseSearchModal 
+          open={productSearchModal.isOpen} 
+          onClose={productSearchModal.onClose}
+          onSelect={(product) => {
+            // Adaptamos el objeto si es necesario antes de agregarlo
+            addItem({
+              ...product,
+              cantidad: 1 // Por defecto al seleccionar desde el modal
+            });
+          }}
+        />
           <PurchaseSummaryPanel 
             totalItems={totalItems} 
             totalUnidades={totalUnidades} 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import {s} from "../../styles/NewPurchase/NewPurchasesStyles"
 
 export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, onClearProduct }) {
   const [manualCode, setManualCode] = useState("");
@@ -55,10 +56,10 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
 
         {/* BOTÓN: Búsqueda Avanzada (Reemplaza al anterior botón de agregar) */}
         <button 
-          onClick={onOpenSearch} 
-          className="mt-2 w-full bg-white text-[#2563eb] border-2 border-[#2563eb] rounded-lg py-2 text-[11px] font-bold uppercase hover:bg-blue-50 transition-colors active:scale-[0.98]"
+          onClick={onOpenSearch}
+          className={s.btnOutline}
         >
-          Búsqueda Avanzada
+          BÚSQUEDA AVANZADA
         </button>
       </div>
     </div>
