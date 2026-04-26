@@ -1,31 +1,35 @@
 use std::collections::BTreeMap;
 use tokio_postgres::Row;
 
-use crate::modules::purchase_order::dto::update;
-use crate::modules::purchase_order::model::{self,
-                                            new_order_model, 
-                                            order_model};
+use crate::modules::purchase_order::{
+    dto::update,
+    model::{
+        new_order_model, 
+        order_model
+    }
+};
+
 use crate::db_config;
 
 const PURCHASE_ORDER_SELECT_BASE: &str = r#"
 SELECT 
-    po.id AS purchase_order_id,
-    po.purchase_request_id AS purchase_request_id,
-    po.created_at AS created_at,
-    s.id AS supplier_id,
-    s.name AS supplier_name,
-    st.id AS status_id,
-    st.status AS status_name,
-    p.id AS product_id,
-    p.description AS product_description,
-    p.code AS product_code,
-    pod.ordered_quantity AS ordered_quantity,
-    pod.received_quantity AS received_quantity
-    FROM purchase_orders AS po
-    INNER JOIN suppliers AS s ON po.supplier_id = s.id
-    INNER JOIN statuses AS st ON po.status_id = st.id
-    LEFT JOIN purchase_order_details AS pod ON pod.purchase_order_id = po.id
-    INNER JOIN products AS p ON pod.product_id = p.id
+po.id AS purchase_order_id,
+po.purchase_request_id AS purchase_request_id,
+po.created_at AS created_at,
+s.id AS supplier_id,
+s.name AS supplier_name,
+st.id AS status_id,
+st.status AS status_name,
+p.id AS product_id,
+p.description AS product_description,
+p.code AS product_code,
+pod.ordered_quantity AS ordered_quantity,
+pod.received_quantity AS received_quantity
+FROM purchase_orders AS po
+INNER JOIN suppliers AS s ON po.supplier_id = s.id
+INNER JOIN statuses AS st ON po.status_id = st.id
+LEFT JOIN purchase_order_details AS pod ON pod.purchase_order_id = po.id
+INNER JOIN products AS p ON pod.product_id = p.id
 "#;
 
 pub async fn query_purchase_order_by_id(id: i32) -> Result<Option<order_model::PurchaseOrderAggregate>, db_config::DbError> {
@@ -46,7 +50,7 @@ pub async fn query_orders(contains: Option<&str>) -> Result<Vec<order_model::Pur
     let client = db_config::get_client().await?;
     if let Some(q) = contains {
         let sql = format!("{} WHERE (COALESCE($1, '') = '' OR supplier_name ILIKE '%' || $1 || '%' OR status_name ILIKE '%' || $1 || '%' OR created_at ILIKE '%' || $1 || '%') ORDER BY purchase_order_id, pod.id", PURCHASE_ORDER_SELECT_BASE); 
-    
+
         let rows = client.query(&sql, &[&q]).await?;
         let aggregates = rows_to_aggregate(rows);
         return Ok(aggregates)
@@ -113,10 +117,10 @@ pub async fn store_new_order(new_order: new_order_model::NewPurchaseOrder) -> Re
         VALUES ($1, $2, $3, $4)
         RETURNING id",
         &[
-            &new_order.purchase_request_id,
-            &new_order.created_at,
-            &new_order.supplier_id,
-            &PENDING_STATUS
+        &new_order.purchase_request_id,
+        &new_order.created_at,
+        &new_order.supplier_id,
+        &PENDING_STATUS
         ],
     ).await {
         Ok(row) => row,
@@ -134,9 +138,9 @@ pub async fn store_new_order(new_order: new_order_model::NewPurchaseOrder) -> Re
             (purchase_order_id, product_id, ordered_quantity)
             VALUES ($1, $2, $3)",
             &[
-                &order_id,
-                &detail.product_id,
-                &detail.ordered_quantity,
+            &order_id,
+            &detail.product_id,
+            &detail.ordered_quantity,
             ],
         ).await?;
     }
@@ -148,14 +152,14 @@ pub async fn store_new_order(new_order: new_order_model::NewPurchaseOrder) -> Re
     aggregate
 }
 
-pub async fn patch_order(
+pub async fn patch_purchase_order(
     id: i32,
     patch: &update::PatchPurchaseOrderDto,
 ) -> Result<Option<order_model::PurchaseOrderAggregate>, db_config::DbError> {
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await?;
 
-    
+
     let exists = tx
         .query_opt("SELECT 1 FROM purchase_orders WHERE id = $1", &[&id])
         .await?;
@@ -188,7 +192,7 @@ pub async fn patch_order(
     let rows = tx.query(&sql, &[&id]).await?;
     let purchase_order = rows_to_aggregate(rows).pop()
         .expect("This should always return the purchase order");
-    
+
 
     tx.commit().await?;
     Ok(Some(purchase_order))

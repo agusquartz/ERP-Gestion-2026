@@ -10,7 +10,8 @@ use crate::modules::purchase_order::{
     }, 
     dto::{
         response::PurchaseOrderResponse,
-        create::CreatePurchaseOrderDto
+        create::CreatePurchaseOrderDto,
+        update::PatchPurchaseOrderDto
     },
     errors
 };
@@ -63,3 +64,11 @@ pub async fn create_purchase_order(dto: CreatePurchaseOrderDto) -> Result<Purcha
 
 }
 
+ 
+pub async fn patch_purchase_order(
+    id: i32,
+    patch: PatchPurchaseOrderDto,
+) -> Result<Option<PurchaseOrderResponse>, errors::ServiceError> {
+    let order = repository::patch_purchase_order(id, &patch).await?;
+    Ok(order.map(PurchaseOrderResponse::from))
+}
