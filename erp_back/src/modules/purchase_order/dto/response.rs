@@ -1,5 +1,7 @@
 use serde::{Serialize,Deserialize};
 use chrono::NaiveDate;
+use crate::modules::purchase_order::model::order_model;
+use crate::modules::purchase_order::mapper;
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -41,3 +43,8 @@ pub struct PurchaseOrderResponse {
     pub details: Vec<PurchaseOrderLineResponse>,
 }
 
+impl From<order_model::PurchaseOrderAggregate> for PurchaseOrderResponse {
+    fn from(value: order_model::PurchaseOrderAggregate) -> Self {
+        mapper::map_purchase_order(value)
+    }
+}
