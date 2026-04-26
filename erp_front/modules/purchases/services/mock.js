@@ -12,3 +12,4 @@ export const mock_items = [
     {id:11, codigo: "54321", descripcion: "Neumatico Pirelli", categoria: "Camioneta", cantidad: 2, precio: 10, subtotal: 20},
     {id:12, codigo: "12121", descripcion: "Neumatico Pirelli", categoria: "Camiones", cantidad: 2, precio: 10, subtotal: 20},
 ];
+
