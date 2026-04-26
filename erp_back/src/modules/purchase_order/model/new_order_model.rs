@@ -11,7 +11,7 @@ pub struct NewPurchaseOrder {
 
 #[derive(Debug,Clone)]
 pub struct NewPurchaseOrderLine {
-    pub product: LineProduct,
+    pub product_id: i32,
     pub ordered_quantity: i32,
 }
 
