@@ -135,7 +135,7 @@ pub async fn store_new_order(new_order: new_order_model::NewPurchaseOrder) -> Re
             VALUES ($1, $2, $3)",
             &[
                 &order_id,
-                &detail.product.id,
+                &detail.product_id,
                 &detail.ordered_quantity,
             ],
         ).await?;
@@ -148,28 +148,6 @@ pub async fn store_new_order(new_order: new_order_model::NewPurchaseOrder) -> Re
     aggregate
 }
 
-//TODO: patch purchase order
-/// Partially updates a product and optionally its taxes.
-///
-/// This operation is transactional:
-/// - Updates product fields dynamically
-/// - Replaces tax relationships if provided
-///
-/// # Behavior
-///
-/// - Only updates fields present in `PatchProductDto`
-/// - If `tax_ids` is provided, replaces all existing taxes
-/// - If product does not exist, returns `Ok(None)`
-///
-/// # Returns
-///
-/// - `Ok(Some(ProductAggregate))` → updated product
-/// - `Ok(None)` → product not found
-///
-/// # Notes
-///
-/// - Uses dynamic SQL generation for partial updates
-/// - Uses boxed parameters to support heterogeneous types
 pub async fn patch_order(
     id: i32,
     patch: &update::PatchPurchaseOrderDto,
