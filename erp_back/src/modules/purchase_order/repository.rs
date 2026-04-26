@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use tokio_postgres::Row;
 
+use crate::modules::purchase_order::dto::update;
 use crate::modules::purchase_order::model::{self,
                                             new_order_model, 
                                             order_model};
@@ -23,7 +24,7 @@ SELECT
     FROM purchase_orders AS po
     INNER JOIN suppliers AS s ON po.supplier_id = s.id
     INNER JOIN statuses AS st ON po.status_id = st.id
-    INNER JOIN purchase_order_details AS pod ON pod.purchase_order_id = po.id
+    LEFT JOIN purchase_order_details AS pod ON pod.purchase_order_id = po.id
     INNER JOIN products AS p ON pod.product_id = p.id
 "#;
 
@@ -148,3 +149,69 @@ pub async fn store_new_order(new_order: new_order_model::NewPurchaseOrder) -> Re
 }
 
 //TODO: patch purchase order
+/// Partially updates a product and optionally its taxes.
+///
+/// This operation is transactional:
+/// - Updates product fields dynamically
+/// - Replaces tax relationships if provided
+///
+/// # Behavior
+///
+/// - Only updates fields present in `PatchProductDto`
+/// - If `tax_ids` is provided, replaces all existing taxes
+/// - If product does not exist, returns `Ok(None)`
+///
+/// # Returns
+///
+/// - `Ok(Some(ProductAggregate))` → updated product
+/// - `Ok(None)` → product not found
+///
+/// # Notes
+///
+/// - Uses dynamic SQL generation for partial updates
+/// - Uses boxed parameters to support heterogeneous types
+pub async fn patch_order(
+    id: i32,
+    patch: &update::PatchPurchaseOrderDto,
+) -> Result<Option<order_model::PurchaseOrderAggregate>, db_config::DbError> {
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await?;
+
+    
+    let exists = tx
+        .query_opt("SELECT 1 FROM purchase_orders WHERE id = $1", &[&id])
+        .await?;
+
+    if exists.is_none() {
+        //implicit rollback here
+        return Ok(None);
+    }
+
+    //Our update dto will always have at least one detail it's updating. And it is the first thing
+    //it should update. So:
+    for d in &patch.details{
+        let sql = "UPDATE purchase_order_details SET received_quantity = $1 WHERE purchase_order_id = $2 AND product_id = $3";
+        let affected = tx.execute(sql, &[&d.received_quantity, &id, &d.product_id])
+            .await?;
+
+        if affected == 0 {
+            //implicit rollback here
+            return Ok(None);
+        }
+    }
+
+    //Finally, we check if we must update the status too
+    if let Some(status_id) = &patch.status_id {
+        tx.execute("UPDATE purchase_orders SET status_id = $1 WHERE id = $2", &[&status_id, &id])
+            .await?;
+    }
+
+    let sql = format!("{} WHERE po.id = $1 ORDER BY po.id, pod.id", PURCHASE_ORDER_SELECT_BASE);
+    let rows = tx.query(&sql, &[&id]).await?;
+    let purchase_order = rows_to_aggregate(rows).pop()
+        .expect("This should always return the purchase order");
+    
+
+    tx.commit().await?;
+    Ok(Some(purchase_order))
+}

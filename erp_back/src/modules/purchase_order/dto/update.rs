@@ -2,16 +2,16 @@ use serde::{Serialize,Deserialize};
 
 #[derive(Debug,Clone,Serialize,Deserialize,Default)]
 #[serde(rename_all = "camelCase")]
-struct PatchPurchaseOrderDto {
-    order_id: i32,
-    status_id: Option<u8>,
-    details: Vec<PatchPurchaseOrderLineDto>,
+pub struct PatchPurchaseOrderDto {
+    pub order_id: i32,
+    pub status_id: Option<i8>,
+    pub details: Vec<PatchPurchaseOrderLineDto>,
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize,Default)]
 #[serde(rename_all = "camelCase")]
-struct PatchPurchaseOrderLineDto {
-    product_id: i32,
-    received_quantity: i32,
+pub struct PatchPurchaseOrderLineDto {
+    pub product_id: i32,
+    pub received_quantity: i32,
 }
 
