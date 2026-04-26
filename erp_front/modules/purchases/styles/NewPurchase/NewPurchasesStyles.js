@@ -3,53 +3,42 @@
 
 export const s = {
   // ── Página ────────────────────────────────────────────────────────────────
-  container: "h-screen flex flex-col bg-[#f3f4f6] p-6 overflow-hidden",
+  container: "h-screen w-full overflow-hidden bg-[#f1f5f9] flex flex-col p-6",
   titleSection: "mb-4",
-  pageTitle: "text-3xl font-bold text-[#1e293b]",
-  contentLayout: "grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 flex-1 min-h-0",
+  pageTitle: "text-2xl font-bold text-[#1e293b]", // Ajustado a 2xl como el Figma
+  contentLayout: "grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 flex-1 min-h-0 overflow-hidden h-full",
   
-  
-  errorBanner:   { background: "#FEE2E2", border: "1px solid #FECACA", color: "#B91C1C", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 13 },
-  divider:       { borderBottom: "1px solid #E5E7EB", marginTop: "4px", marginBottom: "12px"},
-
-  // Nuevo estilo para el panel de información (Figma inferior derecha)
-  infoPanel: "bg-gray-50 border border-gray-200 rounded-xl p-4 mt-4 flex items-start gap-3",
-  infoText: "text-[13px] text-gray-500 leading-relaxed",
-
-
   // ── Tabla de Neumáticos ───────────────────────────────────────────────────
-  tableSection: "flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden",
-  tableWrap:    { overflowX: "auto", flexGrow: 1, minHeight: '500px' },
-  table:        { width: "100%", borderCollapse: "collapse" },
-  th:           { padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6B7280", borderBottom: "1px solid #E5E7EB", background: "#F9FAFB", whiteSpace: "nowrap" },
-  tr:           { borderBottom: "1px solid #F3F4F6" },
-  td:           { padding: "10px 12px", fontSize: 13, color: "#374151" },
-  qtyInput:     { width: 60, padding: "4px 8px", border: "1px solid #D1D5DB", borderRadius: 6, fontSize: 13, textAlign: "center", outline: "none" },
-  tableFooter:  { display: "flex", justifyContent: "space-between", padding: "10px 14px", fontSize: 12, color: "#9CA3AF", borderTop: "1px solid #E5E7EB" },
-
-  // ── Acciones Inferiores ───────────────────────────────────────────────────
-  actions:       { display: "flex", gap: 10, padding: "20px 0", borderTop: "1px solid #E5E7EB", alignItems: "center", marginTop: "auto", justifyContent: "space-between"},
-  btnCancel:     { background: "white", color: "#EF4444", border: "2px solid #EF4444", borderRadius: 5, padding: "9px 20px", cursor: "pointer", fontSize: 13, fontWeight: 600, minWidth: 200 },
-  btnOrder:      { background: "white", color: "#374151", border: "2px solid #D1D5DB", borderRadius: 5, padding: "9px 20px", cursor: "pointer", fontSize: 13, fontWeight: 600, minWidth: 240 },
-  btnRegister:   { background: "#059669", color: "white", border: "none", borderRadius: 5, padding: "9px 20px", cursor: "pointer", fontSize: 13, fontWeight: 600, minWidth: 260 },
-  btnRemove:     { background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", padding: 4, borderRadius: 5, display: "flex", alignItems: "center" },
+  tableSection: "flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col",
+  tableWrap: "flex-1 overflow-auto min-h-0", // Cambiado a clase Tailwind para control de scroll
+  table: "w-full border-collapse",
+  // Encabezado fino y grisáceo
+  th: "sticky top-0 z-10 bg-[#f8fafc] px-4 py-2 text-left text-[11px] font-bold text-slate-500 uppercase border-b border-gray-100",
+  tr: "hover:bg-gray-50/50 transition-colors border-b border-gray-50",
+  td: "px-4 py-3 text-sm text-gray-600",
+  // Cantidad sin bordes para que parezca texto
+  qtyInput: "w-full bg-transparent border-none text-sm text-center focus:ring-0 outline-none",
 
   // ── Panel lateral (Add Product / Summary) ─────────────────────────────────
-  panelCard:      { background: "white", borderRadius: 10, border: "1px solid #E5E7EB", padding: 14 },
-  panelTitle:     { fontSize: 11, fontWeight: 700, color: "#6B7280", letterSpacing: 0.5, marginBottom: 10 },
-  summaryRow:     { display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 13, color: "#374151" },
-  summaryDivider: { borderTop: "1px solid #E5E7EB", marginTop: 8, paddingTop: 8, fontWeight: 700, fontSize: 16, color: "#059669" },
+  // Agregamos el borde azul izquierdo aquí
+  panelCard: "bg-white rounded-xl border border-gray-200 border-l-[4px] border-l-[#2563eb] p-5 shadow-sm",
+  panelTitle: "text-[12px] font-bold text-gray-500 tracking-wider mb-5 uppercase",
+  
+  // Resumen de totales
+  summaryRow: "flex justify-between items-center text-[13px] text-gray-500 mb-3",
+  summaryValue: "font-semibold text-gray-700",
+  // Total en Negro y grande
+  summaryTotal: "flex justify-between items-end mt-4 pt-4 border-t border-gray-100 text-gray-900",
 
-  // ── Formulario e Inputs ───────────────────────────────────────────────────
-  label:      { display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4, marginTop: 6 },
-  input:      { width: "100%", padding: "7px 10px", border: "1px solid #D1D5DB", borderRadius: 6, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" },
-  inputError: { borderColor: "#EF4444" },
-  errorMsg:   { fontSize: 11, color: "#EF4444", display: "block", marginTop: 2 },
+  // ── Inputs del Panel de Búsqueda ──────────────────────────────────────────
+  label: "block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1",
+  input: "w-full bg-[#e2e8f0]/50 border-none rounded-lg px-3 py-2.5 text-sm placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-blue-100 transition-all",
 
-  // ── Botones comunes de Compras ──────────────────────────────────────────
-  btnPrimary:       { background: "#059669", color: "white", border: "none", borderRadius: 7, padding: "9px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600 },
-  btnSecondary:     { background: "white", color: "#374151", border: "1px solid #D1D5DB", borderRadius: 6, padding: "7px 14px", cursor: "pointer", fontSize: 13 },
-  btnSearchCode:    { background: "#059669", color: "white", border: "none", borderRadius: 6, width: 34, height: 34, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  btnBuscarProv:    { background: "#059669", color: "white", border: "none", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: 13, fontWeight: 500 },
-  btnSearch:        { background: "#059669", color: "white", border: "none", borderRadius: 6, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, flexShrink: 0 },
+  // ── Botones ───────────────────────────────────────────────────────────────
+  btnPrimary: "bg-[#2563eb] text-white px-12 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-all shadow-md active:scale-95",
+  // Botón Búsqueda Avanzada (Borde azul)
+  btnOutline: "w-full bg-white text-[#2563eb] border-2 border-[#2563eb] rounded-lg py-2 text-[11px] font-bold uppercase hover:bg-blue-50 transition-colors",
+  
+  infoPanel: "bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-3",
+  infoText: "text-[12px] text-slate-500 leading-relaxed",
 };
