@@ -27,7 +27,6 @@ export default function NewSalePage() {
     selectedClient,
     items,
     subtotal,
-    iva,
     total,
     submitError,
     seller,
@@ -104,7 +103,7 @@ export default function NewSalePage() {
             onClearProduct={() => setPendingProduct(null)}
           />
 
-          <SaleSummaryPanel subtotal={subtotal} iva={iva} total={total} />
+          <SaleSummaryPanel subtotal={subtotal} total={total} />
         </div>
       </div>
 
@@ -131,7 +130,6 @@ export default function NewSalePage() {
         type={confirmType}
         client={selectedClient}
         subtotal={subtotal}
-        iva={iva}
         total={total}
       />
     </div>
