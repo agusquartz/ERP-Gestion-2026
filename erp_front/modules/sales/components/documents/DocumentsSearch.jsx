@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDownIcon } from "@/shared/components/Icons";
 
-export function DocumentsSearch({ onSearch }) {
+export function DocumentsSearch({ onSearch,activeTab }) {
   const [query, setQuery] = useState("");
   const [filterTotal, setFilterTotal] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -52,38 +52,38 @@ export function DocumentsSearch({ onSearch }) {
           />
         </div>
 
-   
-        <div className="relative">
-          <button
-            type="button"
-            className="flex min-w-[150px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-            onClick={() => {setShowStatusDrop(!showStatusDrop); setShowDateDrop(false); }}
-          >
-            <span>{statusFilter || "Estado"}</span>
-            <ChevronDownIcon className={`w-4 h-4 transition-transform ${showStatusDrop ? 'rotate-180' : ''}`} />
-          </button>
+        {activeTab == "Presupuesto" &&
+          <div className="relative">
+            <button
+              type="button"
+              className="flex min-w-[150px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+              onClick={() => {setShowStatusDrop(!showStatusDrop); setShowDateDrop(false); }}
+            >
+              <span>{statusFilter || "Estado"}</span>
+              <ChevronDownIcon className={`w-4 h-4 transition-transform ${showStatusDrop ? 'rotate-180' : ''}`} />
+            </button>
 
-          {showStatusDrop && (
-            <div className="absolute z-20 mt-2 w-full rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
-              <button
-                className="w-full rounded-md px-3 py-2 text-left text-[14px] text-slate-600 hover:bg-slate-50 transition-colors"
-                onClick={() => { setStatusFilter(""); setShowStatusDrop(false); }}
-              >
-                Todas
-              </button>
-              {status.map((c) => (
+            {showStatusDrop && (
+              <div className="absolute z-20 mt-2 w-full rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
                 <button
-                  key={c}
-                  className="w-full rounded-md px-3 py-2 text-left text-[14px] font-medium text-slate-700 hover:bg-[#f0f7ff] hover:text-[#2b6df5] transition-colors"
-                  onClick={() => { setStatusFilter(c); setShowStatusDrop(false); }}
+                  className="w-full rounded-md px-3 py-2 text-left text-[14px] text-slate-600 hover:bg-slate-50 transition-colors"
+                  onClick={() => { setStatusFilter(""); setShowStatusDrop(false); }}
                 >
-                  {c}
+                  Todas
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
-
+                {status.map((c) => (
+                  <button
+                    key={c}
+                    className="w-full rounded-md px-3 py-2 text-left text-[14px] font-medium text-slate-700 hover:bg-[#f0f7ff] hover:text-[#2b6df5] transition-colors"
+                    onClick={() => { setStatusFilter(c); setShowStatusDrop(false); }}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        }
  
         <div className="relative">
           <button
