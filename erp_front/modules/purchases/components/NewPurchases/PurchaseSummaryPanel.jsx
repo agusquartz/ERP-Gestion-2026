@@ -12,19 +12,19 @@ export function PurchaseSummaryPanel({ totalItems = 0, totalUnidades = 0, subtot
         {/* Cantidad de Items */}
         <div className="flex justify-between items-center">
           <span className="text-[13px] text-gray-500">Cantidad de Items</span>
-          <span className="text-[13px] font-semibold text-gray-700">{totalItems} items</span>
+          <span className={s.summaryRow}>{totalItems} items</span>
         </div>
 
         {/* Cantidad Total de Productos */}
         <div className="flex justify-between items-center border-b border-gray-50 pb-3">
           <span className="text-[13px] text-gray-500">Cantidad total</span>
-          <span className="text-[13px] font-semibold text-gray-700">{totalUnidades} artículos</span>
+          <span className={s.summaryRow}>{totalUnidades} artículos</span>
         </div>
 
         {/* TOTAL FINAL */}
         <div className="flex justify-between items-end mt-2">
           <span className="text-sm font-bold text-gray-900 uppercase">Total</span>
-          <span className="text-2xl font-black text-gray-900">
+          <span className={s.summaryValue}>
             $ {totalFinal.toLocaleString()}
           </span>
         </div>

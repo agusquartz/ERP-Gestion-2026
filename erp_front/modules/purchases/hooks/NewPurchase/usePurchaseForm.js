@@ -5,10 +5,10 @@ import { mock_items } from "../../services/mock";
 
 /**
  * Hook para la creación de pedidos de compra.
- * Gestiona ítems, cantidades y totales para su posterior revisión.
+ * Gestiona ítems, cantidades y totales para posterior revisión.
  */
 export function usePurchaseForm() {
- // Estado para los ítems (inicializado con tu mock para desarrollo) 
+ // Estado para los ítems (inicializado con mock para pruebas) 
   const [items, setItems] = useState(mock_items);
   const [submitError, setSubmitError] = useState("");
 

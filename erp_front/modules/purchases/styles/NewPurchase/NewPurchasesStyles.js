@@ -35,7 +35,7 @@ export const s = {
   input: "w-full bg-[#e2e8f0]/50 border-none rounded-lg px-3 py-2.5 text-sm placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-blue-100 transition-all",
 
   // ── Botones ───────────────────────────────────────────────────────────────
-  btnPrimary: "bg-[#2563eb] text-white px-12 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-all shadow-md active:scale-95",
+  btnPrimary: "cursor-pointer min-w-[260px] rounded-[5px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:bg-primary-hover active:translate-y-px",
   // Botón Búsqueda Avanzada (Borde azul)
   btnOutline: "w-full bg-white text-[#2563eb] border-2 border-[#2563eb] rounded-lg py-2 text-[11px] font-bold uppercase hover:bg-blue-50 transition-colors",
   

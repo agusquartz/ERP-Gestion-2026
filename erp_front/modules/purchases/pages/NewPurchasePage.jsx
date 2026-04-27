@@ -15,7 +15,7 @@ import { PurchaseSearchModal } from "../modals/NewPurchase/PurchaseSearchModal";
 
 export default function NewPurchasePage() {
   const {
-    items, totalItems, totalUnidades, subtotal, iva, total, submitError,
+    items, totalItems, totalUnidades, subtotal, submitError,
     addItem, updateItemQty, removeItem, reset
   } = usePurchaseForm();
 
@@ -40,8 +40,8 @@ export default function NewPurchasePage() {
               onRemove={removeItem}/>
           </div>
           
-          {/* Botón Guardar centrado abajo como el Figma */}
-          <div className="flex justify-start pt-4 pb-2">
+          {/* Botón Guardar */}
+          <div className="flex justify-end pt-4 pb-2">
             <button className={s.btnPrimary}>
               Guardar
             </button>
