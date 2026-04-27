@@ -16,6 +16,7 @@ export function ActionButton({onClick, variant = "secondary" ,type,  className =
   const buttonText = {
     "Presupuesto" : "Crear Factura",
     "Facturas" : "Crear Nota de Credito",
+    "guardar" : "Guardar"
   }
   return (
     <button
