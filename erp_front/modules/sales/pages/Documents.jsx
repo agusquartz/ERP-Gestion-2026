@@ -139,6 +139,7 @@ const selectedInvoice = documents.find(doc => doc.id === selectedId);
         isOpen={!!viewingInvoice} 
         onClose={() => setViewingInvoice(null)} 
         invoice={viewingInvoice}
+        onCreateCreditNote={ () => setIsCreatingCreditNote(true)}
       />
 
 
