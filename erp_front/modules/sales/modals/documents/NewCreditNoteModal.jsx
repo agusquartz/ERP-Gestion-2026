@@ -19,9 +19,15 @@ export function NewCreditNoteModal({ isOpen, onClose, invoiceNumber, items}) {
       <div className="w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-white rounded-[15px] shadow-2xl">
         
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800">Nueva Nota de Crédito</h2>
-            <p className="text-sm text-slate-500">Factura seleccionada: ID #{invoiceNumber}</p>
+          <div className="flex justify-between items-baseline w-full" >
+
+                <h2 className="text-2xl font-bold text-slate-800 ml-5">
+                    Nueva Nota de Crédito
+                  
+                </h2>
+                <h2 className="text-2xl font-bold text-slate-800 mr-10">
+                    Factura #{invoiceNumber}
+                </h2>
           </div>
           <button 
             onClick={onClose}
