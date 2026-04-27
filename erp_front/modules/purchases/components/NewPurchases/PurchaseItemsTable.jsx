@@ -6,13 +6,13 @@ export function PurchaseItemsTable({ items = [], onQtyChange, onRemove }) {
   
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Contenedor con scroll: La clave es 'overflow-auto' aquí */}
+      {/* Contenedor con scroll: 'overflow-auto' aquí */}
       <div className="flex-1 overflow-auto min-h-0">
         <table className="w-full border-collapse">
           <thead>
-            {/* 'sticky top-0' mantiene la cabecera fija arriba mientras haces scroll */}
+            
             <tr className="sticky top-0 z-10 bg-[#f8fafc] border-b border-gray-200">
-              {/* Bajamos el padding (py-2) para que sea más fina */}
+              
               <th className="w-10 px-4 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">#</th>
               <th className="w-24 px-2 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">Codigo</th>
               <th className="px-2 py-2 text-left text-[11px] font-bold text-slate-500 uppercase">Producto</th>

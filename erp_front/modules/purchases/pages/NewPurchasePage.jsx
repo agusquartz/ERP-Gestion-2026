@@ -12,6 +12,7 @@ import { PurchaseSummaryPanel } from "../components/NewPurchases/PurchaseSummary
 import { PurchaseInformation } from "../components/NewPurchases/PurchaseInformation";
 import { s } from "../styles/NewPurchase/NewPurchasesStyles";
 import { PurchaseSearchModal } from "../modals/NewPurchase/PurchaseSearchModal";
+import { PurchaseActions } from "../components/NewPurchases/PurchaseActions";
 
 export default function NewPurchasePage() {
   const {
@@ -41,12 +42,8 @@ export default function NewPurchasePage() {
           </div>
           
           {/* Botón Guardar */}
-          <div className="flex justify-end pt-4 pb-2">
-            <button className={s.btnPrimary}>
-              Guardar
-            </button>
-          </div>
-        </div>
+          <PurchaseActions/>
+      </div>
 
         {/* COLUMNA DERECHA: Paneles de control */}
         <div className="flex flex-col gap-4 min-h-0">
