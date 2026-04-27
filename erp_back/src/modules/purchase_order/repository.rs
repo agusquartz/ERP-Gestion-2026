@@ -11,6 +11,23 @@ use crate::modules::purchase_order::{
 
 use crate::db_config;
 
+/// Base SQL query used to fetch purchase orders with all required joins.
+///
+/// This query enforces the domain invariant that a purchase order must
+/// have at least one detail:
+/// - All joins are `INNER JOIN`, meaning orders without details will not be returned
+///
+/// Joined tables:
+/// - `purchase_orders` (header)
+/// - `suppliers`
+/// - `statuses`
+/// - `purchase_order_details` (line items)
+/// - `products`
+///
+/// Design implications:
+/// - Guarantees that every returned row contains a valid line item
+/// - Eliminates the need for NULL handling in aggregation logic
+/// - Aligns database behavior with domain rule: "orders always have details"
 const PURCHASE_ORDER_SELECT_BASE: &str = r#"
 SELECT 
 po.id AS purchase_order_id,
@@ -28,10 +45,23 @@ pod.received_quantity AS received_quantity
 FROM purchase_orders AS po
 INNER JOIN suppliers AS s ON po.supplier_id = s.id
 INNER JOIN statuses AS st ON po.status_id = st.id
-LEFT JOIN purchase_order_details AS pod ON pod.purchase_order_id = po.id
+INNER JOIN purchase_order_details AS pod ON pod.purchase_order_id = po.id
 INNER JOIN products AS p ON pod.product_id = p.id
 "#;
 
+/// Retrieves a single purchase order aggregate by its identifier.
+///
+/// Returns:
+/// - `Ok(Some(...))` if the order exists
+/// - `Ok(None)` if no matching order exists
+///
+/// Behavior:
+/// - Executes a joined query and reconstructs the aggregate via `rows_to_aggregate`
+/// - Due to INNER JOINs, only orders with at least one detail are returned
+///
+/// Invariant:
+/// - If an order exists in the database, it must have at least one detail
+///   for this function to return it
 pub async fn query_purchase_order_by_id(id: i32) -> Result<Option<order_model::PurchaseOrderAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
@@ -46,6 +76,22 @@ pub async fn query_purchase_order_by_id(id: i32) -> Result<Option<order_model::P
     Ok(orders.into_iter().next())
 }
 
+/// Retrieves multiple purchase orders, optionally filtered by a search term.
+///
+/// Parameters:
+/// - `contains`: optional substring used to filter results
+///
+/// Behavior:
+/// - If provided, filters by supplier name, status, or creation date
+/// - Otherwise returns all purchase orders
+///
+/// Notes:
+/// - Filtering is case-insensitive (`ILIKE`)
+/// - `created_at` is compared as text, which may impact performance
+/// - Results are ordered to support correct aggregation
+///
+/// Invariant:
+/// - Only orders with at least one detail are returned
 pub async fn query_orders(contains: Option<&str>) -> Result<Vec<order_model::PurchaseOrderAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
     if let Some(q) = contains {
@@ -60,6 +106,23 @@ pub async fn query_orders(contains: Option<&str>) -> Result<Vec<order_model::Pur
     Ok(rows_to_aggregate(rows))
 }
 
+/// Transforms a flat list of database rows into purchase order aggregates.
+///
+/// Responsibilities:
+/// - Groups rows by `purchase_order_id`
+/// - Reconstructs hierarchical domain structures from denormalized results
+///
+/// Algorithm:
+/// - Uses a `BTreeMap` keyed by order ID
+/// - Initializes an aggregate on first encounter
+/// - Appends line items for each subsequent row
+///
+/// Assumptions:
+/// - Every row represents a valid line item (guaranteed by INNER JOINs)
+/// - No NULL handling is required
+///
+/// Complexity:
+/// - O(n) over number of rows
 fn rows_to_aggregate(rows: Vec<Row>) -> Vec<order_model::PurchaseOrderAggregate> {
     let mut map: BTreeMap<i32, order_model::PurchaseOrderAggregate> = BTreeMap::new();
 
@@ -105,6 +168,26 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<order_model::PurchaseOrderAggregate>
     map.into_values().collect()
 }
 
+/// Persists a new purchase order and its associated line items.
+///
+/// Behavior:
+/// - Inserts the purchase order with a default "pending" status
+/// - Inserts all associated line items
+/// - Commits the transaction
+/// - Re-fetches the aggregate to return a complete domain object
+///
+/// Guarantees:
+/// - Atomic operation (all-or-nothing)
+/// - Returned aggregate reflects committed state
+///
+/// Invariants:
+/// - A purchase order must have at least one detail
+/// - `PENDING_STATUS` must be a valid status ID
+///
+/// Failure modes:
+/// - Any database error aborts the transaction
+/// - If the inserted order cannot be retrieved after commit,
+///   an invariant violation is raised
 pub async fn store_new_order(new_order: new_order_model::NewPurchaseOrder) -> Result<order_model::PurchaseOrderAggregate, db_config::DbError> {
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await?;
@@ -152,6 +235,25 @@ pub async fn store_new_order(new_order: new_order_model::NewPurchaseOrder) -> Re
     aggregate
 }
 
+/// Applies a partial update to a purchase order.
+///
+/// Behavior:
+/// - Verifies purchase order existence
+/// - Updates received quantities for specified line items
+/// - Optionally updates order status
+/// - Returns updated aggregate
+///
+/// Semantics:
+/// - All updates occur within a single transaction
+/// - If any detail update fails (no rows affected), the operation aborts
+///
+/// Returns:
+/// - `Ok(Some(...))` on success
+/// - `Ok(None)` if order does not exist or a detail is invalid
+///
+/// Invariants:
+/// - Purchase order must have at least one detail
+/// - All referenced details must already exist
 pub async fn patch_purchase_order(
     id: i32,
     patch: &update::PatchPurchaseOrderDto,
