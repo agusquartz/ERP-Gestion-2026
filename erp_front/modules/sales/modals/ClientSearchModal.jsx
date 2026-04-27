@@ -53,14 +53,14 @@ export function ClientSearchModal({
 
     setFiltered(
       clientsList.filter((c) => {
-        const nombre = (c?.nombre ?? "").toLowerCase();
-        const apellido = (c?.apellido ?? "").toLowerCase();
-        const ruc = (c?.ruc ?? "").toString();
+        const name = (c?.name ?? "").toLowerCase();
+        const surname = (c?.surname ?? "").toLowerCase();
+        const document = (c?.document ?? "").toString();
 
         return (
-          nombre.includes(q) ||
-          apellido.includes(q) ||
-          ruc.includes(q)
+          name.includes(q) ||
+          surname.includes(q) ||
+          document.includes(q)
         );
       })
     );
@@ -102,7 +102,7 @@ export function ClientSearchModal({
 
   return (
     <>
-      <Modal open={open} onClose={onClose} width={700}>
+      <Modal open={open} onClose={onClose} width="70%">
         <div className="flex items-center gap-3 mb-4">
           <h2 className="m-0 text-lg font-semibold text-foreground">
             Clientes
@@ -111,7 +111,7 @@ export function ClientSearchModal({
           <button
             type="button"
             onClick={newClientModal.open}
-            className="inline-flex h-9 items-center gap-2 rounded-[5px] border border-primary bg-primary px-3 text-sm font-medium text-white transition-all duration-200 hover:bg-primary-hover active:translate-y-px"
+            className="inline-flex cursor-pointer h-9 items-center gap-2 rounded-[5px] border border-primary bg-primary px-3 text-sm font-medium text-white transition-all duration-200 hover:bg-primary-hover active:translate-y-px"
           >
             <PlusIcon />
             Nuevo cliente
@@ -126,7 +126,7 @@ export function ClientSearchModal({
           <input
             ref={inputRef}
             className="h-10 flex-1 rounded-[5px] border border-border bg-background px-3 text-sm text-foreground outline-none transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/15"
-            placeholder="Buscar cliente: nombre, apellido o ruc..."
+            placeholder="Buscar cliente: nombre, apellido o documento..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -134,7 +134,7 @@ export function ClientSearchModal({
 
           <button
             type="button"
-            className="h-10 rounded-[5px] border border-primary px-4 text-sm font-semibold text-primary transition-all duration-200 hover:bg-primary/5 active:translate-y-px"
+            className="h-10 cursor-pointer rounded-[5px] border border-primary px-4 text-sm font-semibold text-primary transition-all duration-200 hover:bg-primary/5 active:translate-y-px"
           >
             Buscar
           </button>
@@ -172,11 +172,11 @@ export function ClientSearchModal({
                     onClick={() => setActiveRow(i)}
                     onDoubleClick={() => handleSelect(c)}
                   >
-                    <td className="px-3 py-3 text-sm text-foreground">{c.nombre}</td>
-                    <td className="px-3 py-3 text-sm text-foreground">{c.apellido}</td>
-                    <td className="px-3 py-3 text-sm text-foreground">{c.ruc}</td>
-                    <td className="px-3 py-3 text-sm text-foreground">{c.ciudad}</td>
-                    <td className="px-3 py-3 text-sm text-foreground">{c.telefono}</td>
+                    <td className="px-3 py-3 text-sm text-foreground">{c.name}</td>
+                    <td className="px-3 py-3 text-sm text-foreground">{c.surname}</td>
+                    <td className="px-3 py-3 text-sm text-foreground">{c.document}</td>
+                    <td className="px-3 py-3 text-sm text-foreground">{c.address || "—"}</td>
+                    <td className="px-3 py-3 text-sm text-foreground">{c.phones?.[0]?.phoneNumber || "—"}</td>
                     <td className="px-3 py-3 text-sm text-primary">
                       {c.email || "—"}
                     </td>
@@ -187,7 +187,7 @@ export function ClientSearchModal({
                           e.stopPropagation();
                           handleEdit(c);
                         }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] border border-border text-muted-foreground transition-all duration-200 hover:border-primary hover:text-primary hover:bg-primary/5 active:translate-y-px"
+                        className="inline-flex cursor-pointer h-8 w-8 items-center justify-center rounded-[5px] border border-border text-muted-foreground transition-all duration-200 hover:border-primary hover:text-primary hover:bg-primary/5 active:translate-y-px"
                         title="Editar cliente"
                       >
                         <EditIcon />
