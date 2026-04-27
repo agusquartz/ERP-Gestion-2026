@@ -100,7 +100,7 @@ const selectedInvoice = documents.find(doc => doc.id === selectedId);
         }}
 />
 
-      <DocumentsSearch activeTab={activeTab} setActiveTab={setActiveTab}/>
+      <DocumentsSearch activeTab={activeTab} />
       <DocumentsTable
         type= {activeTab}
         documents={filteredDocuments}
