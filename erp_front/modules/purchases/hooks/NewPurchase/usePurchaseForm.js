@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { mock_items } from "../../services/mock";
+import { mock_items } from "../../services/NewPurchase/mock";
 
 
 /**
