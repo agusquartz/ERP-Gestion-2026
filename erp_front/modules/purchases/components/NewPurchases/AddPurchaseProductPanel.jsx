@@ -50,7 +50,7 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 border-l-[4px] border-l-[#2563eb] p-5 shadow-sm">
-      {/* TÍTULO: Actualizado según Figma */}
+      {/* TÍTULO */}
       <h3 className="text-[12px] font-bold text-gray-500 tracking-wider mb-5 uppercase">
         Buscar Productos
       </h3>
@@ -73,7 +73,7 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
           />
         </div>
 
-        {/* INPUT: Cantidad (Precio eliminado según pedido) */}
+        {/* INPUT: Cantidad */}
         <div>
           <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">
             Cantidad
@@ -88,7 +88,7 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
           />
         </div>
 
-        {/* BOTÓN: Búsqueda Avanzada (Reemplaza al anterior botón de agregar) */}
+        {/* BOTÓN: Búsqueda Avanzada */}
         <button 
           onClick={onOpenSearch}
           className={s.btnOutline}
