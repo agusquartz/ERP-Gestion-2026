@@ -15,12 +15,13 @@ import { PurchaseSearchModal } from "../modals/NewPurchase/PurchaseSearchModal";
 
 export default function NewPurchasePage() {
   const {
-    selectedProvider, items, totalItems, totalUnidades, subtotal, iva, total, submitError,
-    addItem, updateItemQty, removeItem, selectProvider, reset
+    items, totalItems, totalUnidades, subtotal, iva, total, submitError,
+    addItem, updateItemQty, removeItem, reset
   } = usePurchaseForm();
 
 
   const productSearchModal = useDisclosure();
+  console.log("Estado del modal:", productSearchModal.isOpen);
   const [pendingProduct, setPendingProduct] = useState(null);
 
   return (
@@ -49,18 +50,22 @@ export default function NewPurchasePage() {
 
         {/* COLUMNA DERECHA: Paneles de control */}
         <div className="flex flex-col gap-4 min-h-0">
-          <AddPurchaseProductPanel onOpenSearch={productSearchModal.onOpen} />
+          <AddPurchaseProductPanel 
+            onOpenSearch={productSearchModal.open} 
+            onAdd={addItem}
+            selectedProduct={null} 
+            onClearProduct={() => {}}/>
           <PurchaseSearchModal 
-          open={productSearchModal.isOpen} 
-          onClose={productSearchModal.onClose}
-          onSelect={(product) => {
-            // Adaptamos el objeto si es necesario antes de agregarlo
-            addItem({
-              ...product,
-              cantidad: 1 // Por defecto al seleccionar desde el modal
-            });
-          }}
-        />
+            open={productSearchModal.isOpen} 
+            onClose={productSearchModal.close}
+            onSelect={(product) => {
+              // Adaptamos el objeto si es necesario antes de agregarlo
+              addItem({
+                ...product,
+                cantidad: 1 // Por defecto al seleccionar desde el modal
+              });
+            }}
+          />
           <PurchaseSummaryPanel 
             totalItems={totalItems} 
             totalUnidades={totalUnidades} 

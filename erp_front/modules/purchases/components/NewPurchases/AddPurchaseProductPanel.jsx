@@ -16,6 +16,38 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
     onClearProduct?.();
   };
 
+  // Esta es la función centralizada para agregar
+  const submitAddition = () => {
+    const codeToUse = selectedProduct?.codigo || manualCode;
+    
+    if (!codeToUse.trim()) return;
+
+    // Llamamos a onAdd pasándole el producto y la cantidad
+    onAdd(selectedProduct || { codigo: manualCode, descripcion: "Producto Manual", precio: 0 }, qty);
+    
+    // Limpiamos los estados locales
+    setManualCode("");
+    setQty(1);
+    onClearProduct?.();
+  };
+
+  const handleKeyDown = (e) => {
+  if (e.key === "Enter") {
+    // Evitamos enviar si el código está vacío
+    if (!manualCode.trim() && !selectedProduct) return;
+    
+    onAdd(selectedProduct || { 
+      codigo: manualCode, 
+      descripcion: "Producto Manual", 
+      precio: 0 
+    }, qty);
+
+    // Limpiamos para el siguiente ingreso
+    setManualCode("");
+    setQty(1);
+  }
+};
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 border-l-[4px] border-l-[#2563eb] p-5 shadow-sm">
       {/* TÍTULO: Actualizado según Figma */}
@@ -31,8 +63,9 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
           </label>
           <input
             className="w-full bg-[#e2e8f0]/50 border-none rounded-lg px-3 py-2.5 text-sm placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-blue-100 transition-all"
-            placeholder="Escanea producto.."
+            placeholder="Escanea el producto.."
             value={selectedProduct?.codigo ?? manualCode}
+            onKeyDown={handleKeyDown} // ← Detectar Enter aquí
             onChange={(e) => { 
               setManualCode(e.target.value); 
               onClearProduct?.(); 
@@ -50,6 +83,7 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
             className="w-full bg-[#e2e8f0]/50 border-none rounded-lg px-3 py-2.5 text-sm placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-blue-100 transition-all" 
             placeholder="2..."
             value={qty} 
+            onKeyDown={handleKeyDown} // ← Detectar Enter aquí también
             onChange={(e) => setQty(Number(e.target.value))} 
           />
         </div>

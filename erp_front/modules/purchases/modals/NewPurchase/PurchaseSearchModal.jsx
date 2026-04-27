@@ -4,10 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Modal } from "@/shared/components/Modal";
 import { ChevronDownIcon } from "@/shared/components/Icons";
 // Importamos el servicio específico de compras (o el genérico de productos)
-//import { getProductByQuery } from "../services/purchaseService";
-
-//con mock
-import { mock_items } from "../../services/mock";
+import { getProductByQuery } from "../../services/PurchaseService";
 
 /**
  * Modal adaptado para la búsqueda de neumáticos y productos en Compras.
@@ -22,10 +19,6 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
   const [showCatDrop, setShowCatDrop] = useState(false);
   const inputRef = useRef(null);
 
-    const {
-      selectedProvider, items, totalItems, totalUnidades, subtotal, iva, total, submitError,
-      addItem, updateItemQty, removeItem, selectProvider, reset
-    } = usePurchaseForm();
 
   // Extrae categorías únicas de los resultados para el dropdown
   const categories = [...new Set(filtered.map((p) => p.categoria))];
@@ -90,8 +83,9 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
   };
 
   const handleSelect = (product) => {
-    onSelect(product);
-    onClose();
+    if (!product) return;
+    onSelect(product); // Llama a la función que viene del padre
+    onClose();        // Cierra el modal
   };
 
   const clearAll = () => {
