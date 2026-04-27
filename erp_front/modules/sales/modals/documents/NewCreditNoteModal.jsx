@@ -51,7 +51,7 @@ export function NewCreditNoteModal({ isOpen, onClose, invoiceNumber, items}) {
           </button>
           <ActionButton 
             variant="primary" 
-            type="Facturas" 
+            type="guardar" 
             onClick={() => {
               alert("Nota de Crédito Generada");
               onClose();
