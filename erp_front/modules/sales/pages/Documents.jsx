@@ -7,7 +7,7 @@ import { DocumentsTable } from "../components/documents/DocumentsTable";
 import { ActionButton } from "../components/documents/ButtonActions";
 import { NewCreditNoteModal } from "../modals/documents/NewCreditNoteModal";
 
-
+import { InvoiceDetailsModal } from "../modals/documents/InvoiceDetailsModal";
 
 const DOCUMENT_TYPES = {
     INVOICE: "Facturas",
@@ -20,6 +20,7 @@ export default function DocumentsPage() {
 const [activeTab, setActiveTab] = useState(DOCUMENT_TYPES.INVOICE);
 const [selectedId, setSelectedId] = useState(null);
 const [isCreatingCreditNote, setIsCreatingCreditNote] = useState(false);
+const [viewingInvoice, setViewingInvoice] = useState(null); // Estado para el modal de detalles
 
 //clients data examples: 
  const [documents, setDocuments] = useState([
@@ -66,15 +67,19 @@ const [isCreatingCreditNote, setIsCreatingCreditNote] = useState(false);
     },
   ]);
 
-const handleRemove = (id) => {
-    setDocuments((prev) => prev.filter((doc) => doc.id !== id));
-};
+
 const handleAction = () => {
     if (activeTab === DOCUMENT_TYPES.INVOICE && selectedId) {
       setIsCreatingCreditNote(true);
     }
     //if documents type = quote {router.push('/sales/new?quote_id=${selectId}')} (en breve lo uso)
-  };
+};
+
+// 2. Función para abrir el visor
+const handleView = (id) => {
+  const doc = documents.find(d => d.id === id);
+  setViewingInvoice(doc);
+};
 
 
 
@@ -104,10 +109,11 @@ const selectedInvoice = documents.find(doc => doc.id === selectedId);
       <DocumentsTable
         type= {activeTab}
         documents={filteredDocuments}
-        onRemove={handleRemove}
+        onView={handleView}
+        onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
         //selectedId= {selectedId}
 
-        onSelect={(id) => setSelectedId(id ==selectedId ? null : id) }
+        
       />
       <div className= "flex justify-end items-center h-20">
           {activeTab!== DOCUMENT_TYPES.CREDIT_NOTE && (
@@ -129,6 +135,14 @@ const selectedInvoice = documents.find(doc => doc.id === selectedId);
           items={selectedInvoice?.items}
         />
       )}
+      <InvoiceDetailsModal 
+        isOpen={!!viewingInvoice} 
+        onClose={() => setViewingInvoice(null)} 
+        invoice={viewingInvoice}
+      />
+
+
+
 
 
     </div>
