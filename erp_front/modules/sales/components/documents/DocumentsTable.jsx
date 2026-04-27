@@ -1,5 +1,5 @@
 "use client";
-import { TrashIcon } from "@/shared/components/Icons";
+import { EyeIcon } from "@/shared/components/Icons";
 
 export function DocumentsTable({ documents = [], onSelect, onRemove, type = "Factura" }) {
   
@@ -68,7 +68,7 @@ export function DocumentsTable({ documents = [], onSelect, onRemove, type = "Fac
                     onClick={() => onRemove(doc.id)}
                     className="inline-flex rounded-[8px] p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
                   >
-                    <TrashIcon className="w-5 h-5" />
+                    <EyeIcon className="w-5 h-5" />
                   </button>
                 </td>
               </tr>
