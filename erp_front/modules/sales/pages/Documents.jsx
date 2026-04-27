@@ -5,7 +5,7 @@ import { DocumentsHeader } from "../components/documents/DocumentsHeader";
 import { DocumentsSearch } from "../components/documents/DocumentsSearch";
 import { DocumentsTable } from "../components/documents/DocumentsTable";
 import { ActionButton } from "../components/documents/ButtonActions";
-import { NewCreditNoteTable } from "../modals/documents/NewCreditNoteModal";
+import { NewCreditNoteModal } from "../modals/documents/NewCreditNoteModal";
 
 
 
@@ -20,6 +20,7 @@ export default function DocumentsPage() {
 const [activeTab, setActiveTab] = useState(DOCUMENT_TYPES.INVOICE);
 const [selectedId, setSelectedId] = useState(null);
 const [isCreatingCreditNote, setIsCreatingCreditNote] = useState(false);
+
 //clients data examples: 
  const [documents, setDocuments] = useState([
     {
@@ -29,6 +30,10 @@ const [isCreatingCreditNote, setIsCreatingCreditNote] = useState(false);
       invoice_number: "F-001",
       client: "Juan Pérez",
       total: 150000,
+      items: [
+        { code: "NEU-001", description: "Neumático Michelin 205/55 R16", OriginalQty: 4, unitPrice: 150000 },
+        { code: "SER-002", description: "Alineación y Balanceo 3D", OriginalQty: 1, unitPrice: 250000 }
+      ]
     },
      {
       id: 2,
@@ -37,6 +42,9 @@ const [isCreatingCreditNote, setIsCreatingCreditNote] = useState(false);
       invoice_number: "F-001",
       client: "Pablito Pérez",
       total: 150000,
+      items: [
+        { code: "NEU-005", description: "Neumático Pirelli P7 195/65 R15", OriginalQty: 2, unitPrice: 150000 }
+      ]
     },
     {
       id: 3,
@@ -65,11 +73,15 @@ const handleAction = () => {
     if (activeTab === DOCUMENT_TYPES.INVOICE && selectedId) {
       setIsCreatingCreditNote(true);
     }
+    //if documents type = quote {router.push('/sales/new?quote_id=${selectId}')} (en breve lo uso)
   };
+
 
 
 const filteredDocuments = documents.filter((doc) => doc.type === activeTab);
 
+//Search for the complete invoice item in the list using the selected ID
+const selectedInvoice = documents.find(doc => doc.id === selectedId);
     
   return (
     
@@ -84,7 +96,7 @@ const filteredDocuments = documents.filter((doc) => doc.type === activeTab);
         activeTab={activeTab} 
         setActiveTab={(tab) => {
           setActiveTab(tab);
-          setSelectedId(null); // Resetea la selección al cambiar de pestaña
+          setSelectedId(null);
         }}
 />
 
@@ -94,6 +106,7 @@ const filteredDocuments = documents.filter((doc) => doc.type === activeTab);
         documents={filteredDocuments}
         onRemove={handleRemove}
         //selectedId= {selectedId}
+
         onSelect={(id) => setSelectedId(id ==selectedId ? null : id) }
       />
       <div className= "flex justify-end items-center h-20">
@@ -106,7 +119,18 @@ const filteredDocuments = documents.filter((doc) => doc.type === activeTab);
               />
 
           )}
-      </div>  
+      </div>
+       {/* modal: new credit note, rendering when isCreatingNote is true*/}
+      {isCreatingCreditNote && (
+        <NewCreditNoteModal 
+          isOpen={isCreatingCreditNote} 
+          onClose={() => setIsCreatingCreditNote(false)} 
+          invoiceNumber={selectedInvoice?.invoice_number}
+          items={selectedInvoice?.items}
+        />
+      )}
+
+
     </div>
    
   );
