@@ -3,12 +3,7 @@
 import { TrashIcon, PackageIcon } from "@/shared/components/Icons";
 
 export function PurchaseItemsTable({ items = [], onQtyChange, onRemove }) {
-  const categoryStyles = {
-    CAMIONES: "bg-blue-100 text-blue-700",
-    AUTOS: "bg-emerald-100 text-emerald-700",
-    DEFAULT: "bg-gray-100 text-gray-700"
-  };
-
+  
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Contenedor con scroll: La clave es 'overflow-auto' aquí */}
