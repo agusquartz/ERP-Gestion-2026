@@ -7,29 +7,34 @@ import { useState } from "react";
  * Centraliza: items, cliente, totales y validaciones.
  */
 export function useSaleForm() {
-  const [clients, setClients]           = useState();
+  const [clients, setClients]           = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [items, setItems]               = useState([]);
   const [submitError, setSubmitError]   = useState("");
   
-  const [ivaRate] = useState(0.1); //10%
+  //const [ivaRate] = useState(0.1); //10%
   const [seller] = useState("Juan Perez");
   // ── Totales ──────────────────────────────────────────────────────────────
   const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-  const iva      = subtotal * ivaRate;
-  const total    = subtotal + iva;
+  //const iva      = subtotal * ivaRate;
+  const total    = subtotal;
 
   // ── Items ────────────────────────────────────────────────────────────────
   const addItem = (product, qty) => {
-    const precio   = Number(product.precio) || 0;
-    const cantidad = Number(qty) || 1;
-    const existing = items.find((i) => i.codigo === product.codigo);
+    const price = Number(product.price) || 0;
+    const quantity = Number(qty) || 1;
+
+    const existing = items.find((i) => i.productoId === product.id);
 
     if (existing) {
       setItems((prev) =>
         prev.map((i) =>
-          i.codigo === product.codigo
-            ? { ...i, cantidad: i.cantidad + cantidad, subtotal: (i.cantidad + cantidad) * i.precio }
+          i.productoId === product.id
+            ? {
+                ...i,
+                cantidad: i.cantidad + quantity,
+                subtotal: (i.cantidad + quantity) * i.price,
+              }
             : i
         )
       );
@@ -37,13 +42,13 @@ export function useSaleForm() {
       setItems((prev) => [
         ...prev,
         {
-          id:          Date.now(),
-          productoId:  product.id,
-          codigo:      product.codigo,
-          descripcion: product.descripcion,
-          cantidad,
-          precio,
-          subtotal:    cantidad * precio,
+          id: Date.now(),
+          productoId: product.id,
+          code: product.code,
+          description: product.description,
+          cantidad: quantity,
+          price,
+          subtotal: quantity * price,
         },
       ]);
     }
@@ -52,7 +57,11 @@ export function useSaleForm() {
   const updateItemQty = (id, val) => {
     const cantidad = Math.max(1, Number(val) || 1);
     setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, cantidad, subtotal: cantidad * i.precio } : i))
+      prev.map((i) =>
+        i.id === id
+          ? { ...i, cantidad, subtotal: cantidad * (i.price || 0) }
+          : i
+      )
     );
   };
 
@@ -66,7 +75,7 @@ export function useSaleForm() {
 
   const addClient = (data) => {
     const created = { ...data, id: Date.now() };
-    setClients((prev) => [...prev, created]);
+    setClients((prev = []) => [...prev, created]);
     selectClient(created);
     return created;
   };
@@ -95,7 +104,7 @@ export function useSaleForm() {
   const buildPayload = () => ({
     clienteId: selectedClient?.id,
     vendedor:  "Juan Perez",
-    items:     items.map(({ productoId, cantidad, precio }) => ({ productoId, cantidad, precio })),
+    items:     items.map(({ productoId, cantidad, price }) => ({ productoId, cantidad, price })),
   });
 
   return {
@@ -103,7 +112,7 @@ export function useSaleForm() {
     clients, setClients,
     selectedClient,
     items,
-    subtotal, iva, total,
+    subtotal, total,
     submitError,
     seller,
     // actions
