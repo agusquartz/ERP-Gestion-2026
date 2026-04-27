@@ -1,5 +1,13 @@
 import { serverRequest } from "./request";
 
-export function whoAmI() {
-  return serverRequest("/auth/whoami", { method: "GET" });
+export function whoAmI(cookieHeader, csrfToken) {
+  return serverRequest(
+    "/auth/whoami",
+    {
+      headers: {
+        "x-csrf-token": csrfToken,
+      },
+    },
+    cookieHeader
+  );
 }
