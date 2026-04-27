@@ -1,6 +1,12 @@
 
 "use client";
+/* ============================================================
+   NEW CREDIT NOTE MODAL
 
+   Modal used to create a new credit note from a selected invoice.
+   It displays the invoice number, renders the invoice items table,
+   and provides actions to cancel or generate the credit note.
+   ============================================================ */
 
 import { NewCreditNoteTable } from "./NewCreditNoteTable";
 import { ActionButton } from "../../components/documents/ButtonActions";
