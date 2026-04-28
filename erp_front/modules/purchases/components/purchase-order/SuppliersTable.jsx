@@ -32,6 +32,7 @@
 
 
 import { card, table, badge, label, btn, } from "../../styles/purchase-order/purchaseOrderStyles";
+import { STATUS } from "../../hooks/purchase-order/usePurchaseOrder";
 
 export default function SuppliersTable({
   suppliers = [],
@@ -104,7 +105,7 @@ export default function SuppliersTable({
 
                   {/* Quotation action button */}
                   <td className="px-4 py-3 text-center">
-                    {supplier.status === "generar" ? (
+                    {supplier.statusId === STATUS.UNSENT ? (
                       <button 
                         onClick={() => onOpenQuotation(supplier)}
                         className={`${btn.primarySm} shadow-panel`}
@@ -123,10 +124,10 @@ export default function SuppliersTable({
 
                   {/* Status badge — empty cell for "generar" */}
                   <td className="px-4 py-3 text-center">
-                    {supplier.status === "pending" && (
+                    {supplier.statusId === STATUS.PENDING && (
                       <span className={badge.pendiente}>• Pendiente</span>
                     )}
-                    {supplier.status === "reading" && (
+                    {supplier.statusId === STATUS.READY && (
                       <span className={badge.listo}>• Listo</span>
                     )}
                   </td>
