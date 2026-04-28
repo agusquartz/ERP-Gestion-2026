@@ -30,6 +30,7 @@ import {
   generateAllQuotations,
   printAllQuotations,
   addSuppliers,
+  mapStatus,
 } from "../../services/purchaseOrderService";
 
 export function usePurchaseOrder(orderId) {
@@ -80,8 +81,33 @@ export function usePurchaseOrder(orderId) {
             createdAt: order.created_at,
             requester: order.employee_name,
         });
-        setOrderItems(order.items ?? []);
-        setSuppliers(order.quotes ?? []);
+        
+        setOrderItems(
+          (order.items ?? []).map((item) => ({
+            id: item.id,
+            productId: item.product_id,
+            code: item.product_code,
+            product: item.product_name,
+            category: item.category,
+            quantity: item.quantity,
+          }))
+        );
+
+         // Mapear quotes → suppliers al formato del front
+        const mappedSuppliers = (order.quotes ?? []).map((q) => ({
+          id: q.id,                  // quote_id
+          supplierId: q.supplier_id,
+          name: q.supplier_name,
+          status: mapStatus(q.status), // "unsent" → "generar", etc.
+          categories: q.categories,
+          quotationItems: (q.details ?? []).map((d) => ({
+            orderItemId: d.product_id,
+            confirmedQty: d.confirmed_quantity,
+            unitPrice: d.unit_cost,
+          })),
+        }));
+        
+        setSuppliers(mappedSuppliers);
         
 
         // If all existing suppliers are already past "generar", show "Imprimir Todos"
