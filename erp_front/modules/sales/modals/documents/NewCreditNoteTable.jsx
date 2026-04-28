@@ -55,6 +55,7 @@ export function NewCreditNoteTable({ items = [] }) {
               </th>
               <th className="sticky top-0 border-b border-slate-100 px-4 py-3 text-left text-[13px] font-bold text-slate-500 uppercase">Código</th>
               <th className="sticky top-0 border-b border-slate-100 px-4 py-3 text-left text-[13px] font-bold text-slate-500 uppercase">Descripción</th>
+              <th className="sticky top-0 border-b border-slate-100 px-4 py-3 text-left text-[13px] font-bold text-slate-500 uppercase">Cantidad</th>
               <th className="sticky top-0 border-b border-slate-100 px-4 py-3 text-left text-[13px] font-bold text-slate-500 uppercase">Devolver</th>
               <th className="sticky top-0 border-b border-slate-100 px-4 py-3 text-left text-[13px] font-bold text-slate-500 uppercase">Precio Unit.</th>
               <th className="sticky top-0 border-b border-slate-100 px-4 py-3 text-left text-[13px] font-bold text-slate-500 uppercase">Subtotal</th>
@@ -81,6 +82,7 @@ export function NewCreditNoteTable({ items = [] }) {
                   </td>
                   <td className="px-4 py-3.5 text-[14px] text-slate-600">{item.code}</td>
                   <td className="px-4 py-3.5 text-[14px] text-slate-700 font-semibold truncate">{item.description}</td>
+                   <td className="px-4 py-3.5 text-[14px] text-slate-700 font-semibold truncate">{item.OriginalQty}</td>
                   
                   {/* qty INPUT (Only enabled if the checkbox is selected)  */}
                   <td className="px-4 py-3.5">
