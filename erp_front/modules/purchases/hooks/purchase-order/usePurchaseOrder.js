@@ -201,10 +201,12 @@ export function usePurchaseOrder(orderId) {
    * @param {number} supplierId   - ID of the supplier being updated.
    * @param {Array}  updatedRows  - Quotation rows from the modal form.
    */
-  const handleSaveQuotation = async (supplierId, updatedRows, isComplete) => {
+  const handleSaveQuotation = async (supplierId, allRows, isComplete) => {
     try {
       // TODO: Remove optimistic update if your backend is slow or unreliable.
       // Currently we update UI immediately and fire the API in background.
+      const activeRows = allRows.filter((r) => !r.excluded);
+
       setSuppliers((prev) =>
         prev.map((s) => {
           if (s.id !== supplierId) return s;
@@ -212,11 +214,11 @@ export function usePurchaseOrder(orderId) {
           return {
             ...s,
             status: isComplete ? "reading" : "pending",
-            quotationItems: updatedRows,
+            quotationItems: allRows,
           };
         })
       );
-      await saveQuotation(orderId, supplierId, updatedRows);
+      await saveQuotation(orderId, supplierId, activeRows, isComplete);
     } catch (err) {
       // TODO: Show error toast and revert optimistic update
       console.error("Error saving quotation:", err);
@@ -292,7 +294,6 @@ export function usePurchaseOrder(orderId) {
       const ids = selectedSuppliers.map((s) => s.id);
       
       const newSuppliers = await addSuppliers(orderId, ids);
-
       setSuppliers((prev) => [...prev, ...newSuppliers]);
 
       setAllGenerated(false);
