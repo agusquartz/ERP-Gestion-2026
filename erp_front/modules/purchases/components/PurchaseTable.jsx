@@ -42,7 +42,7 @@ const PurchaseTable = ({ data, totalResults, onView }) => {
               <td className="px-4 py-1.5 text-sm font-bold text-[#111827] border-b border-gray-100">{item.id}</td>
               <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{item.supplier?.name}</td>
               <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{formatDate(item.createdAt)}</td>
-              <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{item.request_number}</td>
+              <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{item.purchaseRequestId}</td>
               <td className="px-4 py-1.5 border-b border-gray-100">
                 <div className="flex justify-center">
                   <span className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[10px] font-bold w-[90px] justify-center ${getStatusStyles(item.status.name)}`}>
