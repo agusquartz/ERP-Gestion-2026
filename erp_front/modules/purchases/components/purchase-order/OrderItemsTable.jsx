@@ -49,6 +49,13 @@ export default function OrderItemsTable({ items = [] }) {
         <div className="overflow-y-auto max-h-48">
           <table className={`${table.base} table-fixed w-full`}>
             <tbody>
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted">
+                    No hay items en este pedido.
+                  </td>
+                </tr>
+              )}
               {items.map((item, index) => (
                 <tr key={item.id} className={table.row}>
                   <td className={`${table.tdMuted} w-8`}>{index + 1}</td>

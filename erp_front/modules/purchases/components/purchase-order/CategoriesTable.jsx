@@ -21,11 +21,11 @@ import { card, table, badge, label, } from "../../styles/purchase-order/purchase
 
 export default function CategoriesTable({ categories = [] }) {
   return (
-    <section className="flex flex-col min-h-0">
+    <section className="flex flex-col h-full min-h-0">
       <p className={label.section}>Categorias del Pedido</p>
 
       {/* Card wrapper — rounded-[5px] matches the design border radius spec */}
-      <div className={`${card.base} shadow-panel flex flex-col min-h-0`} style={{borderRadius: "5px"}}>
+      <div className={`${card.base} shadow-panel flex flex-col flex-1 min-h-0`} style={{borderRadius: "5px"}}>
         
         {/* Fixed header — stays visible while body scrolls */}
         <table className={`${table.base} table-fixed w-full`}>
@@ -46,6 +46,13 @@ export default function CategoriesTable({ categories = [] }) {
         <div className="overflow-y-auto max-h-48">
           <table className={`${table.base} table-fixed w-full`}>
             <tbody>
+              {categories.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted">
+                    No hay categorias registradas.
+                  </td>
+                </tr>
+              )}
               {categories.map((cat, index) => (
                 <tr key={cat.category} className={table.row}>
                   <td className={`${table.tdMuted} w-8`}>{index + 1}</td>

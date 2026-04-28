@@ -41,7 +41,7 @@ export default function SuppliersTable({
   onOpenSupplierSearch,
 }) {
   return (
-    <section className="flex flex-col min-h-0">
+    <section className="flex flex-col h-full min-h-0">
 
       {/* ── Section header with action buttons ── */}
       <div className="flex items-center justify-between mb-3">
@@ -72,7 +72,7 @@ export default function SuppliersTable({
       </div>
 
       {/* ── Table card ── */}
-      <div className={`${card.base} shadow-panel flex flex-col min-h-0`}>
+      <div className={`${card.base} shadow-panel flex flex-col flex-1 min-h-0`}>
 
         {/* Fixed header — never scrolls */}
         <table className={`${table.base} table-fixed w-full`}>
@@ -89,7 +89,14 @@ export default function SuppliersTable({
         {/* Scrollable body — add max-h here to control how tall the table gets */}
         <div className="overflow-y-auto max-h-48">
           <table className={`${table.base} table-fixed w-full`}>
-            <tbody>
+            <tbody> 
+              {suppliers.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted">
+                    No hay proveedores asignados aun.
+                  </td>
+                </tr>
+              )}
               {suppliers.map((supplier, index) => (
                 <tr key={supplier.id} className={table.row}>
                   <td className={`${table.tdMuted} w-8`}>{index + 1}</td>
