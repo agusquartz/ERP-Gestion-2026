@@ -109,7 +109,7 @@ export default function QuotationModal({
           <h2 className={modal.title}>
             Cotizacion{" "}
             <span className="text-primary">
-              PC-#{purchaseOrder?.id?.replace("PC-", "")}
+              PC-#{purchaseOrder?.id}
             </span>
           </h2>
           <p className="text-sm text-muted mt-1">
