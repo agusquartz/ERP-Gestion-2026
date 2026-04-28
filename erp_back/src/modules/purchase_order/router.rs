@@ -34,7 +34,7 @@ use crate::modules::{
 /// - Keeps handler wiring separate from business logic
 pub fn purchase_order_router() -> Router {
     let protected = Router::new()
-        .route("/purchases/purchase_orders", get(list_purchase_orders).post(create_purchase_order))
-        .route("/purchases/purchase_orders/{id}", get(get_purchase_order).patch(patch_purchase_order));
+        .route("/purchases/purchase-orders", get(list_purchase_orders).post(create_purchase_order))
+        .route("/purchases/purchase-orders/{id}", get(get_purchase_order).patch(patch_purchase_order));
     protect_routes(protected)
 }
