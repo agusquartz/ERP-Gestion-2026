@@ -104,7 +104,7 @@ export default function SuppliersTable({
 
                   {/* Quotation action button */}
                   <td className="px-4 py-3 text-center">
-                    {supplier.status === "created" ? (
+                    {supplier.status === "generar" ? (
                       <button 
                         onClick={() => onOpenQuotation(supplier)}
                         className={`${btn.primarySm} shadow-panel`}
