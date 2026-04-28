@@ -95,7 +95,7 @@ pub async fn query_purchase_order_by_id(id: i32) -> Result<Option<order_model::P
 pub async fn query_orders(contains: Option<&str>) -> Result<Vec<order_model::PurchaseOrderAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
     if let Some(q) = contains {
-        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR supplier_name ILIKE '%' || $1 || '%' OR status_name ILIKE '%' || $1 || '%' OR created_at ILIKE '%' || $1 || '%') ORDER BY purchase_order_id, pod.id", PURCHASE_ORDER_SELECT_BASE); 
+        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR s.name ILIKE '%' || $1 || '%' OR st.status ILIKE '%' || $1 || '%') ORDER BY po.id, pod.id", PURCHASE_ORDER_SELECT_BASE); 
 
         let rows = client.query(&sql, &[&q]).await?;
         let aggregates = rows_to_aggregate(rows);
@@ -299,3 +299,5 @@ pub async fn patch_purchase_order(
     tx.commit().await?;
     Ok(Some(purchase_order))
 }
+
+
