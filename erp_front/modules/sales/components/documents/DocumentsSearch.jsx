@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDownIcon } from "@/shared/components/Icons";
 
-export function DocumentsSearch({ onSearch,activeTab }) {
+export function DocumentsSearch({ onSearch, activeTab }) {
   const [query, setQuery] = useState("");
   const [filterTotal, setFilterTotal] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -11,7 +11,6 @@ export function DocumentsSearch({ onSearch,activeTab }) {
   
   const [showStatusDrop, setShowStatusDrop] = useState(false);
   const [showDateDrop, setShowDateDrop] = useState(false);
-
 
   const dates = ["Hoy", "Esta Semana", "Este Mes", "Personalizado"];
   const status = ["Activo", "Expirado"];
@@ -27,12 +26,11 @@ export function DocumentsSearch({ onSearch,activeTab }) {
 
   return (
     <div className="w-full space-y-4 py-4">
-  
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1.5fr_auto_auto_auto] lg:items-end">
         
-     
+        {/* Búsqueda */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[13px] font-bold text-slate-800 ml-1">Busqueda</label>
+          <label className="text-[13px] font-bold text-slate-800 ml-1">Búsqueda</label>
           <input
             className="w-full rounded-[8px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
             placeholder="Buscar por nombre de cliente"
@@ -41,23 +39,24 @@ export function DocumentsSearch({ onSearch,activeTab }) {
           />
         </div>
 
-      
+        {/* Filtro Total */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-bold text-slate-800 ml-1">Filtrar resultados</label>
           <input
             className="w-full rounded-[8px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
-            placeholder="filtrar por total, factura"
+            placeholder="Filtrar por total, factura"
             value={filterTotal}
             onChange={(e) => setFilterTotal(e.target.value)}
           />
         </div>
 
-        {activeTab == "Presupuesto" &&
+        {/* Dropdown de Estado - Solo para Presupuestos */}
+        {activeTab === "Presupuesto" && (
           <div className="relative">
             <button
               type="button"
               className="flex min-w-[150px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-              onClick={() => {setShowStatusDrop(!showStatusDrop); setShowDateDrop(false); }}
+              onClick={() => { setShowStatusDrop(!showStatusDrop); setShowDateDrop(false); }}
             >
               <span>{statusFilter || "Estado"}</span>
               <ChevronDownIcon className={`w-4 h-4 transition-transform ${showStatusDrop ? 'rotate-180' : ''}`} />
@@ -83,13 +82,14 @@ export function DocumentsSearch({ onSearch,activeTab }) {
               </div>
             )}
           </div>
-        }
- 
+        )}
+
+        {/* Dropdown de Fecha */}
         <div className="relative">
           <button
             type="button"
             className="flex min-w-[130px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-            onClick={() => { setShowDateDrop(!showDateDrop); setShowCatDrop(false); }}
+            onClick={() => { setShowDateDrop(!showDateDrop); setShowStatusDrop(false); }}
           >
             <span>{dateFilter || "Fecha"}</span>
             <ChevronDownIcon className={`w-4 h-4 transition-transform ${showDateDrop ? 'rotate-180' : ''}`} />
@@ -110,7 +110,6 @@ export function DocumentsSearch({ onSearch,activeTab }) {
           )}
         </div>
 
- 
         <button
           type="button"
           className="rounded-[8px] border border-slate-300 px-6 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-50 hover:shadow-sm transition-all active:scale-95"
@@ -120,7 +119,6 @@ export function DocumentsSearch({ onSearch,activeTab }) {
         </button>
       </div>
 
- 
       <div className="flex items-center justify-between px-1">
          <span className="text-[12px] text-slate-400">Mostrando resultados de búsqueda...</span>
          <span className="text-[11px] text-slate-400 italic">
