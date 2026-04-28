@@ -23,7 +23,7 @@ import PurchaseTable from '../components/PurchaseTable.jsx';
 import {formatDate, formatCurrency} from '../components/utils.js';
 
 //Delete when finally connected to backend
-import { MOCK_PURCHASE_ORDERS } from '../components/search_purchases/mokData.js';
+//import { MOCK_PURCHASE_ORDERS } from '../components/search_purchases/mokData.js';
 
 
 const SearchPurchaseOrdersPage = () => {
@@ -68,7 +68,7 @@ const SearchPurchaseOrdersPage = () => {
     return orders.filter(order => {
       const searchTerm = clientFilter.toLowerCase();
       const matchesClient = 
-        order.order_number.toLowerCase().includes(searchTerm) ||
+        String(order.id).includes(searchTerm) ||
         order.supplier.name.toLowerCase().includes(searchTerm) ||
         order.request_number.toLowerCase().includes(searchTerm);
       
