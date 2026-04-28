@@ -36,6 +36,21 @@ const MOCK_AVAILABLE_SUPPLIERS = [
 
 const mockDelay = () => new Promise((resolve) => setTimeout(resolve, 300));
 
+// En purchaseOrderService.js — agregá export:
+export function mapStatus(status) {
+  switch (status) {
+    case "created":
+    case "unsent":
+      return "generar";
+    case "pending":
+      return "pendiente";
+    case "reading":
+      return "listo";
+    default:
+      return status;
+  }
+}
+
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 /**

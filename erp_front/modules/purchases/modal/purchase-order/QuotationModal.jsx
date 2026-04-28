@@ -158,9 +158,9 @@ export default function QuotationModal({
                     <tr key={row.orderItemId} className={`${table.row} ${row.excluded ? "opacity-50 bg-gray-50 line-through" : ""}`}>
                       <td className={table.tdMuted}>{index + 1}</td>
                       <td className="px-4 py-3 font-mono text-muted text-xs">
-                        {item.code}
+                        {item.product_code}
                       </td>
-                      <td className={`${table.td} whitespace-normal break-words`}>{item.product}</td>
+                      <td className={`${table.td} whitespace-normal break-words`}>{item.product_name}</td>
                       <td className={table.tdCenter}>{item.quantity}</td>
 
                       <td className="px-4 py-3 text-center">

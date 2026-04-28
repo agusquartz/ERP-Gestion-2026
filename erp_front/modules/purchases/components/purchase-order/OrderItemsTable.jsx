@@ -60,9 +60,9 @@ export default function OrderItemsTable({ items = [] }) {
                 <tr key={item.id} className={table.row}>
                   <td className={`${table.tdMuted} w-8`}>{index + 1}</td>
                   <td className="px-4 py-3 font-mono text-muted text-xs">
-                    {item.product_code}
+                    {item.code}
                   </td>
-                  <td className={table.td}>{item.product_name}</td>
+                  <td className={table.td}>{item.product}</td>
                   <td className="px-4 py-3">
                     <span className={badge.category}>{item.category}</span>
                   </td>
