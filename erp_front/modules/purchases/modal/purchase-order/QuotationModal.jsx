@@ -43,6 +43,7 @@ export default function QuotationModal({
 
       return {
         orderItemId: item.id,
+        productId: item.productId,
         confirmedQty: existing?.confirmedQty ?? 0,
         unitPrice: existing?.unitPrice ?? 0,
         excluded: existing?.excluded ?? false,
@@ -86,7 +87,7 @@ export default function QuotationModal({
       rowsToSend.every(
         (row) => Number(row.confirmedQty) > 0 && Number(row.unitPrice) > 0
       );
-    onSave(supplier.id, rowsToSend, isComplete);
+    onSave(supplier.id, rows, isComplete);
     onClose();
   };
 
