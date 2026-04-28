@@ -70,19 +70,14 @@ const [viewingInvoice, setViewingInvoice] = useState(null); // Estado para el mo
   ]);
 
 
-/*const handleAction = () => {
-    if (activeTab === DOCUMENT_TYPES.INVOICE && selectedId) {
-      setIsCreatingCreditNote(true);
-    }
-    //if documents type = quote {router.push('/sales/new?quote_id=${selectId}')} (en breve lo uso)
-};*/
+
 const handleAction = () => {
-    if (!selectedId) return; // Si no hay nada seleccionado, no hacemos nada
+    if (!selectedId) return; // If nothing is selected, we do nothing.
 
     if (activeTab === DOCUMENT_TYPES.INVOICE) {
       setIsCreatingCreditNote(true);
     } 
-    // 3. Lógica para redirección de Presupuesto
+    //Logic for Budget Redirection
     else if (activeTab === DOCUMENT_TYPES.QUOTE) {
       router.push(`/sales/new?quote_id=${selectedId}`);
     }
@@ -91,7 +86,7 @@ const handleAction = () => {
 
 
 
-// 2. Función para abrir el visor
+// Function to open the viewfinder
 const handleView = (id) => {
   const doc = documents.find(d => d.id === id);
   setViewingInvoice(doc);
