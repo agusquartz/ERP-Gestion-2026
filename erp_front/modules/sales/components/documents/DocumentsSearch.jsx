@@ -24,6 +24,7 @@ export function DocumentsSearch({ onSearch, activeTab }) {
     setDateFilter("");
     setShowStatusDrop(false);
     setShowDateDrop(false);
+    setCustomDate("");
   };
 
   return (
