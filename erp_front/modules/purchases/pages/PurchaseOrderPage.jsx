@@ -52,7 +52,7 @@ import SupplierSearchModal from "../modal/purchase-order/SupplierSearchModal";
 import { btn } from "../styles/purchase-order/purchaseOrderStyles";
 
 export default function PurchaseOrderPage({
-  orderId = "PC-01",
+  orderId,
   onBack,
   onAnalyze,
 }) {
