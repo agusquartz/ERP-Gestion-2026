@@ -1,13 +1,14 @@
 
 "use client";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { DocumentsHeader } from "../components/documents/DocumentsHeader";
 import { DocumentsSearch } from "../components/documents/DocumentsSearch";
 import { DocumentsTable } from "../components/documents/DocumentsTable";
 import { ActionButton } from "../components/documents/ButtonActions";
 import { NewCreditNoteModal } from "../modals/documents/NewCreditNoteModal";
-
 import { InvoiceDetailsModal } from "../modals/documents/InvoiceDetailsModal";
+
 
 const DOCUMENT_TYPES = {
     INVOICE: "Facturas",
@@ -17,6 +18,7 @@ const DOCUMENT_TYPES = {
 
 
 export default function DocumentsPage() {
+const router = useRouter();
 const [activeTab, setActiveTab] = useState(DOCUMENT_TYPES.INVOICE);
 const [selectedId, setSelectedId] = useState(null);
 const [isCreatingCreditNote, setIsCreatingCreditNote] = useState(false);
@@ -68,12 +70,26 @@ const [viewingInvoice, setViewingInvoice] = useState(null); // Estado para el mo
   ]);
 
 
-const handleAction = () => {
+/*const handleAction = () => {
     if (activeTab === DOCUMENT_TYPES.INVOICE && selectedId) {
       setIsCreatingCreditNote(true);
     }
     //if documents type = quote {router.push('/sales/new?quote_id=${selectId}')} (en breve lo uso)
+};*/
+const handleAction = () => {
+    if (!selectedId) return; // Si no hay nada seleccionado, no hacemos nada
+
+    if (activeTab === DOCUMENT_TYPES.INVOICE) {
+      setIsCreatingCreditNote(true);
+    } 
+    // 3. Lógica para redirección de Presupuesto
+    else if (activeTab === DOCUMENT_TYPES.QUOTE) {
+      router.push(`/sales/new?quote_id=${selectedId}`);
+    }
 };
+
+
+
 
 // 2. Función para abrir el visor
 const handleView = (id) => {
