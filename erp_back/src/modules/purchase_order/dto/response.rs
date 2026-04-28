@@ -71,6 +71,8 @@ pub struct LineProductResponse {
 pub struct PurchaseOrderResponse {
     /// Unique identifier of the purchase order.
     pub id: i32,
+    /// Unique identifier of the purchase request.
+    pub purchase_request_id: i32,
     /// Date when the purchase order was created.
     pub created_at: NaiveDate,
     /// Supplier associated with the purchase order.

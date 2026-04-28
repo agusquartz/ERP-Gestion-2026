@@ -31,6 +31,8 @@ pub fn map_purchase_order(value: order_model::PurchaseOrderAggregate) -> respons
     response::PurchaseOrderResponse {
         /// Purchase order identifier
         id: value.purchase_order.id,
+        /// Originatin purchase request identifier
+        purchase_request_id: value.purchase_order.purchase_request_id,
         /// Creation date of the purchase order
         created_at: value.purchase_order.created_at,
         /// Supplier projection
