@@ -9,8 +9,10 @@ export function DocumentsSearch({ onSearch, activeTab }) {
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   
+  
   const [showStatusDrop, setShowStatusDrop] = useState(false);
   const [showDateDrop, setShowDateDrop] = useState(false);
+  const [customDate, setCustomDate] = useState("");
 
   const dates = ["Hoy", "Esta Semana", "Este Mes", "Personalizado"];
   const status = ["Activo", "Expirado"];
@@ -28,7 +30,7 @@ export function DocumentsSearch({ onSearch, activeTab }) {
     <div className="w-full space-y-4 py-4">
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1.5fr_auto_auto_auto] lg:items-end">
         
-        {/* Búsqueda */}
+        {/* Search */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-bold text-slate-800 ml-1">Búsqueda</label>
           <input
@@ -39,7 +41,7 @@ export function DocumentsSearch({ onSearch, activeTab }) {
           />
         </div>
 
-        {/* Filtro Total */}
+        {/* Total filter */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-bold text-slate-800 ml-1">Filtrar resultados</label>
           <input
@@ -50,7 +52,7 @@ export function DocumentsSearch({ onSearch, activeTab }) {
           />
         </div>
 
-        {/* Dropdown de Estado - Solo para Presupuestos */}
+        {/* Status Dropdown, only quotes */}
         {activeTab === "Presupuesto" && (
           <div className="relative">
             <button
@@ -84,31 +86,54 @@ export function DocumentsSearch({ onSearch, activeTab }) {
           </div>
         )}
 
-        {/* Dropdown de Fecha */}
+       {/* DATE Dropdown  */}
         <div className="relative">
           <button
             type="button"
             className="flex min-w-[130px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-100 transition-colors"
             onClick={() => { setShowDateDrop(!showDateDrop); setShowStatusDrop(false); }}
           >
-            <span>{dateFilter || "Fecha"}</span>
+           {/* If there is a custom date, display it; otherwise, display the selected filter or "Date" */}
+            <span>{customDate || dateFilter || "Fecha"}</span>
             <ChevronDownIcon className={`w-4 h-4 transition-transform ${showDateDrop ? 'rotate-180' : ''}`} />
           </button>
 
           {showDateDrop && (
-            <div className="absolute z-20 mt-2 w-full rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
+            <div className="absolute z-20 mt-2 w-full min-w-[160px] rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
               {dates.map((d) => (
-                <button
-                  key={d}
-                  className="w-full rounded-md px-3 py-2 text-left text-[14px] font-medium text-slate-700 hover:bg-[#f0f7ff] hover:text-[#2b6df5] transition-colors"
-                  onClick={() => { setDateFilter(d); setShowDateDrop(false); }}
-                >
-                  {d}
-                </button>
+                <div key={d}>
+                  {d === "Personalizado" ? (
+                    <div className="px-3 py-2">
+                      <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">Elegir fecha</label>
+                      <input 
+                        type="date" 
+                        className="w-full rounded-md border border-slate-200 px-2 py-1 text-[13px] text-slate-700 outline-none focus:border-[#2b6df5]"
+                        onChange={(e) => {
+                          setCustomDate(e.target.value);
+                          setDateFilter("Personalizado");
+                          
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      className="w-full rounded-md px-3 py-2 text-left text-[14px] font-medium text-slate-700 hover:bg-[#f0f7ff] hover:text-[#2b6df5] transition-colors"
+                      onClick={() => { 
+                        setDateFilter(d); 
+                        setCustomDate(""); 
+                        setShowDateDrop(false); 
+                      }}
+                    >
+                      {d}
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
         </div>
+
+        
 
         <button
           type="button"
