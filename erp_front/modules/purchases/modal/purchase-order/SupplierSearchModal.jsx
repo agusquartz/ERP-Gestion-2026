@@ -39,7 +39,7 @@ export default function SupplierSearchModal({
       setSearchQuery("");
 
       try {
-        const data = await getAvailableSuppliers(orderId, categoryNames);
+        const data = await getAvailableSuppliers(categoryNames);
         setAvailableSuppliers(data.filter((s) => !alreadyAdded.includes(s.id)));
       } catch (err) {
         console.error("Error fetching available suppliers:", err);
