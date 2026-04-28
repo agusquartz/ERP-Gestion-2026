@@ -264,16 +264,8 @@ export function usePurchaseOrder(orderId) {
   const handleAddSuppliers = async (selectedSuppliers) => {
     try {
       const ids = selectedSuppliers.map((s) => s.id);
-      await addSuppliers(orderId, ids);
-
-      const newSuppliers = selectedSuppliers.map((s) => ({
-        id: s.id,
-        name: s.name,
-        // Newly added, not yet generated or printed.
-        status: "created",
-        quotationItems: [],
-        categories: s.categories ?? [],
-      }));
+      
+      const newSuppliers = await addSuppliers(orderId, ids);
 
       setSuppliers((prev) => [...prev, ...newSuppliers]);
 
