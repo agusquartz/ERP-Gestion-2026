@@ -26,8 +26,6 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   getPurchaseOrder,
-  getPurchaseOrderItems,
-  getPurchaseOrderSuppliers,
   saveQuotation,
   generateAllQuotations,
   printAllQuotations,
@@ -67,8 +65,6 @@ export function usePurchaseOrder(orderId) {
 
   useEffect(() => {
     if (!orderId) return;
-
-
     /**
      * Loads all purchase order data in parallel.
      * Falls back to an error state if any request fails.
@@ -78,21 +74,19 @@ export function usePurchaseOrder(orderId) {
       setLoading(true);
       setError(null);
       try {
-        // If there are dependencies between calls, switch to sequential awaits.
-        // TODO: These run in parallel — if your backend supports it, keep Promise.all.
-        const [order, items, sups] = await Promise.all([
-          getPurchaseOrder(orderId),
-          getPurchaseOrderItems(orderId),
-          getPurchaseOrderSuppliers(orderId),
-        ]);
-        setPurchaseOrder(order);
-        setOrderItems(items);
-        setSuppliers(sups);
+        const order = await getPurchaseOrder(orderId);
+        setPurchaseOrder({
+            id: order.id,
+            createdAt: order.created_at,
+            requester: order.employee_name,
+        });
+        setOrderItems(order.items ?? []);
+        setSuppliers(order.quotes ?? []);
         
 
         // If all existing suppliers are already past "generar", show "Imprimir Todos"
-        const allPast = sups.every((s) => s.status !== "generar");
-        setAllGenerated(allPast && sups.length > 0);
+        const allPast = suppliers.every((s) => s.status !== "generar");
+        setAllGenerated(allPast && suppliers.length > 0);
 
       } catch (err) {
         // TODO: Replace with your app's error handling / toast system
