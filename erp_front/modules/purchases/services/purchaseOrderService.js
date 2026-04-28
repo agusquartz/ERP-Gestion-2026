@@ -15,17 +15,10 @@
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const API_BASE = "http://localhost:3000";
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_PURCHASE_ORDER = {
-  id: "PC-01",
-  requester: "Maria Gonzales",
-  createdAt: "31/03/2026",
-};
-
 const MOCK_ORDER_ITEMS = [
   { id: 1, code: "9780201379623", product: "Neumático 185/65 R15", category: "NEUMÁTICOS", quantity: 150 },
   { id: 2, code: "3234343545493", product: "Neumático 265/85 R17", category: "NEUMÁTICOS", quantity: 600 },
@@ -69,11 +62,11 @@ const mockDelay = () => new Promise((resolve) => setTimeout(resolve, 300));
  */
 async function apiFetch(url, options = {}) {
   const response = await fetch(url, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...(options.headers || {}),
     },
-    ...options,
   });
 
   if (!response.ok) {
@@ -108,53 +101,7 @@ export async function getPurchaseOrder(orderId) {
     await mockDelay();
     return MOCK_PURCHASE_ORDER;
   }
-  return apiFetch(`${API_BASE}/purchase-orders/${orderId}`);
-}
-
-/**
- * Fetches all items of a purchase order.
- *
- * What it receives:
- *   @param {string} orderId
- *
- * What it returns:
- *   @returns {Promise<Array<{ id, code, product, category, quantity }>>}
- *
- * What it does:
- *   - Retrieves all requested products
- *
- * Why it's important:
- *   - Source of truth for items and categories
- */
-export async function getPurchaseOrderItems(orderId) {
-  if (USE_MOCK) {
-    await mockDelay();
-    return MOCK_ORDER_ITEMS;
-  }
-  return apiFetch(`${API_BASE}/purchase-orders/${orderId}/items`);
-}
-
-/**
- * Fetches suppliers assigned to a purchase order.
- *
- * What it receives:
- *   @param {string} orderId
- *
- * What it returns:
- *   @returns {Promise<Array<{ id, name, status, quotationItems }>>}
- *
- * What it does:
- *   - Retrieves suppliers and their quotation data
- *
- * Why it's important:
- *   - Drives supplier workflow and UI state
- */
-export async function getPurchaseOrderSuppliers(orderId) {
-  if (USE_MOCK) {
-    await mockDelay();
-    return MOCK_SUPPLIERS;
-  }
-  return apiFetch(`${API_BASE}/purchase-orders/${orderId}/suppliers`);
+  return apiFetch(`${API_BASE}/purchase-requests/${orderId}`);
 }
 
 // ─── Quotations ───────────────────────────────────────────────────────────────
@@ -184,9 +131,9 @@ export async function saveQuotation(orderId, supplierId, quotationItems) {
   }
 
   return apiFetch(
-    `${API_BASE}/purchase-orders/${orderId}/suppliers/${supplierId}/quotation`,
+    `${API_BASE}/purchase-quotes/${supplierId}/details`,
     {
-      method: "PUT",
+      method: "POST",
       body: JSON.stringify({ quotationItems }),
     }
   );
@@ -262,7 +209,7 @@ export async function printAllQuotations(orderId) {
  * Why it's important:
  *   - Ensures only relevant suppliers are selectable
  */
-export async function getAvailableSuppliers(orderId, categories) {
+export async function getAvailableSuppliers(categories) {
   if (USE_MOCK) {
     await mockDelay();
 
