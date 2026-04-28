@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000'; // Replace this later
+const BASE_URL = 'http://127.0.0.1:3000'; // Replace this later
 
 export const purchaseService = {
 	/**
@@ -7,7 +7,7 @@ export const purchaseService = {
 	 */
 	getPurchaseOrders: async (search = '') => {
 		try {
-			const url = new URL(`${BASE_URL}/purchase-orders`);
+			const url = new URL(`${BASE_URL}/purchases/purchase-orders`);
 
 			if (search) {
 				url.searchParams.append('search', search);
