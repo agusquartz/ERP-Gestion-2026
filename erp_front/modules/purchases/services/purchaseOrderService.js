@@ -258,9 +258,28 @@ export async function addSuppliers(orderId, supplierIds) {
       categories: s.categories,
     }));
   }
+  const results = await Promise.all(
+    supplierIds.map((supplierId) =>
+      apiFetch(`${API_BASE}/purchase-quotes`, {
+        method: "POST",
+        body: JSON.stringify({
+          purchase_request_id: parseInt(orderId),
+          supplier_id: supplierId,
+        }),
+      })
+    )
+  );
 
-  return apiFetch(`${API_BASE}/purchase-orders/${orderId}/suppliers`, {
-    method: "POST",
-    body: JSON.stringify({ supplierIds }),
-  });
+  return results.map((q) =>> ({
+    id: q.id,                    // quote_id — usado para PATCH y POST /details
+    supplierId: q.supplier_id,   // supplier_id real
+    name: q.supplier_name,
+    status: "generar",           // "created" en DB → "generar" en front
+    quotationItems: [],
+    categories: q.categories,
+  }));
+ // return apiFetch(`${API_BASE}/purchase-orders/${orderId}/suppliers`, {
+ //   method: "POST",
+ //   body: JSON.stringify({ supplierIds }),
+ // });
 }
