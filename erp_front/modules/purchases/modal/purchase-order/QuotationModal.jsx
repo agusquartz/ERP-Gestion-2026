@@ -38,7 +38,7 @@ export default function QuotationModal({
     //2. Build rows by combining with quotation items(If they exist)
     const buildRows = itemsForSupplier.map(item => {
       const existing = supplier.quotationItems?.find(
-        qi => qi.orderItemId === item.id
+        qi => qi.productId === item.productId
       );
 
       return {
@@ -53,7 +53,7 @@ export default function QuotationModal({
     setRows(buildRows);
   }, [supplier, orderItems]);
 
-  const isReadOnly = supplier?.status === "reading";
+  const isReadOnly = supplier?.status === "listo";
 
   if (!isOpen || !supplier) return null;
 
