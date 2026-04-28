@@ -148,7 +148,7 @@ export default function PurchaseOrderPage({
         <OrderItemsTable items={orderItems} />
 
         {/* ── Categories + Suppliers (two columns, each scrollable) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 overflow-hidden">
           <CategoriesTable categories={categories} />
           <SuppliersTable
             suppliers={suppliers}
