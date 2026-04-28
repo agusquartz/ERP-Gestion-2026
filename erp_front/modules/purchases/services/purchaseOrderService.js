@@ -270,7 +270,7 @@ export async function addSuppliers(orderId, supplierIds) {
     )
   );
 
-  return results.map((q) =>> ({
+  return results.map((q) => ({
     id: q.id,                    // quote_id — usado para PATCH y POST /details
     supplierId: q.supplier_id,   // supplier_id real
     name: q.supplier_name,
