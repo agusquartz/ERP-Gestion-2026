@@ -32,7 +32,6 @@ const PurchaseTable = ({ data, totalResults, onView }) => {
             <th className="px-4 py-1.5 text-left text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200">Proveedor</th>
             <th className="px-4 py-1.5 text-left text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200">Fecha</th>
             <th className="px-4 py-1.5 text-left text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200">Pedido N°</th>
-            <th className="px-4 py-1.5 text-left text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200">Total Estimado</th>
             <th className="px-4 py-1.5 text-center text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200">Estado</th>
             <th className="px-4 py-1.5 text-center text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200 last:rounded-tr-lg">Accion</th>
           </tr>
@@ -40,16 +39,15 @@ const PurchaseTable = ({ data, totalResults, onView }) => {
         <tbody className="bg-white">
           {data.map((item) => (
             <tr key={item.id} className="hover:bg-[#F2F3F7] transition-colors group">
-              <td className="px-4 py-1.5 text-sm font-bold text-[#111827] border-b border-gray-100">{item.order_number}</td>
+              <td className="px-4 py-1.5 text-sm font-bold text-[#111827] border-b border-gray-100">{item.id}</td>
               <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{item.supplier?.name}</td>
-              <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{formatDate(item.date)}</td>
+              <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{formatDate(item.createdAt)}</td>
               <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{item.request_number}</td>
-              <td className="px-4 py-1.5 text-sm font-bold text-[#111827] border-b border-gray-100 text-right">{formatCurrency(item.total_estimation)}</td>
               <td className="px-4 py-1.5 border-b border-gray-100">
                 <div className="flex justify-center">
-                  <span className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[10px] font-bold w-[90px] justify-center ${getStatusStyles(item.status)}`}>
+                  <span className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[10px] font-bold w-[90px] justify-center ${getStatusStyles(item.status.name)}`}>
                     <span className="h-1.5 w-1.5 rounded-full bg-current shrink-0" />
-                    {item.status}
+                    {item.status.name}
                   </span>
                 </div>
               </td>
