@@ -41,6 +41,9 @@ export default function SuppliersTable({
   onGenerateOrPrintAll,
   onOpenSupplierSearch,
 }) {
+  
+  const hasSuppliers = suppliers.length > 0;
+
   return (
     <section className="flex flex-col h-full min-h-0">
 
@@ -57,10 +60,11 @@ export default function SuppliersTable({
            */}
           <button
             onClick={onGenerateOrPrintAll}
-            className={`${btn.secondarySm} shadow-panel`}
+            disable={!hasSuppliers}
+            className={`${btn.secondarySm} shadow-panel disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {allGenerated ? "Imprimir Todos" : "Generar Todos"}
-          </button>
+          </button> 
 
           {/* Opens SupplierSearchModal to add one or more new suppliers */}
           <button
@@ -105,26 +109,30 @@ export default function SuppliersTable({
 
                   {/* Quotation action button */}
                   <td className="px-4 py-3 text-center">
-                    {supplier.statusId === STATUS.UNSENT ? (
+                  {/*CREATED → "Generar": first interaction, transitions to UNSENT*/}
+                    {supplier.statusId === STATUS.CREATED ? (
                       <button 
                         onClick={() => onOpenQuotation(supplier)}
                         className={`${btn.primarySm} shadow-panel`}
                       >
                         Generar
                       </button>
-                    ) : (
+                    ) : ( 
+                      // UNSENT / PENDING / READY-OK → "Ver": open modal to view or edit
                       <button
                         onClick={() => onOpenQuotation(supplier)}
                         className={`${btn.secondarySm} shadow-panel`}
                       >
                         Ver
                       </button>
-                    )}
+                   )} 
                   </td>
 
                   {/* Status badge — empty cell for "generar" */}
                   <td className="px-4 py-3 text-center">
-                    {supplier.statusId === STATUS.PENDING && (
+                    {/* CREATED -> no badge */}
+                    {(supplier.statusId === STATUS.UNSENT ||
+                      supplier.statusId === STATUS.PENDING) && (
                       <span className={badge.pendiente}>• Pendiente</span>
                     )}
                     {supplier.statusId === STATUS.READY && (
