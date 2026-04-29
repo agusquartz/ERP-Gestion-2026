@@ -41,12 +41,17 @@ export default function QuotationModal({
         qi => qi.productId === item.productId
       );
 
+      // If the supplier already has saved data (statusId > CREATED/UNSENT)
+      // and this item has no details → it was intentionally excluded
+      const hasBeenSaved = supplier.statusId >= 3;  // PENDING o READY
+      const wasExcluded = hasBeenSaved && !existing;
+
       return {
         orderItemId: item.id,
         productId: item.productId,
         confirmedQty: existing?.confirmedQty ?? 0,
         unitPrice: existing?.unitPrice ?? 0,
-        excluded: existing?.excluded ?? false,
+        excluded: existing?.excluded ?? wasExcluded,
       };
     }); 
 
