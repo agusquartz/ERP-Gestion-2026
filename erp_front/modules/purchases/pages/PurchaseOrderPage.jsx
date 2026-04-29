@@ -106,7 +106,7 @@ export default function PurchaseOrderPage({
 
   // Supplier IDs already on this order — passed to SupplierSearchModal so it
   // can exclude them from the available list.
-  const alreadyAddedIds = suppliers.map((s) => s.id);
+  const alreadyAddedIds = suppliers.map((s) => s.supplierId);
 
   return (
     /*
