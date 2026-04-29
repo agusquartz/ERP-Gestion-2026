@@ -36,21 +36,6 @@ const MOCK_AVAILABLE_SUPPLIERS = [
 
 const mockDelay = () => new Promise((resolve) => setTimeout(resolve, 300));
 
-// En purchaseOrderService.js — agregá export:
-export function mapStatus(status) {
-  switch (status) {
-    case "created":
-    case "unsent":
-      return "generar";
-    case "pending":
-      return "pendiente";
-    case "reading":
-      return "listo";
-    default:
-      return status;
-  }
-}
-
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 /**
@@ -85,9 +70,20 @@ async function apiFetch(url, options = {}) {
   });
 
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
+    const raw = await response.text().catch(() => "");
+    let errorBody = null;
+    try {
+      errorBody = raw ? JSON.parse(raw) : null;
+    } catch {
+      errorBody = raw;
+    }
+
+    console.error("API ERROR", { url, status: response.status, body: errorBody });
+
     throw new Error(
-      errorBody.message ?? `Request failed with status ${response.status}`
+      (errorBody && typeof errorBody === "object" && errorBody.message) ||
+        (typeof errorBody === "string" && errorBody) ||
+        `Request failed with status ${response.status}`
     );
   }
 
@@ -97,19 +93,10 @@ async function apiFetch(url, options = {}) {
 // ─── Purchase Order ───────────────────────────────────────────────────────────
 
 /**
- * Fetches purchase order header information.
- *
- * What it receives:
- *   @param {string} orderId
- *
- * What it returns:
- *   @returns {Promise<{ id, requester, createdAt }>}
- *
- * What it does:
- *   - Returns mock data OR fetches from backend
- *
- * Why it's important:
- *   - Provides context for the entire purchase flow
+ * Fetches the full purchase request (header + items + quotes)
+ * 
+ * @param {number} orderId
+ * @returns {Promise<Object> rar backend response}
  */
 export async function getPurchaseOrder(orderId) {
   if (USE_MOCK) {
@@ -122,36 +109,65 @@ export async function getPurchaseOrder(orderId) {
 // ─── Quotations ───────────────────────────────────────────────────────────────
 
 /**
- * Saves supplier quotation data.
+ * Saves confirmed product lines for a quote and updates its status.
  *
- * What it receives:
- *   @param {string} orderId
- *   @param {number} supplierId
- *   @param {Array<{ orderItemId, confirmedQty, unitPrice }>} quotationItems
+ * Step 1 — POST /purchase-quotes/:quoteId/details
+ *   Replaces all existing detail rows (DELETE + INSERT on backend).
+ *   Only active (non-excluded) rows are sent.
  *
- * What it returns:
- *   @returns {Promise<{ supplierId, status, quotationItems }>}
+ * Step 2 — PATCH /purchase-quotes/:quoteId
+ *   Advances the status:
+ *     UNSENT  (2) → PENDING (3)  if any active row is incomplete
+ *     UNSENT  (2) → READY   (4)  if all active rows are complete
+ *     PENDING (3) → READY   (4)  if now complete
  *
- * What it does:
- *   - Persists supplier response
- *
- * Why it's important:
- *   - Core action of the quotation flow
+ * @param {number}  quoteId       - The purchase_quotes.id
+ * @param {Array}   activeRows    - Non-excluded rows (already filtered by the hook)
+ * @param {boolean} isComplete    - True if all rows have qty > 0 and price > 0
+ * @param {number}  currentStatus - Current statusId (used to determine valid transition)
  */
-export async function saveQuotation(orderId, supplierId, quotationItems) {
-  if (USE_MOCK) {
-    await mockDelay();
-    console.log("[Mock] saveQuotation", { orderId, supplierId, quotationItems });
-    return { supplierId, status: "listo", quotationItems };
-  }
 
-  return apiFetch(
-    `${API_BASE}/purchase-quotes/${supplierId}/details`,
-    {
-      method: "POST",
-      body: JSON.stringify({ quotationItems }),
-    }
-  );
+export async function saveQuotation(quoteId, activeRows, isComplete, currentStatusId) {
+  //const safeItems = Array.isArray(quotationItems) ? quotationItems : [];
+
+  //Step 1 - Save detail rows
+  const detailsPayload = activeRows.map((row) => ({
+    product_id:         row.productId,
+    confirmed_quantity: row.confirmedQty,
+    unit_cost:          row.unitPrice,
+  }));
+
+  await apiFetch(`${API_BASE}/purchase-quotes/${quoteId}/details`, {
+    method: "POST",
+    body:   JSON.stringify({ details: detailsPayload }),
+  });
+  
+// Step 2 — Determine and apply next status
+  // Status IDs: 2=unsent, 3=pending, 4=ready
+
+  const nextStatusId = isComplete ? 4 : 3;
+
+  // Skip PATCH if status wouldn't change (e.g. already PENDING and still incomplete)
+  if (currentStatusId === nextStatusId) return;
+
+  await apiFetch(`${API_BASE}/purchase-quotes/${quoteId}`, {
+    method: "PATCH",
+    body:   JSON.stringify({ status_id: nextStatusId }),
+  });
+}
+
+/**
+ * Updates only the status of a quote.
+ * Used for "Generar" (CREATED → UNSENT) and "Imprimir" (UNSENT → PENDING).
+ *
+ * @param {number} quoteId  - The purchase_quotes.id
+ * @param {number} statusId - Target status ID
+ */
+export async function updateQuotationStatus(quoteId, statusId) {
+  return apiFetch(`${API_BASE}/purchase-quotes/${quoteId}`, {
+    method: "PATCH",
+    body:   JSON.stringify({ status_id: statusId }),
+  });
 }
 
 /**
@@ -207,22 +223,12 @@ export async function printAllQuotations(orderId) {
 }
 
 // ─── Suppliers ────────────────────────────────────────────────────────────────
-
 /**
- * Fetches available suppliers filtered by categories.
+ * Fetches available suppliers filtered by the given category names.
+ * Backend returns only suppliers that handle at least one matching category.
  *
- * What it receives:
- *   @param {string} orderId
- *   @param {string[]} categories
- *
- * What it returns:
- *   @returns {Promise<Array<{ id, name, categories }>>}
- *
- * What it does:
- *   - Returns suppliers that match at least one category
- *
- * Why it's important:
- *   - Ensures only relevant suppliers are selectable
+ * @param {string[]} categories
+ * @returns {Promise<Array<{ id, name, categories }>>}
  */
 export async function getAvailableSuppliers(categories) {
   if (USE_MOCK) {
@@ -242,20 +248,15 @@ export async function getAvailableSuppliers(categories) {
 }
 
 /**
- * Adds suppliers to a purchase order.
+ * Adds suppliers to a purchase order by creating one purchase_quote per supplier.
  *
- * What it receives:
- *   @param {string} orderId
- *   @param {number[]} supplierIds
+ * Each POST /purchase-quotes call creates a quote with status CREATED (2).
+ * Returns the new supplier rows in frontend shape so the hook can append
+ * them to state without re-fetching the full order.
  *
- * What it returns:
- *   @returns {Promise<Array<{ id, name, status, quotationItems, categories }>>}
- *
- * What it does:
- *   - Assigns suppliers to the order
- *
- * Why it's important:
- *   - Enables supplier participation in the quotation process
+ * @param {string|number} orderId
+ * @param {number[]}      supplierIds
+ * @returns {Promise<Array<{ id, supplierId, name, statusId, quotationItems, categories }>>}
  */
 export async function addSuppliers(orderId, supplierIds) {
   if (USE_MOCK) {
@@ -268,16 +269,18 @@ export async function addSuppliers(orderId, supplierIds) {
     return added.map((s) => ({
       id: s.id,
       name: s.name,
-      status: "generar",
+      statusId: 2,
       quotationItems: [],
       categories: s.categories,
     }));
   }
+
+  // Create one quote per selected supplier
   const results = await Promise.all(
     supplierIds.map((supplierId) =>
       apiFetch(`${API_BASE}/purchase-quotes`, {
         method: "POST",
-        body: JSON.stringify({
+        body:   JSON.stringify({
           purchase_request_id: parseInt(orderId),
           supplier_id: supplierId,
         }),
@@ -285,16 +288,13 @@ export async function addSuppliers(orderId, supplierIds) {
     )
   );
 
+  // Map backend response to frontend supplier shape
   return results.map((q) => ({
-    id: q.id,                    // quote_id — usado para PATCH y POST /details
-    supplierId: q.supplier_id,   // supplier_id real
-    name: q.supplier_name,
-    status: "generar",           // "created" en DB → "generar" en front
+    id:             q.id,               // quote_id - used for all subsequent calls
+    supplierId:     q.supplier_id,   
+    name:           q.supplier_name,
+    statusId:       q.status_id ?? 1,   // always CREATED on creation
     quotationItems: [],
-    categories: q.categories,
+    categories:     q.categories,
   }));
- // return apiFetch(`${API_BASE}/purchase-orders/${orderId}/suppliers`, {
- //   method: "POST",
- //   body: JSON.stringify({ supplierIds }),
- // });
 }
