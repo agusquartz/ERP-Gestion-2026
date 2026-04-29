@@ -14,28 +14,7 @@
  */
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-
-const USE_MOCK = false;
 const API_BASE = "http://localhost:3000";
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_ORDER_ITEMS = [
-  { id: 1, code: "9780201379623", product: "Neumático 185/65 R15", category: "NEUMÁTICOS", quantity: 150 },
-  { id: 2, code: "3234343545493", product: "Neumático 265/85 R17", category: "NEUMÁTICOS", quantity: 600 },
-  { id: 3, code: "6767576889000", product: "Llanta deportiva 18\" O2 Racing", category: "LLANTAS", quantity: 45 },
-  { id: 4, code: "3476091234546", product: "Aceite Sintético SW-30L Castrol", category: "LUBRICANTES", quantity: 87 },
-];
-
-const MOCK_SUPPLIERS = [];
-
-const MOCK_AVAILABLE_SUPPLIERS = [
-  { id: 4, name: "Neumáticos del Oeste", categories: ["NEUMÁTICOS"] },
-  { id: 5, name: "Lubricentro Central", categories: ["LUBRICANTES"] },
-  { id: 6, name: "Ruedas y Más", categories: ["NEUMÁTICOS", "LLANTAS"] },
-];
-
-const mockDelay = () => new Promise((resolve) => setTimeout(resolve, 300));
-
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 /**
@@ -99,10 +78,6 @@ async function apiFetch(url, options = {}) {
  * @returns {Promise<Object> rar backend response}
  */
 export async function getPurchaseOrder(orderId) {
-  if (USE_MOCK) {
-    await mockDelay();
-    return MOCK_PURCHASE_ORDER;
-  }
   return apiFetch(`${API_BASE}/purchase-requests/${orderId}`);
 }
 
@@ -128,8 +103,6 @@ export async function getPurchaseOrder(orderId) {
  */
 
 export async function saveQuotation(quoteId, activeRows, isComplete, currentStatusId) {
-  //const safeItems = Array.isArray(quotationItems) ? quotationItems : [];
-
   //Step 1 - Save detail rows
   const detailsPayload = activeRows.map((row) => ({
     product_id:         row.productId,
@@ -186,11 +159,6 @@ export async function updateQuotationStatus(quoteId, statusId) {
  *   - Starts supplier interaction workflow
  */
 export async function generateAllQuotations(orderId) {
-  if (USE_MOCK) {
-    await mockDelay();
-    return;
-  }
-
   await apiFetch(`${API_BASE}/purchase-orders/${orderId}/generate-all`, {
     method: "POST",
   });
@@ -212,11 +180,6 @@ export async function generateAllQuotations(orderId) {
  *   - Final step for exporting/printing quotations
  */
 export async function printAllQuotations(orderId) {
-  if (USE_MOCK) {
-    await mockDelay();
-    return { printUrl: "/mock-print.pdf" };
-  }
-
   return apiFetch(`${API_BASE}/purchase-orders/${orderId}/print-all`, {
     method: "GET",
   });
@@ -231,18 +194,6 @@ export async function printAllQuotations(orderId) {
  * @returns {Promise<Array<{ id, name, categories }>>}
  */
 export async function getAvailableSuppliers(categories) {
-  if (USE_MOCK) {
-    await mockDelay();
-
-    if (categories?.length) {
-      return MOCK_AVAILABLE_SUPPLIERS.filter((supplier) =>
-        supplier.categories.some((cat) => categories.includes(cat))
-      );
-    }
-
-    return MOCK_AVAILABLE_SUPPLIERS;
-  }
-
   const params = new URLSearchParams({ categories: categories.join(",") });
   return apiFetch(`${API_BASE}/suppliers/available?${params}`);
 }
@@ -259,22 +210,6 @@ export async function getAvailableSuppliers(categories) {
  * @returns {Promise<Array<{ id, supplierId, name, statusId, quotationItems, categories }>>}
  */
 export async function addSuppliers(orderId, supplierIds) {
-  if (USE_MOCK) {
-    await mockDelay();
-
-    const added = MOCK_AVAILABLE_SUPPLIERS.filter((s) =>
-      supplierIds.includes(s.id)
-    );
-
-    return added.map((s) => ({
-      id: s.id,
-      name: s.name,
-      statusId: 2,
-      quotationItems: [],
-      categories: s.categories,
-    }));
-  }
-
   // Create one quote per selected supplier
   const results = await Promise.all(
     supplierIds.map((supplierId) =>
