@@ -60,7 +60,7 @@ export default function SuppliersTable({
            */}
           <button
             onClick={onGenerateOrPrintAll}
-            disable={!hasSuppliers}
+            disabled={!hasSuppliers}
             className={`${btn.secondarySm} shadow-panel disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {allGenerated ? "Imprimir Todos" : "Generar Todos"}
