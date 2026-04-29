@@ -332,7 +332,7 @@ export function usePurchaseOrder(orderId) {
   const handleGenerateOrPrintAll = async () => {
     if (!allGenerated) {
       try {
-        // Encontrar todos los proveedores en CREATED que aún no fueron generados
+        // Find all providers in CREATED that have not yet been generated
         const toGenerate = suppliers.filter((s) => s.statusId === STATUS.CREATED);
 
         // Transicionar cada uno a UNSENT en el backend
@@ -340,7 +340,7 @@ export function usePurchaseOrder(orderId) {
           toGenerate.map((s) => updateQuotationStatus(s.id, STATUS.UNSENT))
         );
 
-        // Actualizar estado local
+        // Update local status
         setSuppliers((prev) =>
           prev.map((s) =>
             s.statusId === STATUS.CREATED ? { ...s, statusId: STATUS.UNSENT } : s
