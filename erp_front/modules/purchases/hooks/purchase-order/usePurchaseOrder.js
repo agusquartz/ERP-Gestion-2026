@@ -30,20 +30,37 @@ import {
   generateAllQuotations,
   printAllQuotations,
   addSuppliers,
-  mapStatus,
+  updateQuotationStatus,
 } from "../../services/purchaseOrderService";
 
+
+// ─── Status IDs — must match the `statuses` table in the DB ──────────────────
+//
+//  id | status
+//  ---+---------
+//   1 | created   ← supplier just added, no action yet
+//   2 | unsent    ← "Generar" clicked, quote sent but no response yet
+//   3 | pending   ← saved with incomplete fields
+//   4 | reading   ← all fields filled and saved (read-only)
+//
+// Exported so SuppliersTable can import and use them directly
+// without duplicating magic numbers.
+export const STATUS = {
+  CREATED:  1,
+  UNSENT:   2,
+  PENDING:  3,
+  READY:    4,
+};
+
 export function usePurchaseOrder(orderId) {
-  // ── Server data ─────────────────────────────────────────────────────────────
+  // ── Remote data ─────────────────────────────────────────────────────────────
   const [purchaseOrder, setPurchaseOrder] = useState(null);
   const [orderItems, setOrderItems]       = useState([]);
   const [suppliers, setSuppliers]         = useState([]);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
 
-
   // ── Modal visibility ────────────────────────────────────────────────────────
-  
   /** The supplier whose QuotationModal is currently open. null = modal closed. */
   const [activeSupplier, setActiveSupplier] = useState(null);
 
@@ -63,47 +80,50 @@ export function usePurchaseOrder(orderId) {
 
 
   // ── Data fetching ───────────────────────────────────────────────────────────
-
   useEffect(() => {
     if (!orderId) return;
+    
     /**
      * Loads all purchase order data in parallel.
      * Falls back to an error state if any request fails.
      */
-
     async function fetchAll() {
       setLoading(true);
       setError(null);
       try {
         const order = await getPurchaseOrder(orderId);
+        
         setPurchaseOrder({
-            id: order.id,
-            createdAt: order.created_at,
-            requester: order.employee_name,
+            id:         order.id,
+            createdAt:  order.created_at,
+            requester:  order.employee_name,
         });
         
+        // Map items to fronted shape
         setOrderItems(
           (order.items ?? []).map((item) => ({
-            id: item.id,
-            productId: item.product_id,
-            code: item.product_code,
-            product: item.product_name,
-            category: item.category,
-            quantity: item.quantity,
+            id:         item.id,
+            productId:  item.product_id,
+            code:       item.product_code,
+            product:    item.product_name,
+            category:   item.category,
+            quantity:   item.quantity,
           }))
         );
 
          // Mapear quotes → suppliers al formato del front
+         // quotationItems preserves excluded state when re-opening the modal
         const mappedSuppliers = (order.quotes ?? []).map((q) => ({
-          id: q.id,                  // quote_id
-          supplierId: q.supplier_id,
-          name: q.supplier_name,
-          status: mapStatus(q.status), // "unsent" → "generar", etc.
-          categories: q.categories,
+          id:           q.id,                  // quote_id - used for PATCH and POST /details
+          supplierId:   q.supplier_id,
+          name:         q.supplier_name,
+          statusId:     q.status_id, // "unsent" → "generar", etc.
+          categories:   q.categories,
           quotationItems: (q.details ?? []).map((d) => ({
-            orderItemId: d.product_id,
-            confirmedQty: d.confirmed_quantity,
-            unitPrice: d.unit_cost,
+            productId:      d.product_id,
+            confirmedQty:   d.confirmed_quantity,
+            unitPrice:      d.unit_cost,
+            excluded: false,
           })),
         }));
         
@@ -111,11 +131,14 @@ export function usePurchaseOrder(orderId) {
         
 
         // If all existing suppliers are already past "generar", show "Imprimir Todos"
-        const allPast = suppliers.every((s) => s.status !== "generar");
-        setAllGenerated(allPast && suppliers.length > 0);
+        const allPast = 
+          mappedSuppliers.length > 0 &&
+          mappedSuppliers.every(
+            (s) => s.statusId !== STATUS.CREATED && s.statusId !== STATUS.UNSENT
+          );
+        setAllGenerated(allPast && mappedSuppliers.length > 0);
 
       } catch (err) {
-        // TODO: Replace with your app's error handling / toast system
         console.error("Error loading purchase order:", err);
         setError("No se pudo cargar el pedido de compra.");
       } finally {
@@ -125,10 +148,8 @@ export function usePurchaseOrder(orderId) {
 
     fetchAll();
   }, [orderId]);
-
-
+  
   // ── Derived: categories summary ──────────────────────────────────────────────
-
   /**
    * Builds the category summary rows shown in CategoriesTable.
    * Derived from orderItems so it always stays in sync without an extra API call.
@@ -139,7 +160,6 @@ export function usePurchaseOrder(orderId) {
    *       provides that breakdown. Currently it counts all non-"generar" suppliers
    *       across the whole order, which is an approximation.
    */
-
   const categories = useMemo(() => {
     const map = {};
     orderItems.forEach((item) => {
@@ -151,25 +171,25 @@ export function usePurchaseOrder(orderId) {
       
     return Object.values(map).map((cat) => ({
       ...cat,
+      // Count suppliers tht are past "created" and handle this category
       assignedSuppliers: suppliers.filter((s) => {
-        if (s.status === "generar") return false;
-
-        const itemIdsForCategory = orderItems
-          .filter((item) => item.category === cat.category)
-          .map((item) => item.id);
-
-        // Guard: if no quotationItems, check the supplier's categories array instead
+        if (s.statusId === STATUS.CREATED) return false;
+        
         if (!s.quotationItems || s.quotationItems.length === 0) {
           return s.categories?.some((c) => c === cat.category) ?? false;
         }
+        
+        const itemIdsForCategory = orderItems
+          .filter((item) => item.category === cat.category)
+          .map((item) => item.productId);
 
-        return s.quotationItems.some((qi) =>
-          itemIdsForCategory.includes(qi.orderItemId)
+        return s.quotationItems.some(
+        (qi) =>  !qi.excluded && itemIdsForCategory.includes(qi.productId)
         );
       }).length,
     }));
   }, [orderItems, suppliers]);
-
+    
   /**
    * Flat list of unique category name strings.
    * Passed to SupplierSearchModal and the service layer for backend filtering.
@@ -179,90 +199,163 @@ export function usePurchaseOrder(orderId) {
     [orderItems]
   );
 
+
   // ── Quotation modal handlers ─────────────────────────────────────────────────
-
-  /** Opens the QuotationModal for a given supplier. */
-  const handleOpenQuotation = (supplier) => setActiveSupplier(supplier);
-
-  /** Closes the QuotationModal. */
-  const handleCloseQuotation = () => setActiveSupplier(null);
-
   /**
-   * Persists a supplier's filled-in quotation and advances its status.
+  * Opens QuotationModal for a supplier
+  * If status is CREATED, transitions to UNSENT first (marks quote as "generated")
+  */
+  
+  const handleOpenQuotation = async (supplier) => {
+    if (supplier.statusId === STATUS.CREATED) {
+      try {
+        await updateQuotationStatus(supplier.id, STATUS.UNSENT);
+        const updated = { ...supplier, statusId: STATUS.UNSENT};
+        setSuppliers((prev) =>
+          prev.map((s) => (s.id === supplier.id ? updated : s))
+        );
+        setActiveSupplier(updated);
+      } catch (err) {
+        console.error("Error transition to unsent:", err);
+        // Open anyway with original status so the user isn't blocked
+        setActiveSupplier(supplier);
+      }
+    } else {
+      setActiveSupplier(supplier);
+    }
+  };
+  
+  /** Closes QuotationModal without saving. */
+  const handleCloseQuotation = () => setActiveSupplier(null);
+  
+  /**
+   * Saves a supplier's quotation.
    *
-   * Optimistic update: UI updates immediately; backend call fires in background.
-   * If the backend fails, the error is logged — add a toast + state revert here
-   * once your notification system is in place.
+   * allRows includes BOTH active and excluded rows so that:
+   *   - Excluded checkboxes persist when re-opening the modal
+   *   - Partially filled values persist when re-opening the modal
+   *
+   * Only activeRows (non-excluded) are sent to the backend.
    *
    * Status transitions:
-   *   "generar"   → "pendiente"  (first time the quotation is sent)
-   *   "pendiente" → "listo"      (supplier confirmed quantities and prices)
+   *   UNSENT  → PENDING  if any active row is missing qty or price
+   *   UNSENT  → READY    if all active rows are fully filled
+   *   PENDING → READY    if remaining fields are now complete
    *
-   * @param {number} supplierId   - ID of the supplier being updated.
-   * @param {Array}  updatedRows  - Quotation rows from the modal form.
+   * @param {number}  quoteId    - The quote (supplier row) being saved
+   * @param {Array}   allRows    - All rows including excluded ones (for UI persistence)
+   * @param {boolean} isComplete - True if all active rows have qty > 0 and price > 0
    */
-  const handleSaveQuotation = async (supplierId, allRows, isComplete) => {
+  const handleSaveQuotation = async (quoteId, allRows, isComplete) => {
     try {
-      // TODO: Remove optimistic update if your backend is slow or unreliable.
-      // Currently we update UI immediately and fire the API in background.
+      // Only send non-excluded rows to the backend
       const activeRows = allRows.filter((r) => !r.excluded);
+    
+      const supplier        = suppliers.find((s) => s.id === quoteId);
+      const currentStatus   = supplier?.statusId;
 
+      let nextStatus = isComplete ? STATUS.READY : STATUS.PENDING;
+
+      await saveQuotation(quoteId, activeRows, isComplete, currentStatus);
+
+      // Optimistic update - update UI inmediately
       setSuppliers((prev) =>
-        prev.map((s) => {
-          if (s.id !== supplierId) return s;
-          
-          return {
-            ...s,
-            status: isComplete ? "reading" : "pending",
-            quotationItems: allRows,
-          };
-        })
+        prev.map((s) =>
+          s.id === quoteId
+            ? {
+                ...s,
+                statusId: nextStatus,
+                // Store ALL rows so excluded state and partial values persist
+                quotationItems: allRows,
+              }
+            : s
+        )
       );
-      await saveQuotation(orderId, supplierId, activeRows, isComplete);
+
+      // Persist to backend
+      await saveQuotation(quoteId, activeRows, isComplete, currentStatus);
+
     } catch (err) {
-      // TODO: Show error toast and revert optimistic update
       console.error("Error saving quotation:", err);
     }
   };
+  
 
+  const handleGenerateQuotation = async (supplier) => {
+    try {
+      if (supplier.statusId === STATUS.CREATED) {
+        await updateQuotationStatus(supplier.id, STATUS.UNSENT);
+
+        setSuppliers((prev) =>
+          prev.map((s) =>
+            s.id === supplier.id ? { ...s, statusId: STATUS.UNSENT } : s
+          )
+        );
+      }
+
+      setActiveSupplier(supplier);
+    } catch (err) {
+      console.error("Error generating quotation:", err);
+    }
+  };
+
+  
+  // ── "Imprimir" inside QuotationModal ───────────────────────────────────────────────────────
+  const handlePrintQuotation = async (quoteId) => {
+    try {
+      const supplier = suppliers.find((s) => s.id === quoteId);
+      if (!supplier) return;
+
+
+      // Only update if currently UNSENT
+      if (supplier.statusId === STATUS.UNSENT) {
+        await updateQuotationStatus(quoteId, STATUS.PENDING);
+        setSuppliers((prev) =>
+          prev.map((s) =>
+            s.id === quoteId ? { ...s, statusId: STATUS.PENDING } : s
+          )
+        );
+      }
+      window.print();
+    } catch (err) {
+      console.error("Error preparing print:", err);
+    }
+  };
 
   // ── "Generar Todos" / "Imprimir Todos" ───────────────────────────────────────
-
   /**
-   * Handles the main action button in SuppliersTable, which toggles between
-   * "Generar Todos" and "Imprimir Todos" depending on `allGenerated`.
+   * "Generar Todos": transitions all UNSENT suppliers to PENDING.
+   * "Imprimir Todos": prints all quotations.
    *
-   * When label is "Generar Todos":
-   *   - Transitions all "generar" suppliers to "pendiente" (optimistic).
-   *   - Calls generateAllQuotations() on the backend.
-   *   - Sets allGenerated = true → button switches to "Imprimir Todos".
-   *
-   * When label is "Imprimir Todos":
-   *   - Calls printAllQuotations() on the backend.
-   *   - TODO: Handle the print URL/blob returned by the backend (open in new tab, etc.)
+   * Button is disabled when there are no suppliers (handled in SuppliersTable).
    */
   const handleGenerateOrPrintAll = async () => {
-      if (!allGenerated) {
-      // ── Generar Todos ──
+    if (!allGenerated) {
       try {
-        setSuppliers((prev) =>
-          prev.map((s) => (s.status === "created" ? { ...s, status: "unsend" } : s))
+        // Encontrar todos los proveedores en CREATED que aún no fueron generados
+        const toGenerate = suppliers.filter((s) => s.statusId === STATUS.CREATED);
+
+        // Transicionar cada uno a UNSENT en el backend
+        await Promise.all(
+          toGenerate.map((s) => updateQuotationStatus(s.id, STATUS.UNSENT))
         );
-        await generateAllQuotations(orderId);
+
+        // Actualizar estado local
+        setSuppliers((prev) =>
+          prev.map((s) =>
+            s.statusId === STATUS.CREATED ? { ...s, statusId: STATUS.UNSENT } : s
+          )
+        );
+
         setAllGenerated(true);
       } catch (err) {
-        // TODO: Show error toast and revert supplier statuses
         console.error("Error generating all quotations:", err);
       }
     } else {
-      // ── Imprimir Todos ──
       try {
         const result = await printAllQuotations(orderId);
-        // TODO: Handle result — e.g. open result.printUrl in a new tab:
-        // window.open(result.printUrl, "_blank");
         console.log("Print result:", result);
       } catch (err) {
-        // TODO: Show error toast
         console.error("Error printing all quotations:", err);
       }
     }
@@ -270,32 +363,19 @@ export function usePurchaseOrder(orderId) {
 
   // ── Supplier search modal handlers ───────────────────────────────────────────
 
-  /** Opens the SupplierSearchModal. */
   const handleOpenSupplierSearch = () => setIsSupplierSearchOpen(true);
-
-  /** Closes the SupplierSearchModal without adding anyone. */
   const handleCloseSupplierSearch = () => setIsSupplierSearchOpen(false);
 
-
   /**
-   * Adds one or more suppliers selected in SupplierSearchModal to the order.
-   *
-   * The backend returns the newly created supplier entries; we append them
-   * directly to local state to avoid a full re-fetch.
-   *
-   * Resets allGenerated to false because the new supplier(s) are in "generar"
-   * status and haven't been notified yet, so "Generar Todos" becomes relevant again.
-   *
-   * @param {Array} selectedSuppliers - Supplier objects chosen in the modal.
-   *   Each: { id: number, name: string, categories: string[] }
+   * Adds selected suppliers to the order.
+   * Uses the backend response directly so quote IDs are correct.
+   * Resets allGenerated because new suppliers start as CREATED.
    */
   const handleAddSuppliers = async (selectedSuppliers) => {
     try {
-      const ids = selectedSuppliers.map((s) => s.id);
-      
-      const newSuppliers = await addSuppliers(orderId, ids);
+      const ids =           selectedSuppliers.map((s) => s.id);
+      const newSuppliers =  await addSuppliers(orderId, ids);
       setSuppliers((prev) => [...prev, ...newSuppliers]);
-
       setAllGenerated(false);
       setIsSupplierSearchOpen(false);
     } catch (err) {
@@ -303,25 +383,7 @@ export function usePurchaseOrder(orderId) {
     }
   };
 
-  // ── Print handler ────────────────────────────────────────────────────────────
-
-  /** Triggers browser print for the current quotation. */
-  const handlePrint = () => window.print();
-
-  const handlePrintQuotation = async (supplierId) => {
-    try {
-      setSuppliers((prev) =>
-        prev.map((s) => (s.id === supplierId ? {...s, status: "pending"} : s))
-      );
-
-      // The modal prints using window.print(), so here we're only synchronizing the state.
-      // If the backend then returns a PDF, this is the point to open it.
-    } catch (err) {
-      console.error("Error preparing print:", err);
-    }
-  };
   // ── Exposed API ──────────────────────────────────────────────────────────────
-
   return {
     // Remote data
     purchaseOrder,
@@ -338,7 +400,7 @@ export function usePurchaseOrder(orderId) {
     handleCloseQuotation,
     handleSaveQuotation,
     handlePrint: handlePrintQuotation,
-    handlePrint,
+    handleGenerateQuotation,
 
     // Supplier search modal
     isSupplierSearchOpen,
