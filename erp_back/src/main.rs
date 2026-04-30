@@ -49,8 +49,6 @@ async fn main() {
         .ok()
         .expect("Failed to load environment variables from .env file");
 
-    //dotenv().ok();
-    
     //DATABASE CONFIGURATION
     //-------------------------------------------------------------------------
     //TODO: error management
@@ -73,19 +71,20 @@ async fn main() {
     // -------------------------------------------------------------------------
     let cors_origin = std::env::var("CORS_ALLOWED_ORIGIN")
         .expect("CORS_ALLOWED_ORIGIN must be set");
+    let origins = cors_origin
+        .split(",")
+        .map(|s| s.parse().unwrap())
+        .collect::<Vec<_>>();
 
     let cors = CorsLayer::new()
-        // .allow_origin(cors_origin.parse::<HeaderValue>().unwrap())
-        .allow_origin(AllowOrigin::list([
-            "https://wxqzb.xyz".parse().unwrap(),
-            "https://www.wxqzb.xyz".parse().unwrap(),
-        ]))
+        .allow_origin(AllowOrigin::list(origins))
         .allow_methods([
             Method::GET,
             Method::POST,
             Method::PUT,
             Method::PATCH,
             Method::DELETE,
+            Method::OPTIONS,
         ])
         .allow_headers([
             header::CONTENT_TYPE,
