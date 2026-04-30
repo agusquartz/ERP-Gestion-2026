@@ -16,6 +16,8 @@ import {
   modal,
 } from "../../styles/purchase-order/purchaseOrderStyles";
 
+import { STATUS } from "../../hooks/purchase-order/usePurchaseOrder";
+
 export default function QuotationModal({
   isOpen,
   supplier,
@@ -58,7 +60,7 @@ export default function QuotationModal({
     setRows(buildRows);
   }, [supplier, orderItems]);
 
-  const isReadOnly = supplier?.status === "listo";
+  const isReadOnly = supplier?.statusId === STATUS.READY;
 
   if (!isOpen || !supplier) return null;
 
