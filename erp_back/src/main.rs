@@ -21,6 +21,7 @@ mod modules {
     pub mod quote;
     pub mod invoice;
     pub mod credit_notes;
+    pub mod purchase_order;
 }
 
 mod shared {
@@ -106,6 +107,7 @@ async fn main() {
         .merge(modules::quote::router::quote_router())
         .merge(modules::invoice::router::invoice_router())
         .merge(modules::credit_notes::router::credit_note_router())
+        .merge(modules::purchase_order::router::purchase_order_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
