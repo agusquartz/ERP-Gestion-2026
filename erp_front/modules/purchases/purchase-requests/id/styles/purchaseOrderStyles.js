@@ -14,7 +14,7 @@ export const btn = {
   primarySm:
     "px-3 py-1 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary-hover transition-colors",
   secondarySm:
-    "px-3 py-1 rounded-lg border border-border text-secondary text-xs font-medium hover:bg-gray-50 transition-colors",
+    "px-3 py-1 rounded-lg border border-border text-secondary text-xs font-medium hover:bg-gray-200 hover:shadow-sm active:bg-gray-300 transition-all duration-150",
 };
 
 export const card = {
@@ -39,6 +39,8 @@ export const badge = {
     "px-3 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 border border-yellow-300",
   listo:
     "px-3 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300",
+  cancelado:
+    "px-3 py-0.5 rounded-full text-xs font-semibold border bg-[#FFE6E5] text-[#5D0000] border-[#91372B]",
 };
 
 export const label = {

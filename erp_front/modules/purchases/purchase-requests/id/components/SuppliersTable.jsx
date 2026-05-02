@@ -69,7 +69,7 @@ export default function SuppliersTable({
           {/* Opens SupplierSearchModal to add one or more new suppliers */}
           <button
             onClick={onOpenSupplierSearch}
-            className={`${btn.primarySm} shadow-panel`}
+            className="px-2 py-1 text-xs text-medium rounded-md border border-primary text-primary hover:bg-primary/10 transition-colors shadow-panel"
           >
             + Agregar Proveedor
           </button>
@@ -134,6 +134,9 @@ export default function SuppliersTable({
                     {(supplier.statusId === STATUS.UNSENT ||
                       supplier.statusId === STATUS.PENDING) && (
                       <span className={badge.pendiente}>• Pendiente</span>
+                    )}
+                    {(supplier.statusId === STATUS.CANCELLED) && (
+                      <span className={badge.cancelado}>• Cancelado</span>
                     )}
                     {supplier.statusId === STATUS.READY && (
                       <span className={badge.listo}>• Listo</span>

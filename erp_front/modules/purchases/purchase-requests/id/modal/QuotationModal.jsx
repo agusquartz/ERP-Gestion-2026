@@ -60,7 +60,9 @@ export default function QuotationModal({
     setRows(buildRows);
   }, [supplier, orderItems]);
 
-  const isReadOnly = supplier?.statusId === STATUS.READY;
+  const isReadOnly = 
+    supplier?.statusId === STATUS.READY ||
+    supplier?.statusId === STATUS.CANCELLED;
 
   if (!isOpen || !supplier) return null;
 
@@ -139,9 +141,33 @@ export default function QuotationModal({
         </div>
 
         <div className="print:hidden">
-          <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
-            Ítems Cotizados
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
+              Ítems Cotizados
+            </p>
+
+            {!isReadOnly && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="discard-all"
+                  checked={rows.length > 0 && rows.every(r => r.excluded)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setRows((prev) =>
+                      prev.map((row) => {
+                        //if (row.excluded) return row;
+                        return { ...row, excluded: checked };
+                      })
+                    );
+                  }}
+                />
+                <span className="text-xs font-semibold text-muted uppercase tracking-widest">
+                  Descartar todos
+                </span>
+              </label>
+            )}
+          </div>
 
           <div className="rounded-lg border border-border overflow-y-auto max-h-64">
             <table className={`${table.base} w-full table-fixed`}>

@@ -46,10 +46,11 @@ import {
 // Exported so SuppliersTable can import and use them directly
 // without duplicating magic numbers.
 export const STATUS = {
-  CREATED:  1,
-  UNSENT:   2,
-  PENDING:  3,
-  READY:    4,
+  CREATED:   1,
+  UNSENT:    2,
+  PENDING:   3,
+  READY:     4,
+  CANCELLED: 5,
 };
 
 export function usePurchaseOrder(orderId) {
@@ -251,6 +252,23 @@ export function usePurchaseOrder(orderId) {
       // Only send non-excluded rows to the backend
       const activeRows = allRows.filter((r) => !r.excluded);
     
+      if (activeRows.length === 0) {
+        await updateQuotationStatus(quoteId, STATUS.CANCELLED);
+        
+        setSuppliers((prev) =>
+          prev.map((s) =>
+            s.id === quoteId
+              ? {
+                ...s,
+                statusId: STATUS.CANCELLED,
+                quotationItems: allRows,
+              }
+              : s
+          )
+        );
+        return;
+      }
+
       const supplier        = suppliers.find((s) => s.id === quoteId);
       const currentStatus   = supplier?.statusId;
 
