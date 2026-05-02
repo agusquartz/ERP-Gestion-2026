@@ -16,3 +16,20 @@ export const getProductByQuery = async (query) => {
       item.descripcion.toLowerCase().includes(lowerQuery)
   );
 };
+
+export const createPurchaseRequest = async (purchaseData) => {
+  // Simulamos la llamada a la API de Rust
+  console.log("Enviando a Rust:", purchaseData);
+  
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  
+  // Aquí iría el fetch real:
+  // const response = await fetch('/api/purchases', {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify(purchaseData)
+  // });
+  // if (!response.ok) throw new Error('Error en el servidor');
+  
+  return { success: true };
+};

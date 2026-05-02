@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { usePurchaseForm } from "../hooks/NewPurchase/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
+import { Toaster, toast } from 'sonner'; // Importamos Sonner
+import { createPurchaseRequest } from "../services/purchaseService";
 
 
 // Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales);
@@ -22,11 +24,45 @@ export default function NewPurchasePage() {
 
 
   const productSearchModal = useDisclosure();
-  console.log("Estado del modal:", productSearchModal.isOpen);
+
   const [pendingProduct, setPendingProduct] = useState(null);
+
+const handleSave = async () => {
+    // 1. Validación: No guardar si está vacío
+    if (items.length === 0) {
+      return toast.error("La lista de pedido está vacía");
+    }
+
+    // 2. Creamos la promesa para el guardado
+    const savePromise = async () => {
+      // Estructuramos los datos según el estándar del backend (CamelCase)
+      const requestData = {
+        items: items.map(item => ({
+          productId: item.id || item.codigo, // Usamos el ID o código
+          quantity: item.cantidad,
+          price: item.precio // Aunque sea 0 o referencial
+        })),
+        totalAmount: subtotal,
+        status: "PENDING_QUOTE" // Estado para la siguiente fase de cotización
+      };
+
+      return await createPurchaseRequest(requestData);
+    };
+
+    // 3. Disparamos el Toast con estado de carga, éxito y error
+    toast.promise(savePromise(), {
+      loading: 'Registrando pedido de productos...',
+      success: () => {
+        reset(); // Limpiamos la tabla solo si se guardó bien
+        return 'Pedido registrado. Listo para cotizar.';
+      },
+      error: 'Error: No se pudo registrar el pedido.',
+    });
+  };
 
   return (
     <div className={s.container}>
+      <Toaster position="top-right" richColors />
       <div className={s.titleSection}>
         <h1 className={s.pageTitle}>Nuevo Pedido</h1>
       </div>
@@ -42,7 +78,7 @@ export default function NewPurchasePage() {
           </div>
           
           {/* Botón Guardar */}
-          <PurchaseActions/>
+          <PurchaseActions onSave={handleSave}/>
       </div>
 
         {/* COLUMNA DERECHA: Paneles de control */}
