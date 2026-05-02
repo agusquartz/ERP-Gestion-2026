@@ -1,5 +1,5 @@
 /**
- * @file purchaseOrderStyles.js
+ * @file purchaseRequestsStyles.js
  * @module modules/purchases/styles/purchase-order
  *
  * Centralized design tokens and reusable Tailwind class strings for the

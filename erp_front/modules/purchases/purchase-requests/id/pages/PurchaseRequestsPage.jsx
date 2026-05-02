@@ -1,5 +1,5 @@
 /**
- * @file PurchaseOrderPage.jsx
+ * @file PurchaseRequestsPage.jsx
  * @module modules/purchases/pages
  *
  * @description

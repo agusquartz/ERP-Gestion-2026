@@ -1,5 +1,5 @@
 /**
- * @file purchaseOrderService.js
+ * @file purchaseRequestsService.js
  * @module modules/purchases/services
  *
  * @description

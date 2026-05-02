@@ -1,5 +1,5 @@
 /**
- * @file usePurchaseOrder.js
+ * @file usePurchaseRequests.js
  * @module modules/purchases/hooks/purchase-order
  *
  * @description
