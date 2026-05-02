@@ -1,30 +1,11 @@
-/**
- * ============================================================
- * HANDOVER STATUS: Search & Filter Module
- * ============================================================
- * DONE:
- * - Server-side search (debounced)
- * - Client-side filtering (Status, Date, Order #)
- * - Dynamic results counter in Table
- * - Main layout "Big Card" styling
- * * PENDING:
- * - Detail View: handleViewDetail() is wired to the 'Eye' icon.
- * - API Endpoints: Replace BASE_URL in /services/purchaseService.js
- * ============================================================
- */
-
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDebounce } from '../hooks/useDebounce.js'; 
-import { purchaseService } from '../services/PurchaseService.js';
+import { getPurchaseOrdersByQuery } from '../../../../../lib/http/client/purchase-orders.js';
 import PurchaseFilters from '../components/PurchaseFilters.jsx';
 import PurchaseTable from '../components/PurchaseTable.jsx';
 
 import {formatDate, formatCurrency} from '../components/utils.js';
-
-//Delete when finally connected to backend
-//import { MOCK_PURCHASE_ORDERS } from '../components/search_purchases/mokData.js';
-
 
 const SearchPurchaseOrdersPage = () => {
   const [selectedDate, setSelectedDate] = useState('');
@@ -44,13 +25,8 @@ const SearchPurchaseOrdersPage = () => {
     const loadData = async () => {
 	  setIsLoading(true);
 	  try {
-		//TODO: this is the real call to the api, we're working with mock data
-		const data = await purchaseService.getPurchaseOrders(debouncedServerSearch);
+		const data = await getPurchaseOrdersByQuery(debouncedServerSearch);
 		setOrders(data);
-
-        // Mocking the result of the API call
-	    //const mockResult = MOCK_PURCHASE_ORDERS;
-        //setOrders(mockResult);
 
 	  } catch (err) {
 		console.error("Failed to load orders: ", err);
