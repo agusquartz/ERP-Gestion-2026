@@ -120,12 +120,12 @@ export default function PurchaseOrderPage({
      */
 
     <div
-      className="h-full overflow-hidden flex flex-col bg-surface p-6 shadow-panel border border-border" 
+      className="h-[calc(100vh-3rem)] overflow-hidden flex flex-col bg-surface p-4 shadow-panel" 
       style={{ borderRadius: "5px"}}
     >
       
       {/* ── Page header ── */}
-      <div className="shrink-0 mb-4">
+      <div className="shrink-0 mb-2">
         <h1 className="text-2xl font-bold tracking-tight">
           Pedido de compra{" "}
           <span className="text-primary">#{purchaseOrder?.id}</span>
@@ -144,7 +144,7 @@ export default function PurchaseOrderPage({
        * Each child manages its own internal scroll.
        */}
       {/* ── Items table (scrollable) ── */}
-      <div className="flex flex-col flex-1 min-h-0 overflow-hidden gap-4">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden gap-2">
         <OrderItemsTable items={orderItems} />
 
         {/* ── Categories + Suppliers (two columns, each scrollable) ── */}
@@ -161,7 +161,7 @@ export default function PurchaseOrderPage({
       </div>
 
       {/* ── Footer actions ── */}
-      <div className="flex justify-end gap-3 mt-4 shrink-0">
+      <div className="flex justify-end gap-3 mt-2 shrink-0">
         <button
           onClick={onBack}
           className={`${btn.secondary} shadow-panel`}

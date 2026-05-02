@@ -49,7 +49,7 @@ export default function SuppliersTable({
 
       {/* ── Section header with action buttons ── */}
       <div className="flex items-center justify-between mb-3">
-        <p className={label.section}>Proveedores &amp; Cotizaciones</p>
+        <p className={`${label.section} mt-2`}>Proveedores &amp; Cotizaciones</p>
 
         <div className="flex gap-2">
           {/*

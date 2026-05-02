@@ -18,7 +18,7 @@ export const btn = {
 };
 
 export const card = {
-  base: "rounded-xl overflow-hidden border border-border bg-surface",
+  base: "rounded-xl overflow-hidden bg-surface",
 };
 
 export const table = {
