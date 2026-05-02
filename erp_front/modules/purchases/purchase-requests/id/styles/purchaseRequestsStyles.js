@@ -1,6 +1,6 @@
 /**
  * @file purchaseRequestsStyles.js
- * @module modules/purchases/styles/purchase-order
+ * @module modules/purchases/purchase-requests/id/styles
  *
  * Centralized design tokens and reusable Tailwind class strings for the
  * Purchase Order views and components.

@@ -1,6 +1,6 @@
 /**
  * @file SupplierSearchModal.jsx
- * @module modules/purchases/modal/purchase-order
+ * @module modules/purchases/purchase-requests/id/modal
  *
  * @description
  * Modal for searching and selecting suppliers to add to a purchase order.
@@ -14,8 +14,8 @@ import {
   input,
   modal,
   badge,
-} from "../../styles/purchase-order/purchaseOrderStyles";
-import { getAvailableSuppliers } from "../../services/purchaseOrderService";
+} from "../styles/purchaseRequestsStyles";
+import { getAvailableSuppliers } from "../services/purchaseRequestsService";
 
 export default function SupplierSearchModal({
   isOpen,

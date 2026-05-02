@@ -1,6 +1,6 @@
 /**
  * @file CategoriesTable.jsx
- * @module modules/purchases/components/purchase-order
+ * @module modules/purchases/purchase-requests/id/components
  *
  * @description
  * Displays a summary of the unique product categories present in the order,
@@ -17,7 +17,7 @@
  * @returns {JSX.Element} A bordered, scrollable category summary table.
  */
 
-import { card, table, badge, label, } from "../../styles/purchase-order/purchaseOrderStyles";
+import { card, table, badge, label, } from "../styles/purchaseRequestsStyles";
 
 export default function CategoriesTable({ categories = [] }) {
   return (

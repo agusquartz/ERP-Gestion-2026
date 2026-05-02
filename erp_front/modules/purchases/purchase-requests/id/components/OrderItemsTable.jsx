@@ -1,6 +1,6 @@
 /**
  * @file OrderItemsTable.jsx
- * @module modules/purchases/components/purchase-order
+ * @module modules/purchases/purchase-requests/id/components
  *
  * @description
  * Displays the list of products included in a purchase order.
@@ -18,7 +18,7 @@
  */
 
 
-import { card, table, badge, label, } from "../../styles/purchase-order/purchaseOrderStyles";
+import { card, table, badge, label, } from "../styles/purchaseRequestsStyles";
 
 export default function OrderItemsTable({ items = [] }) {
   

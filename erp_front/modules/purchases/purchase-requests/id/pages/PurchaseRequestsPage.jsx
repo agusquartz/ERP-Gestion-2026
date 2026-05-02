@@ -1,9 +1,9 @@
 /**
  * @file PurchaseRequestsPage.jsx
- * @module modules/purchases/pages
+ * @module modules/purchases/purchase-requests/id/pages
  *
  * @description
- * Main page for viewing a Purchase Order (Pedido de Compra).
+ * Main page for viewing a Purchase Requests (Pedido de Compra).
  */
 
 
@@ -43,13 +43,13 @@
 
 "use client";
 
-import { usePurchaseOrder } from "../hooks/purchase-order/usePurchaseOrder";
-import OrderItemsTable from "../components/purchase-order/OrderItemsTable";
-import CategoriesTable from "../components/purchase-order/CategoriesTable";
-import SuppliersTable from "../components/purchase-order/SuppliersTable";
-import QuotationModal from "../modal/purchase-order/QuotationModal";
-import SupplierSearchModal from "../modal/purchase-order/SupplierSearchModal";
-import { btn } from "../styles/purchase-order/purchaseOrderStyles";
+import { usePurchaseOrder } from "../hooks/usePurchaseRequests";
+import OrderItemsTable from "../components/OrderItemsTable";
+import CategoriesTable from "../components/CategoriesTable";
+import SuppliersTable from "../components/SuppliersTable";
+import QuotationModal from "../modal/QuotationModal";
+import SupplierSearchModal from "../modal/SupplierSearchModal";
+import { btn } from "../styles/purchaseRequestsStyles";
 
 export default function PurchaseOrderPage({
   orderId,

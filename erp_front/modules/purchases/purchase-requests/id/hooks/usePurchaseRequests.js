@@ -1,6 +1,6 @@
 /**
  * @file usePurchaseRequests.js
- * @module modules/purchases/hooks/purchase-order
+ * @module modules/purchases/purchase-requests/id/hooks
  *
  * @description
  * Custom hook that centralizes all state and business logic for the
@@ -31,7 +31,7 @@ import {
   printAllQuotations,
   addSuppliers,
   updateQuotationStatus,
-} from "../../services/purchaseOrderService";
+} from "../services/purchaseRequestsService";
 
 
 // ─── Status IDs — must match the `statuses` table in the DB ──────────────────

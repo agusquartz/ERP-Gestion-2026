@@ -1,6 +1,6 @@
 /**
  * @file QuotationModal.jsx
- * @module modules/purchases/modal/purchase-order
+ * @module modules/purchases/purchase-requests/id/modal
  *
  * @description
  * Modal for viewing and filling in a supplier's quotation response.
@@ -14,9 +14,9 @@ import {
   table,
   input,
   modal,
-} from "../../styles/purchase-order/purchaseOrderStyles";
+} from "../styles/purchaseRequestsStyles";
 
-import { STATUS } from "../../hooks/purchase-order/usePurchaseOrder";
+import { STATUS } from "../hooks/usePurchaseRequests";
 
 export default function QuotationModal({
   isOpen,

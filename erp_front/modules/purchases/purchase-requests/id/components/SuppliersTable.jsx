@@ -1,6 +1,6 @@
 /**
  * @file SuppliersTable.jsx
- * @module modules/purchases/components/purchase-order
+ * @module modules/purchases/purchase-requests/id/components
  *
  * @description
  * Displays the list of suppliers assigned to a purchase order with their
@@ -31,8 +31,8 @@
  */
 
 
-import { card, table, badge, label, btn, } from "../../styles/purchase-order/purchaseOrderStyles";
-import { STATUS } from "../../hooks/purchase-order/usePurchaseOrder";
+import { card, table, badge, label, btn, } from "../styles/purchaseRequestsStyles";
+import { STATUS } from "../hooks/usePurchaseRequests";
 
 export default function SuppliersTable({
   suppliers = [],
