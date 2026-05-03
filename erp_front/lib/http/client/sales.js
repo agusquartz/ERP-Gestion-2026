@@ -6,6 +6,14 @@ export function getProductByQuery(q) {
   });
 }
 
+export function getProductById(id) {
+  if (!id) throw new Error("Product ID is required");
+
+  return clientRequest(`/products/${id}`, {
+    method: "GET",
+  });
+}
+
 export function createSale(payload) {
   return clientRequest("/sales", {
     method: "POST",
