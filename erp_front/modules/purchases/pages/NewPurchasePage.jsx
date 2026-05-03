@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePurchaseForm } from "../hooks/NewPurchase/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 import { Toaster, toast } from 'sonner'; // Importamos Sonner
-import { createPurchaseRequest } from "../services/purchaseService";
+import { createPurchaseRequest } from "../services/NewPurchase/PurchaseService";
 
 
 // Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales);
