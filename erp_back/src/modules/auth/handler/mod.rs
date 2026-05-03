@@ -157,10 +157,17 @@ pub async fn login(
 pub async fn logout(cookies: Cookies) -> impl IntoResponse {
     let mut jwt_cookie = Cookie::new("jwt", "");
     jwt_cookie.set_path("/");
+    jwt_cookie.set_http_only(true);
+    jwt_cookie.set_secure(true);
+    jwt_cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
+    jwt_cookie.set_domain(&CONFIG.cookie_domain);
     jwt_cookie.set_max_age(time::Duration::seconds(0));
 
     let mut csrf_cookie = Cookie::new("csrfToken", "");
     csrf_cookie.set_path("/");
+    csrf_cookie.set_secure(true);
+    csrf_cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
+    csrf_cookie.set_domain(&CONFIG.cookie_domain);
     csrf_cookie.set_max_age(time::Duration::seconds(0));
 
     cookies.add(jwt_cookie);
