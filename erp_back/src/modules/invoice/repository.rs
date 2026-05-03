@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 use tokio_postgres::Row;
 
 use crate::modules::invoice::model::{self, NewInvoice, InvoiceAggregate};
-use crate::db_config;
+use crate::shared::db_config;
 
 /// Base SQL query used for retrieving invoices with all related data.
 ///
@@ -159,22 +159,12 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::InvoiceAggregate> {
     map.into_values().collect()
 }
 
-/// Stores a new invoice and its associated line items.
-///
-/// # Workflow
-/// 1. Begin transaction
-/// 2. Insert invoice header
-/// 3. Insert invoice line items
-/// 4. Commit transaction
-/// 5. Re-query full aggregate
-///
-/// # Returns
-/// - Fully constructed `InvoiceAggregate`
-pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, db_config::DbError> {
-    let mut client = db_config::get_client().await?;
-    let tx = client.transaction().await?;
 
-    let row = match  tx.query_one(
+pub async fn store_new_invoice(
+    tx: &tokio_postgres::Transaction<'_>,
+    invoice: NewInvoice,
+) -> Result<i32, db_config::DbError> {
+    let row = tx.query_one(
         "INSERT INTO sales_invoices 
         (invoice_nr, date, expiration_date, total, quote_id, client_id, sale_condition_id)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -188,13 +178,7 @@ pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, 
             &invoice.client_id,
             &invoice.sale_condition_id,
         ],
-    ).await {
-        Ok(row) => row,
-        Err(e) => {
-            println!("Db Error: {:?}", e);
-            return Err(e.into());
-        }
-    };
+    ).await?;
 
     let invoice_id: i32 = row.get(0);
 
@@ -212,10 +196,6 @@ pub async fn store_new_invoice(invoice: NewInvoice) -> Result<InvoiceAggregate, 
             ],
         ).await?;
     }
-    tx.commit().await?;
 
-    let aggregate = query_invoice_by_id(invoice_id)
-        .await? 
-        .ok_or(db_config::DbError::InvariantViolation("Inserted invoice not found after commit".into()));
-    aggregate
+    Ok(invoice_id)
 }
