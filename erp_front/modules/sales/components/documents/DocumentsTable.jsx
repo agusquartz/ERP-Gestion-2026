@@ -4,7 +4,7 @@ import { EyeIcon } from "@/shared/components/Icons";
 export function DocumentsTable({ documents = [], onSelect, onView, type = "Factura" }) {
   const columnConfig = {
     "Facturas": ["Fecha", "Nro. Factura", "Cliente", "Total", "Acción"],
-    "Presupuesto": ["Fecha", "Nro. Factura", "Cliente", "Estado", "Total", "Acción"],
+    "Presupuesto": ["Fecha", "Nro. Presupuesto", "Cliente", "Estado", "Total", "Acción"],
     "Notas de Credito": ["Fecha", "Nro. Nota Credito", "Nro. Factura", "Cliente", "Total", "Acción"]
   };
 
