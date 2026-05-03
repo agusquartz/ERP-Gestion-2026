@@ -10,7 +10,6 @@ export function ConfirmModal({
   type,
   client,
   subtotal,
-  iva,
   total,
 }) {
   const isFactura = type === "factura";
@@ -47,10 +46,10 @@ export function ConfirmModal({
               <span className="font-medium text-foreground">{fmt(subtotal)}</span>
             </div>
 
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <span className="text-muted">IVA 10%</span>
               <span className="font-medium text-foreground">{fmt(iva)}</span>
-            </div>
+            </div> */}
 
             <div className="flex items-center justify-between border-t border-border pt-3">
               <span className="text-base font-bold text-foreground">Total</span>
