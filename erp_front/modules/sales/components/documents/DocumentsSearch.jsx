@@ -25,6 +25,8 @@ export function DocumentsSearch({ onSearch, activeTab }) {
     setShowStatusDrop(false);
     setShowDateDrop(false);
     setCustomDate("");
+
+    onSearch?.("");
   };
 
   return (
@@ -38,7 +40,11 @@ export function DocumentsSearch({ onSearch, activeTab }) {
             className="w-full rounded-[8px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
             placeholder="Buscar por nombre de cliente"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setQuery(value);
+              onSearch?.(value);
+            }}
           />
         </div>
 
