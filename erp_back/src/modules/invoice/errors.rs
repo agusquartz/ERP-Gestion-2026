@@ -23,6 +23,12 @@ pub enum ServiceError {
     //credit notes) failed. It's distinct from Database because we want to know who's responsible
     //for the error.
     Dependency(DependencyError),
+    Conflict(ConflictError),
+}
+
+#[derive(Debug)]
+pub struct ConflictError {
+    pub context: String,
 }
 
 #[derive(Debug)]
@@ -78,6 +84,11 @@ impl std::fmt::Display for ServiceError {
                 None => write!(f,"{} doesn't exist", context.entity)
             }
             ServiceError::Dependency(err) => write!(f,"{} system has failed, because: {}", err.system, err.message),
+            
+
+            ServiceError::Conflict(err) => {
+                write!(f, "conflict error: {}", err.context)
+            }
         }
     }
 }
