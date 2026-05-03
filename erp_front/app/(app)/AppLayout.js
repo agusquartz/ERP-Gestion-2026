@@ -37,6 +37,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { logout, whoAmI } from "@/lib/http/client/auth";
 
 function getModulesAccess(permissions = []) {
   const moduleMap = {
@@ -87,12 +89,34 @@ export default function AppLayout({
   children,
   permissions = EMPTY_PERMISSIONS,
 }) {
+  const router = useRouter();
   const pathname = usePathname();
 
   const modulesAccess = useMemo(
     () => getModulesAccess(permissions),
     [permissions]
   );
+
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function checkSession() {
+      try {
+        await whoAmI();
+      } catch {
+        if (!ignore) {
+          router.replace("/");
+        }
+      }
+    }
+
+    checkSession();
+
+    return () => {
+      ignore = true;
+    };
+  }, [router]);
 
   const modules = useMemo(() => {
     const allModules = [
@@ -264,6 +288,17 @@ export default function AppLayout({
 
   const [openModules, setOpenModules] = useState({});
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      router.replace("/");
+      router.refresh();
+    }
+  };
+
   useEffect(() => {
     const activeModule = modules.find((module) =>
       pathname.startsWith(module.basePath)
@@ -359,7 +394,11 @@ export default function AppLayout({
         </nav>
 
         <div className="border-t border-border p-2">
-          <button className="flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-destructive/10">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-destructive/10"
+          >
             Logout
           </button>
         </div>
