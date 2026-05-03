@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 /**
  * Hook central del módulo de ventas.
@@ -74,11 +74,42 @@ export function useSaleForm() {
   };
 
   const addClient = (data) => {
-    const created = { ...data, id: Date.now() };
+    const created = { ...data };
     setClients((prev = []) => [...prev, created]);
     selectClient(created);
     return created;
   };
+
+  // ── Cargar presupuesto existente ─────────────────────────────────────────
+  const loadQuoteIntoForm = useCallback(({ client, products }) => {
+    setSelectedClient(client);
+
+    setItems(
+      products.map(({ product, detail }, index) => {
+        const quantity = Number(detail.quantity) || 1;
+
+        /**
+         * Preferimos unitCost del presupuesto porque es el precio histórico
+         * guardado en el quote.
+         *
+         * Si no viene unitCost, usamos product.price.
+         */
+        const price = Number(detail.unitCost ?? product.price) || 0;
+
+        return {
+          id: `${detail.productId}-${index}`,
+          productoId: product.id,
+          code: product.code,
+          description: product.description,
+          cantidad: quantity,
+          price,
+          subtotal: quantity * price,
+        };
+      })
+    );
+
+    setSubmitError("");
+  }, []);
 
   // ── Validación ────────────────────────────────────────────────────────────
   const validate = () => {
@@ -124,5 +155,6 @@ export function useSaleForm() {
     validate,
     reset,
     buildPayload,
+    loadQuoteIntoForm,
   };
 }
