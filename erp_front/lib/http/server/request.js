@@ -1,25 +1,51 @@
 import "server-only";
-import { cookies } from "next/headers";
 import { SERVER_ENV } from "@/lib/env/server";
 
-export async function serverRequest(path, options = {}) {
-  const cookieStore = await cookies();
-  const csrfToken = cookieStore.get(SERVER_ENV.CSRF_COOKIE_NAME)?.value;
+// export async function serverRequest(path, options = {}, cookieHeader = "") {
+//   const res = await fetch(`${SERVER_ENV.API_URL}${path}`, {
+//     ...options,
+//     headers: {
+//       "Content-Type": "application/json",
+//       ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+//       ...(options.headers ?? {}),
+//     },
+//     cache: "no-store",
+//   });
 
-  const response = await fetch(`${SERVER_ENV.API_URL}${path}`, {
+//   if (res.status === 401) return null;
+//   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+//   if (res.status === 204) return null;
+
+//   return res.json();
+// }
+export async function serverRequest(path, options = {}, cookieHeader = "") {
+  const url = `${SERVER_ENV.API_URL}${path}`;
+
+  const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(csrfToken ? { "x-csrf-token": csrfToken } : {}),
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
       ...(options.headers ?? {}),
     },
     cache: "no-store",
   });
 
-  if (!response.ok) {
-    throw new Error(`HTTP error ${response.status}`);
+  if (res.status === 401) return null;
+  if (res.status === 204) return null;
+
+  if (!res.ok) {
+    const text = await res.text();
+
+    console.error("serverRequest failed", {
+      url,
+      status: res.status,
+      body: text,
+      cookieHeader,
+    });
+
+    throw new Error(`HTTP ${res.status}: ${text}`);
   }
 
-  if (response.status === 204) return null;
-  return response.json();
+  return res.json();
 }

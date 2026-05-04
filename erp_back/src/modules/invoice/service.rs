@@ -25,6 +25,7 @@ use crate::modules::invoice::model::{NewInvoice, LineProduct, LineItem};
 use crate::modules::invoice::dto::response::InvoiceResponse;
 use crate::modules::invoice::dto::create::{CreateInvoiceDto, CreateInvoiceLineItemDto};
 use crate::modules::invoice::errors;
+use crate::shared::db_config;
 
 use std::collections::HashMap;
 use rust_decimal::{ Decimal,
@@ -64,6 +65,37 @@ pub async fn get_invoice(id: i32) -> Result<Option<InvoiceResponse>, errors::Ser
 /// 6. Persist via repository
 /// 7. Map result to `InvoiceResponse`
 pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, errors::ServiceError> {
+    // Validations
+    if dto.details.is_empty() {
+        return Err(errors::ServiceError::Validation(errors::ValidationError {
+            context: "invoice must have at least one detail".to_string(),
+        }));
+    }
+
+    for line in &dto.details {
+        if line.quantity <= 0 {
+            return Err(errors::ServiceError::Validation(errors::ValidationError {
+                context: format!(
+                    "quantity must be greater than zero for product {}",
+                    line.product_id
+                ),
+            }));
+        }
+
+        if line.unit_cost <= Decimal::from(0) {
+            return Err(errors::ServiceError::Validation(errors::ValidationError {
+                context: format!(
+                    "unit cost must be greater than zero for product {}",
+                    line.product_id
+                ),
+            }));
+        }
+    }
+
+
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await.map_err(db_config::DbError::from)?;
+    
     //make a map with products
     let mut products: HashMap<i32,ProductResponse> = HashMap::new();
 
@@ -125,23 +157,59 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, er
     };
 
     //now just send to repo and let that layer take charge
-    let aggregate = repository::store_new_invoice(invoice).await?; 
+    for detail in &invoice.details {
+        product::service::decrease_stock(
+            &tx,
+            detail.product.id,
+            detail.quantity,
+        )
+        .await
+        .map_err(|err| match err {
+            db_config::DbError::Other(msg) if msg == "insufficient stock" => {
+                errors::ServiceError::Conflict(errors::ConflictError {
+                    context: format!(
+                        "insufficient stock for product {}",
+                        detail.product.id
+                    ),
+                })
+            }
+
+            other => errors::ServiceError::Database(other),
+        })?;
+    }
+
+    let invoice_id = repository::store_new_invoice(&tx, invoice).await?;
+
+    tx.commit().await.map_err(db_config::DbError::from)?;
+
+    let aggregate = repository::query_invoice_by_id(invoice_id)
+        .await?
+        .ok_or(errors::ServiceError::Database(
+            db_config::DbError::InvariantViolation(
+                "Inserted invoice not found after commit".into(),
+            ),
+        ))?;
+
     let response = InvoiceResponse::from(aggregate);
+
     Ok(response)
 
 }
 
-/// Computes the total invoice amount including taxes.
+/// Computes the total invoice amount.
 ///
-/// # Formula
-/// total = Σ (unit_cost × quantity) + tax_amount
-fn compute_invoice_total(details: &Vec<LineItem>) -> rust_decimal::Decimal {
-    let mut acc: Decimal = Decimal::from(0);
+/// IMPORTANT:
+/// `unit_cost` already includes VAT/IVA.
+/// Therefore, tax is stored as line metadata but is NOT added again.
+///
+/// Formula:
+/// total = Σ(unit_cost × quantity)
+fn compute_invoice_total(details: &[LineItem]) -> Decimal {
+    let mut acc = Decimal::from(0);
 
     for line in details {
         let subtotal = line.unit_cost * Decimal::from(line.quantity);
-        let tax_amount = subtotal * line.tax / Decimal::from(100);
-        acc = acc + subtotal + tax_amount;
+        acc += subtotal;
     }
 
     acc

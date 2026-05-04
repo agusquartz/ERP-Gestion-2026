@@ -8,7 +8,7 @@ export function SaleHeader({ selectedClient, onBuscarCliente, seller }) {
 
         {selectedClient ? (
           <span className="text-sm font-medium text-primary">
-            {selectedClient.nombre} {selectedClient.apellido}
+            {selectedClient.name} {selectedClient.surname}
           </span>
         ) : (
           <span className="text-sm text-muted-foreground">Sin cliente</span>

@@ -5,22 +5,22 @@ import { Modal } from "@/shared/components/Modal";
 import { createClient } from "../services/saleService";
 
 const FIELDS = [
-  { key: "nombre", label: "Nombre", placeholder: "Ingresa el nombre", required: true },
-  { key: "apellido", label: "Apellido", placeholder: "Ingresa el apellido", required: true },
-  { key: "ruc", label: "RUC", placeholder: "ej. 1.213.134-5", required: true },
-  { key: "ciudad", label: "Ciudad", placeholder: "ej. Asunción", required: true },
-  { key: "telefono", label: "Teléfono", placeholder: "+595 9xxx xxx", required: true },
+  { key: "name", label: "Nombre", placeholder: "Ingresa el nombre", required: true },
+  { key: "surname", label: "Apellido", placeholder: "Ingresa el apellido", required: true },
+  { key: "document", label: "RUC", placeholder: "ej. 1.213.134-5", required: true },
+  { key: "address", label: "Ciudad", placeholder: "ej. Asunción", required: true },
+  { key: "phone", label: "Teléfono", placeholder: "+595 9xxx xxx", required: true },
   { key: "email", label: "Correo electrónico", placeholder: "examples@gmail.com", required: true },
 ];
 
 const EMPTY = {
-  nombre: "",
-  apellido: "",
-  ruc: "",
-  ciudad: "",
-  telefono: "",
+  name: "",
+  surname: "",
+  document: "",
+  address: "",
+  phone: "",
   email: "",
-  fechaNacimiento: "",
+  birthDate: "",
 };
 
 export function NewClientModal({ open, onClose, onCreate }) {
@@ -43,11 +43,30 @@ export function NewClientModal({ open, onClose, onCreate }) {
 
     try {
       const payload = {
-        ...form,
-        fechaNacimiento: form.fechaNacimiento?.trim() ? form.fechaNacimiento : null,
+        name: form.name,
+        surname: form.surname,
+        document: form.document,
+        address: form.address || null,
+        email: form.email,
+
+        birthDate: form.birthDate?.trim()
+          ? form.birthDate
+          : null,
+
+        creditLimit: 0,
+
+        phones: form.phone
+          ? [
+              {
+                phoneNumber: form.phone,
+                isEmergency: false,
+              },
+            ]
+          : [],
       };
 
       const newClient = await createClient(payload);
+
       onCreate(newClient);
       setForm(EMPTY);
       setErrors({});

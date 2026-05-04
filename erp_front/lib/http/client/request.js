@@ -34,7 +34,7 @@ export async function clientRequest(path, options = {}) {
       error = { message: response.statusText };
     }
 
-    throw new Error(error.message || `HTTP ${response.status}`);
+    throw new Error(error.message || error.error || `HTTP ${response.status}`);
   }
 
   if (response.status === 204) return null;

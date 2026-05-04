@@ -36,9 +36,9 @@ export function SaleItemsTable({ items, onQtyChange, onRemove }) {
             {items.map((item, i) => (
               <tr key={item.id} className="border-b border-gray-100">
                 <td className="px-3 py-2.5 text-sm text-foreground">{i + 1}</td>
-                <td className="px-3 py-2.5 text-sm text-foreground">{item.codigo}</td>
-                <td className="truncate px-3 py-2.5 text-sm text-foreground" title={item.descripcion}>
-                  {item.descripcion}
+                <td className="px-3 py-2.5 text-sm text-foreground">{item.code}</td>
+                <td className="truncate px-3 py-2.5 text-sm text-foreground" title={item.description}>
+                  {item.description}
                 </td>
                 <td className="px-3 py-2.5">
                   <input
@@ -49,7 +49,7 @@ export function SaleItemsTable({ items, onQtyChange, onRemove }) {
                     className="w-[60px] rounded-[5px] border border-border px-2 py-1 text-center text-sm outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/15"
                   />
                 </td>
-                <td className="px-3 py-2.5 text-sm text-foreground">${item.precio}</td>
+                <td className="px-3 py-2.5 text-sm text-foreground">${item.price}</td>
                 <td className="px-3 py-2.5 text-sm text-foreground">${item.subtotal}</td>
                 <td className="px-3 py-2.5">
                   <button

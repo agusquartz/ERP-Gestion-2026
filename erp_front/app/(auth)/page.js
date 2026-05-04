@@ -50,7 +50,7 @@ export default function LoginPage() {
       setSuccess(true);
 
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push("/app");
       }, 800);
 
     } catch (err) {

@@ -13,14 +13,14 @@ export function AddProductPanel({
   const [qty, setQty] = useState(1);
   const [errors, setErrors] = useState({});
 
-  const displayCode = selectedProduct?.codigo ?? manualCode;
-  const displayDesc = selectedProduct?.descripcion ?? "";
-  const price = selectedProduct?.precio ?? 0;
+  const displayCode = selectedProduct?.code ?? manualCode;
+  const displayDesc = selectedProduct?.description ?? "";
+  const price = selectedProduct?.price ?? 0;
 
   const validate = () => {
     const e = {};
     if (!selectedProduct && !manualCode.trim())
-      e.codigo = "Ingresá o buscá un producto";
+      e.code = "Ingresá o buscá un producto";
     if (!qty || qty < 1) e.qty = "Cantidad inválida";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -30,9 +30,9 @@ export function AddProductPanel({
     if (!validate()) return;
 
     const prod = selectedProduct ?? {
-      codigo: manualCode,
-      descripcion: "",
-      precio: 0,
+      code: manualCode,
+      description: "",
+      price: 0,
     };
 
     onAdd(prod, qty);

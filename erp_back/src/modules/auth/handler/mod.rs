@@ -13,7 +13,7 @@ use tower_cookies::{Cookies, Cookie};
 
 use crate::modules::auth::middleware::jwt::{create_jwt, Claims};
 use crate::modules::auth::middleware::csrf::generate_csrf;
-use crate::modules::user::service::get_user_by_name;
+use crate::modules::user::service::{get_user_by_name, get_user_permissions};
 use crate::utils::argon2::verify_password;
 use crate::shared::config::CONFIG;
 
@@ -39,6 +39,7 @@ pub struct LoginRequest {
 /// Response: { "sub": "user123", "iat": 1670000000, "exp": 1670003600 }
 /// ```
 pub async fn whoami(Extension(claims): Extension<Claims>) -> Json<Claims> {
+    println!("{}", serde_json::to_string_pretty(&claims).unwrap());
     Json(claims)
 }
 
@@ -99,8 +100,24 @@ pub async fn login(
     // 2. Create JWT
     // -----------------------------
     let ttl_seconds = CONFIG.jwt_ttl_seconds;
+    let permissions = get_user_permissions(user.id).await.map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Could not fetch user permissions" })),
+        )
+    })?;
+    
+    let permission_codes: Vec<String> = permissions
+    .into_iter()
+    .map(|p| p.code)
+    .collect();
 
-    let token = create_jwt(&payload.username, ttl_seconds)
+    let token = create_jwt(
+        &user.username,
+        &user.role_name,
+        permission_codes,
+        ttl_seconds
+    )
         .map_err(|_| (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({"error": "Token creation failed"}))
@@ -140,10 +157,17 @@ pub async fn login(
 pub async fn logout(cookies: Cookies) -> impl IntoResponse {
     let mut jwt_cookie = Cookie::new("jwt", "");
     jwt_cookie.set_path("/");
+    jwt_cookie.set_http_only(true);
+    jwt_cookie.set_secure(true);
+    jwt_cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
+    jwt_cookie.set_domain(&CONFIG.cookie_domain);
     jwt_cookie.set_max_age(time::Duration::seconds(0));
 
     let mut csrf_cookie = Cookie::new("csrfToken", "");
     csrf_cookie.set_path("/");
+    csrf_cookie.set_secure(true);
+    csrf_cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
+    csrf_cookie.set_domain(&CONFIG.cookie_domain);
     csrf_cookie.set_max_age(time::Duration::seconds(0));
 
     cookies.add(jwt_cookie);

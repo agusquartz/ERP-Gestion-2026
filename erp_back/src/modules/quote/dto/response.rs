@@ -135,6 +135,7 @@ pub struct QuoteProductResponseDto {
 /// identify line items by their product, not by the internal detail row id.
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct QuoteDetailResponseDto {
     /// The product associated with this line item.
     pub product: QuoteProductResponseDto,

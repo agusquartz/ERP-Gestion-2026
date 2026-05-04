@@ -22,7 +22,7 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
   const [showCatDrop, setShowCatDrop] = useState(false);
   const inputRef = useRef(null);
 
-  const categories = [...new Set(filtered.map((p) => p.categoria))];
+  const categories = [...new Set(filtered.map((p) => p.category?.name))];
 
   useEffect(() => {
     if (open) {
@@ -49,13 +49,14 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
         if (descFilter) {
           f = f.filter(
             (p) =>
-              p.descripcion.toLowerCase().includes(descFilter.toLowerCase()) ||
-              p.sku.toLowerCase().includes(descFilter.toLowerCase()) ||
-              p.codigo.toLowerCase().includes(descFilter.toLowerCase())
+              p.description.toLowerCase().includes(descFilter.toLowerCase()) ||
+              p.code.toLowerCase().includes(descFilter.toLowerCase())
           );
         }
 
-        if (catFilter) f = f.filter((p) => p.categoria === catFilter);
+        if (catFilter) {
+          f = f.filter((p) => p.category?.name === catFilter);
+        }
 
         setFiltered(f);
         setActiveRow(0);
@@ -224,19 +225,19 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
                     onClick={() => setActiveRow(i)}
                     onDoubleClick={() => handleSelect(p)}
                   >
-                    <td className="px-4 py-3 text-foreground">{p.codigo}</td>
+                    <td className="px-4 py-3 text-foreground">{p.code}</td>
                     <td className="px-4 py-3 text-foreground">{p.sku}</td>
                     <td
                       className="px-4 py-3 text-foreground"
-                      title={p.descripcion}
+                      title={p.description}
                     >
                       <div className="line-clamp-2 break-words">
-                        {p.descripcion}
+                        {p.description}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-foreground">{p.categoria}</td>
+                    <td className="px-4 py-3 text-foreground">{p.category?.name}</td>
                     <td className="px-4 py-3 text-foreground">{p.stock}</td>
-                    <td className="px-4 py-3 text-foreground">{p.precio}</td>
+                    <td className="px-4 py-3 text-foreground">{p.price}</td>
                     <td className="px-4 py-3">
                       <button
                         type="button"
