@@ -72,8 +72,3 @@ export const EyeIcon = () => (
   
 
 )
-
-
-
-
-

@@ -21,6 +21,7 @@ mod modules {
     pub mod quote;
     pub mod invoice;
     pub mod credit_notes;
+    pub mod purchase_order;
 }
 
 mod shared {
@@ -49,8 +50,6 @@ async fn main() {
         .ok()
         .expect("Failed to load environment variables from .env file");
 
-    //dotenv().ok();
-    
     //DATABASE CONFIGURATION
     //-------------------------------------------------------------------------
     //TODO: error management
@@ -73,19 +72,20 @@ async fn main() {
     // -------------------------------------------------------------------------
     let cors_origin = std::env::var("CORS_ALLOWED_ORIGIN")
         .expect("CORS_ALLOWED_ORIGIN must be set");
+    let origins = cors_origin
+        .split(",")
+        .map(|s| s.parse().unwrap())
+        .collect::<Vec<_>>();
 
     let cors = CorsLayer::new()
-        // .allow_origin(cors_origin.parse::<HeaderValue>().unwrap())
-        .allow_origin(AllowOrigin::list([
-            "https://wxqzb.xyz".parse().unwrap(),
-            "https://www.wxqzb.xyz".parse().unwrap(),
-        ]))
+        .allow_origin(AllowOrigin::list(origins))
         .allow_methods([
             Method::GET,
             Method::POST,
             Method::PUT,
             Method::PATCH,
             Method::DELETE,
+            Method::OPTIONS,
         ])
         .allow_headers([
             header::CONTENT_TYPE,
@@ -106,6 +106,7 @@ async fn main() {
         .merge(modules::quote::router::quote_router())
         .merge(modules::invoice::router::invoice_router())
         .merge(modules::credit_notes::router::credit_note_router())
+        .merge(modules::purchase_order::router::purchase_order_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
