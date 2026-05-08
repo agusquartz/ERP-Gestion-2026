@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Modal } from "@/shared/components/Modal";
 import { ChevronDownIcon } from "@/shared/components/Icons";
 // Importamos el servicio específico de compras (o el genérico de productos)
-import { getProductByQuery } from "../../services/NewPurchase/PurchaseService";
+import { getProductByQuery } from "../services/PurchaseService";
 
 /**
  * Modal adaptado para la búsqueda de neumáticos y productos en Compras.

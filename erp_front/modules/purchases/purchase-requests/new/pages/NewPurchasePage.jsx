@@ -4,17 +4,17 @@ import { useState } from "react";
 import { usePurchaseForm } from "../hooks/NewPurchase/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 import { Toaster, toast } from 'sonner'; // Importamos Sonner
-import { createPurchaseRequest } from "../services/NewPurchase/PurchaseService";
+import { createPurchaseRequest } from "../services/PurchaseService";
 
 
 // Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales);
-import { PurchaseItemsTable } from "../components/NewPurchases/PurchaseItemsTable"; 
+import { PurchaseItemsTable } from "../components/PurchaseItemsTable"; 
 import { AddPurchaseProductPanel } from "../components/NewPurchases/AddPurchaseProductPanel.jsx";
 import { PurchaseSummaryPanel } from "../components/NewPurchases/PurchaseSummaryPanel";
 import { PurchaseInformation } from "../components/NewPurchases/PurchaseInformation";
-import { s } from "../styles/NewPurchase/NewPurchasesStyles";
-import { PurchaseSearchModal } from "../modals/NewPurchase/PurchaseSearchModal";
-import { PurchaseActions } from "../components/NewPurchases/PurchaseActions";
+import { s } from "../styles/NewPurchasesStyles";
+import { PurchaseSearchModal } from "../modals/PurchaseSearchModal";
+import { PurchaseActions } from "../components/PurchaseActions";
 
 export default function NewPurchasePage() {
   const {
