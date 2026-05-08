@@ -69,14 +69,17 @@ export function usePurchaseOrder(orderId) {
 
   // ── "Generar Todos" / "Imprimir Todos" toggle ────────────────────────────────
   /**
-   * Tracks whether "Generar Todos" has been executed at least once for this order.
-   * - false → button reads "Generar Todos"
-   * - true  → button reads "Imprimir Todos"
+   * Derived from suppliers — no manual state needed.
+   * true  → all active (non-cancelled) suppliers are past CREATED → show "Imprimir Todos"
+   * false → at least one active supplier is still in CREATED      → show "Generar Todos"
    *
-   * Resets to false whenever the user adds a new supplier, because there is now
-   * at least one supplier in "generar" status that hasn't been notified yet.
+   * Recalculates automatically whenever suppliers changes, so adding a new supplier
+   * or saving a quotation always reflects the correct label without extra setAllGenerated calls.
    */
-  const [allGenerated, setAllGenerated] = useState(false);
+  const allGenerated = useMemo(() => {
+    const active = suppliers.filter((s) => s.statusId !== STATUS.CANCELLED);
+    return active.length > 0 && active.every((s) => s.statusId !== STATUS.CREATED);
+  }, [suppliers]);
 
 
   // ── Data fetching ───────────────────────────────────────────────────────────
@@ -130,13 +133,6 @@ export function usePurchaseOrder(orderId) {
         setSuppliers(mappedSuppliers);
         
 
-        // If all existing suppliers are already past "generar", show "Imprimir Todos"
-        const allPast = 
-          mappedSuppliers.length > 0 &&
-          mappedSuppliers.every(
-            (s) => s.statusId !== STATUS.CREATED && s.statusId !== STATUS.UNSENT
-          );
-        setAllGenerated(allPast && mappedSuppliers.length > 0);
 
       } catch (err) {
         console.error("Error loading purchase order:", err);
@@ -363,8 +359,6 @@ export function usePurchaseOrder(orderId) {
             s.statusId === STATUS.CREATED ? { ...s, statusId: STATUS.UNSENT } : s
           )
         );
-
-        setAllGenerated(true);
       } catch (err) {
         console.error("Error generating all quotations:", err);
       }
@@ -393,7 +387,6 @@ export function usePurchaseOrder(orderId) {
       const ids =           selectedSuppliers.map((s) => s.id);
       const newSuppliers =  await addSuppliers(orderId, ids);
       setSuppliers((prev) => [...prev, ...newSuppliers]);
-      setAllGenerated(false);
       setIsSupplierSearchOpen(false);
     } catch (err) {
       console.error("Error adding suppliers:", err);
@@ -426,7 +419,7 @@ export function usePurchaseOrder(orderId) {
     handleAddSuppliers,
 
     // SuppliersTable header button
-    allGenerated,           // true → show "Imprimir Todos", false → show "Generar Todos"
+    allGenerated,           
     handleGenerateOrPrintAll,
   };
 }
