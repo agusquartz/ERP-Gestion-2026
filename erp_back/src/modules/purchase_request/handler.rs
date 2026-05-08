@@ -6,24 +6,15 @@ use axum::{
     Json,
 };
 
-
-
-
 use std::collections::HashMap;
-
-
 use crate::modules::purchase_request::dto::create::CreatePurchaseRequestDto;
 use crate::modules::purchase_request::dto::response::PurchaseRequestResponseDto;
 use crate::modules::purchase_request::dto::search::ProductSearchResponseDto;
-
-
 use crate::modules::purchase_request::service;
-
 
 // ============================================================
 // HANDLERS
 // ============================================================
-
 
 /// POST /purchase-requests
 ///
