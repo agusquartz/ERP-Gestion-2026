@@ -111,6 +111,7 @@ async fn main() {
         .merge(modules::purchase_order::router::purchase_order_router())
         .merge(modules::purchase_request::router::list_purchase_request_router())
         .merge(modules::purchase_invoice::router::purchase_invoice_router())
+        .merge(modules::purchase_request::router::list_purchase_request_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
