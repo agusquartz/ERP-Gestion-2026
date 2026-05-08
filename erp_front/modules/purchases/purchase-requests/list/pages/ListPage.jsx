@@ -1,53 +1,89 @@
 "use client";
-import { useState } from "react";
-// Si tus componentes están en esa carpeta de módulos, usa la ruta completa desde la raíz:
+
+import { useEffect, useState } from "react";
+
 import { OrderSearch } from "@/modules/purchases/purchase-requests/list/components/OrderSearch";
 import { OrderTable } from "@/modules/purchases/purchase-requests/list/components/OrderTable";
-import {getPurchaseRequestsByQuery} from "@/lib/http/client/purchuse-request";
+
+import { listPurchaseRequests } from "@/lib/http/client/purchase-request";
+
+function formatDate(dateString) {
+  if (!dateString) return "-";
+
+  const date = new Date(dateString);
+
+  return new Intl.DateTimeFormat("es-PY", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function mapPurchaseRequestToOrder(purchaseRequest) {
+  return {
+    id: purchaseRequest.id,
+
+    request_number: `PED-${String(purchaseRequest.id).padStart(3, "0")}`,
+
+    order_number: null,
+
+    date: formatDate(purchaseRequest.createdAt),
+
+    status: "Pendiente",
+
+    provider: purchaseRequest.employee
+      ? `${purchaseRequest.employee.name} ${purchaseRequest.employee.surname}`
+      : "Sin empleado",
+  };
+}
+
 export default function ListPage() {
   const [selectedId, setSelectedId] = useState(null);
-  //getPurchaseRequestsByQuery()
 
-  // Datos de prueba para visualizar la tabla
-  const [orders] = useState([
-    {
-      id: 1,
-      request_number: "PED-001",
-      order_number: "15",
-      date: "28/04/2026",
-      status: "Recibido",
-      provider: "Cubiertas Itapúa S.A."
-    },
-    {
-      id: 2,
-      request_number: "PED-002",
-      order_number: "16",
-      date: "27/04/2026",
-      status: "Pendiente",
-      provider: "Distribuidora Michelin"
-    },
-    {
-      id: 3,
-      request_number: "PED-003",
-      order_number: null, // Caso sin orden todavía
-      date: "26/04/2026",
-      status: "Pendiente",
-      provider: "Gomería Central"
-    },
-    {
-      id: 4,
-      request_number: "PED-2026-004",
-      order_number: "OC-8901",
-      date: "25/04/2026",
-      status: "Recibido",
-      provider: "Pirelli Paraguay"
+  const [orders, setOrders] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function loadPurchaseRequests(contains = "") {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await listPurchaseRequests({ contains });
+
+      const mappedOrders = data.map(mapPurchaseRequestToOrder);
+
+      setOrders(mappedOrders);
+    } catch (error) {
+      console.error("Error cargando pedidos de compra:", error);
+      setError(error.message || "No se pudieron cargar los pedidos de compra");
+    } finally {
+      setLoading(false);
     }
-  ]);
+  }
+
+  useEffect(() => {
+    loadPurchaseRequests();
+  }, []);
+
+  const handleSearch = (filters) => {
+    console.log("Filtros aplicados:", filters);
+
+    if (typeof filters === "string") {
+      loadPurchaseRequests(filters);
+      return;
+    }
+
+    loadPurchaseRequests(filters?.contains || "");
+  };
 
   const handleView = (id) => {
-    const order = orders.find(o => o.id === id);
+    const order = orders.find((o) => o.id === id);
+
+    if (!order) return;
+
     console.log("Visualizando pedido:", order.request_number);
-    // Aquí abrirías el modal de detalles
   };
 
   return (
@@ -56,22 +92,36 @@ export default function ListPage() {
         <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
           Pedidos de Compra
         </h1>
+
         <div className="mt-2 h-px w-full bg-foreground/80" />
       </div>
 
-      {/* Search Component */}
-      <OrderSearch onSearch={(filters) => console.log("Filtros aplicados:", filters)} />
+      <OrderSearch onSearch={handleSearch} />
 
-      {/* Table Component con los datos inyectados */}
-      <OrderTable 
-        orders={orders}
-        onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
-        onView={handleView}
-      />
+      {loading && (
+        <div className="py-4 text-sm text-muted-foreground">
+          Cargando pedidos de compra...
+        </div>
+      )}
 
-      {/* Resumen visual opcional al final */}
+      {error && (
+        <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <OrderTable
+          orders={orders}
+          onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
+          onView={handleView}
+        />
+      )}
+
       <div className="mt-4 flex justify-between items-center px-2">
-       
+        <span className="text-sm text-muted-foreground">
+          Total: {orders.length} pedidos
+        </span>
       </div>
     </div>
   );
