@@ -97,7 +97,36 @@ CREATE TABLE return_credit_note_details(
 	subtotal DECIMAL(17,2) NOT NULL
 );
 
+CREATE TABLE purchase_payment_orders(
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	created_at DATE NOT NULL DEFAULT CURRENT_DATE,
 
+	supplier_id INT NOT NULL REFERENCES suppliers(id),
+	status_id INT NOT NULL REFERENCES statuses(id),
 
+	requested_by_employee_id INT REFERENCES employees(id),
+	approved_by_employee_id INT REFERENCES employees(id),
 
+	scheduled_payment_date DATE,
+	observations TEXT
+);
 
+CREATE TABLE purchase_payment_order_details(
+	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+	purchase_payment_order_id INT NOT NULL
+		REFERENCES purchase_payment_orders(id)
+		ON DELETE RESTRICT,
+
+	purchase_invoice_id INT NOT NULL REFERENCES purchase_invoices(id),
+
+	amount_to_pay DECIMAL(17,2) NOT NULL,
+
+	observations TEXT,
+
+	CONSTRAINT chk_payment_order_detail_amount
+		CHECK (amount_to_pay > 0),
+
+	CONSTRAINT uq_payment_order_invoice
+		UNIQUE (purchase_payment_order_id, purchase_invoice_id)
+);
