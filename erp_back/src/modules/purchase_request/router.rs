@@ -1,0 +1,25 @@
+
+
+
+
+use axum::{
+    routing::{get, post},
+    Router,
+};
+
+use crate::modules::purchase_request::handler::{
+    create_purchase_request_handler,
+    get_purchase_request_handler,
+    list_purchase_requests_handler,
+    list_products_for_purchase_request_handler,
+};
+
+pub fn list_purchase_request_router() -> Router {
+    Router::new()
+        .route(
+            "/purchase-requests",
+            post(create_purchase_request_handler)
+                .get(list_purchase_requests_handler),
+        )
+      
+}
