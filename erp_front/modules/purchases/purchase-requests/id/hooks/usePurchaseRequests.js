@@ -27,7 +27,6 @@ import { useState, useEffect, useMemo } from "react";
 import {
   getPurchaseOrder,
   saveQuotation,
-  generateAllQuotations,
   printAllQuotations,
   addSuppliers,
   updateQuotationStatus,

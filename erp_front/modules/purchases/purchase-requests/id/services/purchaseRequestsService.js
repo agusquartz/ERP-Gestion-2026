@@ -14,7 +14,7 @@
  */
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const API_BASE = "http://localhost:3000";
+//const API_BASE = "http://localhost:3000";
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 /**
@@ -39,6 +39,8 @@ const API_BASE = "http://localhost:3000";
  *   - Prevents duplicated fetch logic
  *   - Centralizes error handling
  */
+
+/*
 async function apiFetch(url, options = {}) {
   const response = await fetch(url, {
     ...options,
@@ -67,7 +69,7 @@ async function apiFetch(url, options = {}) {
   }
 
   return response.json();
-}
+}*/
 
 // ─── Purchase Order ───────────────────────────────────────────────────────────
 
@@ -77,9 +79,11 @@ async function apiFetch(url, options = {}) {
  * @param {number} orderId
  * @returns {Promise<Object> rar backend response}
  */
+
+/*
 export async function getPurchaseOrder(orderId) {
   return apiFetch(`${API_BASE}/purchase-requests/${orderId}`);
-}
+}*/
 
 // ─── Quotations ───────────────────────────────────────────────────────────────
 
@@ -102,6 +106,7 @@ export async function getPurchaseOrder(orderId) {
  * @param {number}  currentStatus - Current statusId (used to determine valid transition)
  */
 
+/*
 export async function saveQuotation(quoteId, activeRows, isComplete, currentStatusId) {
   //Step 1 - Save detail rows
   const detailsPayload = activeRows.map((row) => ({
@@ -127,7 +132,7 @@ export async function saveQuotation(quoteId, activeRows, isComplete, currentStat
     method: "PATCH",
     body:   JSON.stringify({ status_id: nextStatusId }),
   });
-}
+}*/
 
 /**
  * Updates only the status of a quote.
@@ -136,12 +141,14 @@ export async function saveQuotation(quoteId, activeRows, isComplete, currentStat
  * @param {number} quoteId  - The purchase_quotes.id
  * @param {number} statusId - Target status ID
  */
+
+/*
 export async function updateQuotationStatus(quoteId, statusId) {
   return apiFetch(`${API_BASE}/purchase-quotes/${quoteId}`, {
     method: "PATCH",
     body:   JSON.stringify({ status_id: statusId }),
   });
-}
+}*/
 
 /**
  * Generates quotations for all suppliers.
@@ -158,11 +165,13 @@ export async function updateQuotationStatus(quoteId, statusId) {
  * Why it's important:
  *   - Starts supplier interaction workflow
  */
+
+/*
 export async function generateAllQuotations(orderId) {
   await apiFetch(`${API_BASE}/purchase-orders/${orderId}/generate-all`, {
     method: "POST",
   });
-}
+}*/
 
 /**
  * Retrieves printable version of quotations.
@@ -179,11 +188,13 @@ export async function generateAllQuotations(orderId) {
  * Why it's important:
  *   - Final step for exporting/printing quotations
  */
+
+/*
 export async function printAllQuotations(orderId) {
   return apiFetch(`${API_BASE}/purchase-orders/${orderId}/print-all`, {
     method: "GET",
   });
-}
+}*/
 
 // ─── Suppliers ────────────────────────────────────────────────────────────────
 /**
@@ -193,10 +204,12 @@ export async function printAllQuotations(orderId) {
  * @param {string[]} categories
  * @returns {Promise<Array<{ id, name, categories }>>}
  */
+
+/*
 export async function getAvailableSuppliers(categories) {
   const params = new URLSearchParams({ categories: categories.join(",") });
   return apiFetch(`${API_BASE}/suppliers/available?${params}`);
-}
+}*/
 
 /**
  * Adds suppliers to a purchase order by creating one purchase_quote per supplier.
@@ -209,6 +222,8 @@ export async function getAvailableSuppliers(categories) {
  * @param {number[]}      supplierIds
  * @returns {Promise<Array<{ id, supplierId, name, statusId, quotationItems, categories }>>}
  */
+
+/*
 export async function addSuppliers(orderId, supplierIds) {
   // Create one quote per selected supplier
   const results = await Promise.all(
@@ -232,4 +247,16 @@ export async function addSuppliers(orderId, supplierIds) {
     quotationItems: [],
     categories:     q.categories,
   }));
-}
+}*/
+
+import { getPurchaseOrder, saveQuotation, updateQuotationStatus } from "@/lib/http/client/purchase-requests"
+import { getAvailableSuppliers, addSuppliers } from "@/lib/http/client/suppliers";
+
+export {
+  getPurchaseOrder,
+  saveQuotation,
+  updateQuotationStatus,
+  printAllQuotations,
+  getAvailableSuppliers,
+  addSuppliers,
+};
