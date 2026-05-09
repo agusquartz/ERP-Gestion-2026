@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { mock_items } from "../../services/NewPurchase/mock";
 
 
 /**
@@ -9,7 +8,7 @@ import { mock_items } from "../../services/NewPurchase/mock";
  */
 export function usePurchaseForm() {
  // Estado para los ítems (inicializado con mock para pruebas) 
-  const [items, setItems] = useState(mock_items);
+  const [items, setItems] = useState([]);
   const [submitError, setSubmitError] = useState("");
 
   // Solo subtotal, sin IVA
@@ -19,15 +18,15 @@ export function usePurchaseForm() {
 
   const addItem = (product, qty) => {
     // En compras usamos el precio de costo del producto
-    const precio = Number(product.precioCompra || product.precio) || 0;
+    const precio = Number(product.cost) || 0;
     const cantidad = Number(qty) || 1;
-    const existing = items.find((i) => i.codigo === product.codigo);
+    const existing = items.find((i) => i.codigo === product.code);
 
     if (existing) {
       setItems((prev) =>
         prev.map((i) =>
-          i.codigo === product.codigo
-            ? { ...i, cantidad: i.cantidad + cantidad, subtotal: (i.cantidad + cantidad) * precio }
+          i.codigo === product.code
+            ? { ...i, cantidad: i.cantidad + cantidad, subtotal: (i.cantidad + cantidad) * i.costo }
             : i
         )
       );
@@ -37,11 +36,11 @@ export function usePurchaseForm() {
         {
           id: Date.now(),
           productoId: product.id,
-          codigo: product.codigo,
-          descripcion: product.descripcion,
-          categoria: product.categoria || "GENERAL",
-          cantidad,
-          precio,
+          codigo: product.code,
+          descripcion: product.description,
+          categoria: product.category?.name,
+          cantidad: cantidad,
+          precio: product.price,
           subtotal: cantidad * precio,
         },
       ]);
@@ -66,6 +65,24 @@ export function usePurchaseForm() {
     setSubmitError("");
   };
 
+  const buildPayload = () => {
+    return {
+      // Coincide con 'pub created_at: NaiveDate' (camelCase -> createdAt)
+      createdAt: new Date().toISOString().split('T')[0], 
+      
+      // Coincide con 'pub employee_id: i32' (camelCase -> employeeId)
+      // Aquí deberías usar el ID del usuario logueado. Por ahora un quemado:
+      employeeId: 1, 
+      
+      // Coincide con 'pub details: Vec<CreatePurchaseRequestDetailDto>'
+      details: items.map((i) => ({
+        // Dentro de details, camelCase aplica también:
+        productId: i.productoId, // 'product_id' en Rust
+        quantity: i.cantidad,    // 'quantity' en Rust
+      })),
+    };
+  };
+
   return {
     items,
     subtotal,
@@ -75,6 +92,7 @@ export function usePurchaseForm() {
     addItem,
     updateItemQty,
     removeItem,
-    reset
+    reset,
+    buildPayload
   };
 }
