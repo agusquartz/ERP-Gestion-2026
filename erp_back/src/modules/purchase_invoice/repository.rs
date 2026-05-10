@@ -42,7 +42,7 @@ pub async fn query_invoice(
 			search_val = format!("%{}%", q);
 
 			sql.push_str(&format!(
-				"AND (pi.invoice_nr ILIKE ${idx} \
+				" AND (pi.invoice_nr ILIKE ${idx} \
 				OR CAST(pi.purchase_order_id AS TEXT) ILIKE ${idx} \
 				OR s.name ILIKE ${idx})" 
 			));
@@ -53,14 +53,14 @@ pub async fn query_invoice(
 
 		if let Some(ref f) = params.from {
 			from_val = *f;
-			sql.push_str(&format!("AND pi.created_at >= ${idx}"));
+			sql.push_str(&format!(" AND pi.created_at >= ${idx}"));
 			args.push(&from_val);
 			idx += 1;
 		}
 
 		if let Some(ref t) = params.to {
 			to_val = *t;
-			sql.push_str(&format!("AND pi.created_at <= ${idx}"));
+			sql.push_str(&format!(" AND pi.created_at <= ${idx}"));
 			args.push(&to_val);
 			idx += 1;
 		}
