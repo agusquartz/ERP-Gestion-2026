@@ -6,6 +6,7 @@ pub struct PurchaseInvoice {
 	pub id: i32,
 	pub invoice_nr: String,
 	pub purchase_order_id: i32,
+	pub supplier_name: String,
 	pub created_at: NaiveDate,
 	pub sale_condition_id: i32,
 	pub total: Decimal,
