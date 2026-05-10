@@ -26,9 +26,9 @@ impl PaymentStatus {
 
 	pub fn from_str(s: &str) -> Option<Self> {
 		match s {
-			"pagado" 			=> Some(PaymentStatus::Paid),
-			"pago_parcial" 		=> Some(PaymentStatus::PartialPayment),
-			"pago_pendiente"	=> Some(PaymentStatus::PaymentPending),
+			"paid" 			=> Some(PaymentStatus::Paid),
+			"partial_payment" 		=> Some(PaymentStatus::PartialPayment),
+			"payment_pending"	=> Some(PaymentStatus::PaymentPending),
 			_ 					=> None,
 		}
 	}
