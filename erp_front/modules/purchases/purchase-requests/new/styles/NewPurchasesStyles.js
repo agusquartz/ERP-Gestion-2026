@@ -3,13 +3,13 @@
 
 export const s = {
   // ── Página ────────────────────────────────────────────────────────────────
-  container: "h-screen w-full overflow-hidden bg-[#f1f5f9] flex flex-col p-6",
+  container: "h-screen w-full overflow-hidden bg-[#f1f5f9] flex flex-col p-4",
   titleSection: "mb-4",
   pageTitle: "text-2xl font-bold text-[#1e293b]", // Ajustado a 2xl como el Figma
-  contentLayout: "grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 flex-1 min-h-0 overflow-hidden h-full",
+  contentLayout: "grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 flex-1 min-h-0",
   
   // ── Tabla de Neumáticos ───────────────────────────────────────────────────
-  tableSection: "flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col",
+  tableSection: "flex flex-col min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden",
   tableWrap: "flex-1 overflow-auto min-h-0", // Cambiado a clase Tailwind para control de scroll
   table: "w-full border-collapse",
   // Encabezado fino y grisáceo

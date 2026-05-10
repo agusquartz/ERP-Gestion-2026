@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePurchaseForm } from "../hooks/NewPurchase/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 import { Toaster, toast } from 'sonner'; // Importamos Sonner
-import { createPurchaseRequest } from "../services/PurchaseService";
+import { createPurchaseRequest } from "@/lib/http/client/purchase-request";
 
 
 // Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales);
@@ -18,7 +18,7 @@ import { PurchaseActions } from "../components/PurchaseActions";
 
 export default function NewPurchasePage() {
   const {
-    items, totalItems, totalUnidades, subtotal, submitError,
+    items, totalItems, totalUnidades, subtotal,
     addItem, updateItemQty, removeItem, reset
   } = usePurchaseForm();
 
@@ -29,22 +29,16 @@ export default function NewPurchasePage() {
 
 const handleSave = async () => {
     // 1. Validación: No guardar si está vacío
-    if (items.length === 0) {
-      return toast.error("La lista de pedido está vacía");
-    }
+  if (items.length === 0) {
+    return toast.warning("Solicitud incompleta", {
+      description: "Debes agregar al menos un producto antes de guardar."
+    });
+  }
 
     // 2. Creamos la promesa para el guardado
     const savePromise = async () => {
       // Estructuramos los datos según el estándar del backend (CamelCase)
-      const requestData = {
-        items: items.map(item => ({
-          productId: item.id || item.codigo, // Usamos el ID o código
-          quantity: item.cantidad,
-          price: item.precio // Aunque sea 0 o referencial
-        })),
-        totalAmount: subtotal,
-        status: "PENDING_QUOTE" // Estado para la siguiente fase de cotización
-      };
+      const requestData = buildPayLoad();
 
       return await createPurchaseRequest(requestData);
     };
@@ -86,8 +80,8 @@ const handleSave = async () => {
           <AddPurchaseProductPanel 
             onOpenSearch={productSearchModal.open} 
             onAdd={addItem}
-            selectedProduct={null} 
-            onClearProduct={() => {}}/>
+            selectedProduct={pendingProduct} 
+            onClearProduct={() => setPendingProduct(null)}/>
           <PurchaseSearchModal 
             open={productSearchModal.isOpen} 
             onClose={productSearchModal.close}

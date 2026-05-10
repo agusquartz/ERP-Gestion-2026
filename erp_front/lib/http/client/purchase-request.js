@@ -39,3 +39,13 @@ export function searchProductsForPurchaseRequest({ contains } = {}) {
     }
   );
 }
+
+export function createPurchaseRequest(payload){
+  // Simulamos la llamada a la API de Rust
+  console.log("Enviando a Rust:", payload);
+
+  return clientRequest(`/purchases/purchase-requests/${id}`, {
+    method:'POST',
+    body: JSON.stringify(payload),
+  })
+}
