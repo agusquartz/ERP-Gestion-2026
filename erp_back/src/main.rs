@@ -5,7 +5,7 @@ use axum::{
 use dotenvy::from_filename;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::{AllowOrigin, CorsLayer};
-use axum::http::{HeaderName, Method, header, request};
+use axum::http::{Method, header, HeaderName};
 use axum::http::HeaderValue;
 use axum::serve;
 use tokio::net::TcpListener;
@@ -21,7 +21,6 @@ mod modules {
     pub mod quote;
     pub mod invoice;
     pub mod credit_notes;
-    pub mod purchase_request;
     pub mod purchase_order;
 }
 
@@ -108,7 +107,6 @@ async fn main() {
         .merge(modules::invoice::router::invoice_router())
         .merge(modules::credit_notes::router::credit_note_router())
         .merge(modules::purchase_order::router::purchase_order_router())
-        .merge(modules::purchase_request::router::list_purchase_request_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
