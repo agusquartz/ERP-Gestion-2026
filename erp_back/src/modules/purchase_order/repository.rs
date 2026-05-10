@@ -300,4 +300,36 @@ pub async fn patch_purchase_order(
     Ok(Some(purchase_order))
 }
 
+/// increases the received quantity of a product on a given order
+pub async fn increase_received_quantity(
+    tx: &tokio_postgres::Transaction<'_>,
+    order_id: i32,
+    product_id: i32,
+    amount: i32,
+) -> Result<bool, db_config::DbError> {
+    let rows = tx.execute(
+        "UPDATE purchase_order_details
+         SET received_quantity = received_quantity + $1
+         WHERE purchase_order_id = $2 AND product_id = $3",
+        &[&amount, &order_id, &product_id],
+    ).await?;
 
+    Ok(rows == 1)
+}
+
+/// decreases the received quantity of a product on a given order
+pub async fn decrease_received_quantity(
+    tx: &tokio_postgres::Transaction<'_>,
+    order_id: i32,
+    product_id: i32,
+    amount: i32,
+) -> Result<bool, db_config::DbError> {
+    let rows = tx.execute(
+        "UPDATE purchase_order_details
+         SET received_quantity = received_quantity - $1
+         WHERE purchase_order_id = $2 AND product_id = $3 AND received_quantity >= $1",
+        &[&amount, &order_id, &product_id],
+    ).await?;
+
+    Ok(rows == 1)
+}
