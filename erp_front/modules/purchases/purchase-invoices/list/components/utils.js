@@ -3,23 +3,26 @@ export function getStatusStyle(status) {
 		case "paid":
 			return {
 				label: 	"Pagado",
-				color: 	"text-[#1a7f4b]",
-				bg: 	"bg-[#e6f9ef]",
-				dot: 	"bg-[#1a7f4b]",
+				color: 	"text-[#00085D]",
+				bg: 	"bg-[#E5EAFF]",
+				dot: 	"bg-[#00085D]",
+				border: "border-[#4A83FF]", 
 			};
 		case "partial_payment":
 			return {
 				label: 	"Pago Parcial",
-				color: 	"text-[#b45309]",
-				bg: 	"bg-[#fff7ed]",
-				dot: 	"bg-[#b45309]",
+				color: 	"text-[#5D5200]",
+				bg: 	"bg-[#FFFDE5]",
+				dot: 	"bg-[#5D5200]",
+				border: "border-[#FFE44A]",
 			};
 		case "payment_pending":
 			return {
 				label: 	"Pago Pendiente",
-				color: 	"text-[#b91c1c]",
-				bg: 	"bg-[#fef2f2]",
-				dot: 	"bg-[#b91c1c]",
+				color: 	"text-[#5D0000]",
+				bg: 	"bg-[#FFE6E5]",
+				dot: 	"bg-[#5D0000]",
+				border: "border-[#91372B]",
 			};
 		default:
 			return {
@@ -27,6 +30,7 @@ export function getStatusStyle(status) {
 				color: 	"text-slate-600",
 				bg: 	"bg-slate-100",
 				dot: 	"bg-slate-400",
+				border: "border-gray",
 			};
 	}
 }
