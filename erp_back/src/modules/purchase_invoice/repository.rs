@@ -26,12 +26,16 @@ pub async fn query_invoice(
 
 	let client = db_config::get_client().await?;
 
-	let has_filtered = params.search.is_some() || params.from.is_some() || params.to.is_some();
+	let has_filtered = params.search.is_some()
+		|| params.filter.is_some()
+		|| params.from.is_some()
+		|| params.to.is_some();
 	
 	if has_filtered {
 		let mut sql = format!("{} WHERE 1=1", PURCHASE_INVOICE_SELECT_BASE);
 
 		let search_val: String;
+		let filter_val: String;
 		let from_val: NaiveDate;
 		let to_val: NaiveDate;
 
@@ -42,12 +46,22 @@ pub async fn query_invoice(
 			search_val = format!("%{}%", q);
 
 			sql.push_str(&format!(
-				" AND (pi.invoice_nr ILIKE ${idx} \
-				OR CAST(pi.purchase_order_id AS TEXT) ILIKE ${idx} \
-				OR s.name ILIKE ${idx})" 
+				" AND s.name ILIKE ${idx}" 
 			));
 
 			args.push(&search_val);
+			idx += 1;
+		}
+
+		if let Some(ref fi) = params.filter {
+			filter_val = format!("%{}%", fi);
+
+			sql.push_str(&format!(
+				" AND (pi.invoice_nr ILIKE ${idx} \
+				OR CAST(pi.purchase_order_id AS TEXT) ILIKE ${idx})" 
+			));
+
+			args.push(&filter_val);
 			idx += 1;
 		}
 
