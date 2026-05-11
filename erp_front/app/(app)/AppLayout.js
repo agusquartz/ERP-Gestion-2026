@@ -146,7 +146,7 @@ export default function AppLayout({
         items: [
           {
             label: "Nuevo Pedido",
-            href: "/purchases/new-order",
+            href: "/purchases/purchase-requests/new",
             permissionPrefix: "purchases",
           },
           {
