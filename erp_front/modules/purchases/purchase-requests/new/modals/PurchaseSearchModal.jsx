@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Modal } from "@/shared/components/Modal";
 import { ChevronDownIcon } from "@/shared/components/Icons";
-// Importamos el servicio específico de compras (o el genérico de productos)
+// Importamos el servicio específico de compras
 import { getProductByQuery } from "@/lib/http/client/sales";
 
 /**
@@ -55,13 +55,13 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
           const term = descFilter.toLowerCase();
           f = f.filter(
             (p) =>
-              p.descripcion.toLowerCase().includes(term) ||
-              p.codigo.toLowerCase().includes(term)
+              p.description.toLowerCase().includes(term) ||
+              p.code.toLowerCase().includes(term)
           );
         }
 
         // Filtro por categoría seleccionada
-        if (catFilter) f = f.filter((p) => p.categoria === catFilter);
+        if (catFilter) f = f.filter((p) => p.category?.name === catFilter);
 
         setFiltered(f);
         setActiveRow(0);
@@ -101,7 +101,7 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
       <div className="space-y-5 p-2">
         <h2 className="text-2xl font-bold text-slate-800">Buscar productos</h2>
 
-        {/* BARRA DE FILTROS: Adaptada al grid de tu captura */}
+        {/* BARRA DE FILTROS*/}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1.5fr_auto_auto_auto] items-end">
           <div className="space-y-1">
             <label className="text-[11px] font-bold text-slate-400 uppercase ml-1">Buscar</label>
@@ -170,13 +170,13 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
                     className={`border-b border-slate-50 hover:bg-blue-50/30 transition-colors cursor-pointer ${activeRow === i ? 'bg-blue-50' : ''}`}
                     onClick={() => setActiveRow(i)}
                   >
-                    <td className="px-4 py-4 font-medium text-slate-700">{p.codigo}</td>
-                    <td className="px-4 py-4 text-slate-600">{p.descripcion}</td>
+                    <td className="px-4 py-4 font-medium text-slate-700">{p.code}</td>
+                    <td className="px-4 py-4 text-slate-600">{p.description}</td>
                     <td className="px-4 py-4">
-                      <span className="px-2 py-1 rounded bg-slate-100 text-[10px] font-bold text-slate-500 uppercase">{p.categoria}</span>
+                      <span className="px-2 py-1 rounded bg-slate-100 text-[10px] font-bold text-slate-500 uppercase">{p.category?.name }</span>
                     </td>
                     <td className="px-4 py-4 text-slate-600 font-semibold">{p.stock}</td>
-                    <td className="px-4 py-4 text-slate-600">${p.precio}</td>
+                    <td className="px-4 py-4 text-slate-600">${p.price}</td>
                     <td className="px-4 py-4">
                       <button 
                         onClick={() => handleSelect(p)}
