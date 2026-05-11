@@ -26,7 +26,8 @@ export function usePurchaseForm() {
       setItems((prev) =>
         prev.map((i) =>
           i.codigo === product.code
-            ? { ...i, cantidad: i.cantidad + cantidad, subtotal: (i.cantidad + cantidad) * i.costo }
+            ? { ...i, cantidad: i.cantidad + cantidad, 
+              subtotal: (i.cantidad + cantidad) * i.costo }
             : i
         )
       );
@@ -40,7 +41,7 @@ export function usePurchaseForm() {
           descripcion: product.description,
           categoria: product.category?.name,
           cantidad: cantidad,
-          precio: product.price,
+          costo: product.cost,
           subtotal: cantidad * precio,
         },
       ]);
@@ -52,7 +53,7 @@ export function usePurchaseForm() {
     setItems((prev) =>
       prev.map((i) => 
         i.id === id 
-          ? { ...i, cantidad, subtotal: cantidad * (Number(i.precio) || 0) } 
+          ? { ...i, cantidad, subtotal: cantidad * (Number(i.costo) || 0) } 
           : i
       )
     );

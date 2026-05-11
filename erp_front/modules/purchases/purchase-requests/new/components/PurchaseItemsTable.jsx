@@ -42,7 +42,7 @@ export function PurchaseItemsTable({ items = [], onQtyChange, onRemove }) {
                     className="w-full bg-transparent border-none text-sm text-center focus:ring-0 outline-none"
                   />
                 </td>
-                <td className="px-2 py-3 text-sm text-gray-600">${item.precio}</td>
+                <td className="px-2 py-3 text-sm text-gray-600">${item.costo}</td>
                 <td className="px-2 py-3 text-sm font-semibold text-gray-800">${item.subtotal}</td>
                 <td className="px-2 py-3 text-center">
                   <button onClick={() => onRemove(item.id)} className="text-gray-400 hover:text-red-500">

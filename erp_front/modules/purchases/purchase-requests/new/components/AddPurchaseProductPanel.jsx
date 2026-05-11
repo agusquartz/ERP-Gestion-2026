@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import {s} from "../styles/NewPurchasesStyles"
+import { getProductByQuery } from "@/lib/http/client/sales";
+import { Toaster, toast } from 'sonner'; // Importamos Sonner
 
 export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, onClearProduct }) {
   const [manualCode, setManualCode] = useState("");
   const [qty, setQty] = useState(1);
+  const [query, setQuery] = useState("");
 
   const handleAdd = () => {
     // Lógica para agregar el producto (puedes disparar esto al presionar Enter en el input)
     if (!selectedProduct && !manualCode.trim()) return;
-    onAdd(selectedProduct || { codigo: manualCode, descripcion: "", precio: 0 }, qty);
+    onAdd(selectedProduct || { code: manualCode, description: "", price: 0 }, qty);
     setManualCode("");
     setQty(1);
     onClearProduct?.();
@@ -18,12 +21,12 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
 
   // Esta es la función centralizada para agregar
   const submitAddition = () => {
-    const codeToUse = selectedProduct?.codigo || manualCode;
+    const codeToUse = selectedProduct?.code || manualCode;
     
     if (!codeToUse.trim()) return;
 
     // Llamamos a onAdd pasándole el producto y la cantidad
-    onAdd(selectedProduct || { codigo: manualCode, descripcion: "Producto Manual", precio: 0 }, qty);
+    onAdd(selectedProduct || { code: manualCode, description: "Producto Manual", price: 0 }, qty);
     
     // Limpiamos los estados locales
     setManualCode("");
@@ -31,21 +34,61 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
     onClearProduct?.();
   };
 
-  const handleKeyDown = (e) => {
-  if (e.key === "Enter") {
+  const handleKeyDown = async (e) => {
+    if (e.key === "Enter") {
+    const query = e.target.value.trim();
+    if (!query) return;
+
+    try {
+      // 1. Buscamos el producto por código exacto
+      let products = await getProductByQuery(query);
+      
+      // 2. Buscamos una coincidencia exacta de código
+      const foundProduct = products.find(
+        p => p.code.toLowerCase() === query.toLowerCase()
+      );
+
+      if (foundProduct) {
+        // 3. Si existe, lo añadimos con cantidad 1
+        onAdd({...foundProduct,
+          cantidad: qty} 
+        );
+        // Limpiamos el input para el siguiente escaneo
+        onClearProduct(); 
+        toast.success(`Producto añadido: ${foundProduct.description}`);
+        setManualCode("");
+        setQty(1);
+      } else {
+        // 4. Si no existe, lanzamos el aviso de Sonner
+        toast.error("Producto no encontrado", {
+          description: `El código no figura en el sistema. Debe registrarlo primero o verificar el código.`,
+          duration: 4000,
+        });
+      }
+    } catch (error) {
+      console.error("Detalle del error:", error);
+      toast.error("Error al buscar el producto");
+    }
+  }
+  /* if (e.key === "Enter") {
     // Evitamos enviar si el código está vacío
     if (!manualCode.trim() && !selectedProduct) return;
     
-    onAdd(selectedProduct || { 
-      codigo: manualCode, 
-      descripcion: "Producto Manual", 
-      precio: 0 
-    }, qty);
+    const product = getProductByQuery(description)
+
+    onAdd(product, qty)
+    //onAdd(selectedProduct || { 
+    //  code: manualCode, 
+    //  description: "Producto Manual", 
+    //  price: 0 
+    //}, qty);
 
     // Limpiamos para el siguiente ingreso
     setManualCode("");
     setQty(1);
-  }
+  } */
+
+
 };
 
   return (

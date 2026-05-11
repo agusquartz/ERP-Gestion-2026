@@ -25,7 +25,7 @@ export default function NewPurchasePage() {
 
   const productSearchModal = useDisclosure();
 
-  const [pendingProduct, setPendingProduct] = useState(null);
+  const [pendingProduct, setPendingProduct] = useState("");
 
 const handleSave = async () => {
     // 1. Validación: No guardar si está vacío
@@ -81,7 +81,7 @@ const handleSave = async () => {
             onOpenSearch={productSearchModal.open} 
             onAdd={addItem}
             selectedProduct={pendingProduct} 
-            onClearProduct={() => setPendingProduct(null)}/>
+            onClearProduct={() => ("")}/>
           <PurchaseSearchModal 
             open={productSearchModal.isOpen} 
             onClose={productSearchModal.close}
