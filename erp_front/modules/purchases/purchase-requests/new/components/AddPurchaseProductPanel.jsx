@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {s} from "../../styles/NewPurchase/NewPurchasesStyles"
+import {s} from "../styles/NewPurchasesStyles"
 
 export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, onClearProduct }) {
   const [manualCode, setManualCode] = useState("");

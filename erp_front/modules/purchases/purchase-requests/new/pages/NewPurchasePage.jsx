@@ -1,7 +1,7 @@
 
 "use client";
 import { useState } from "react";
-import { usePurchaseForm } from "../hooks/NewPurchase/usePurchaseForm";
+import { usePurchaseForm } from "../hooks/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
 import { Toaster, toast } from 'sonner'; // Importamos Sonner
 import { createPurchaseRequest } from "@/lib/http/client/purchase-request";
@@ -9,9 +9,9 @@ import { createPurchaseRequest } from "@/lib/http/client/purchase-request";
 
 // Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales);
 import { PurchaseItemsTable } from "../components/PurchaseItemsTable"; 
-import { AddPurchaseProductPanel } from "../components/NewPurchases/AddPurchaseProductPanel.jsx";
-import { PurchaseSummaryPanel } from "../components/NewPurchases/PurchaseSummaryPanel";
-import { PurchaseInformation } from "../components/NewPurchases/PurchaseInformation";
+import { AddPurchaseProductPanel } from "../components/AddPurchaseProductPanel.jsx";
+import { PurchaseSummaryPanel } from "../components/PurchaseSummaryPanel";
+import { PurchaseInformation } from "../components/PurchaseInformation";
 import { s } from "../styles/NewPurchasesStyles";
 import { PurchaseSearchModal } from "../modals/PurchaseSearchModal";
 import { PurchaseActions } from "../components/PurchaseActions";

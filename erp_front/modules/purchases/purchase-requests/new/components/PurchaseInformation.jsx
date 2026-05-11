@@ -1,5 +1,5 @@
 import { InfoIcon } from "@/shared/components/Icons"; // Asegúrate de tener un icono de info
-import { s } from "../../styles/NewPurchase/NewPurchasesStyles";
+import { s } from "../styles/NewPurchasesStyles";
 
 export function PurchaseInformation() {
   return (

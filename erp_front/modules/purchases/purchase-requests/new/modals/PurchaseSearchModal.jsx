@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Modal } from "@/shared/components/Modal";
 import { ChevronDownIcon } from "@/shared/components/Icons";
 // Importamos el servicio específico de compras (o el genérico de productos)
-import { getProductByQuery } from "../services/PurchaseService";
+import { getProductByQuery } from "@/lib/http/client/sales";
 
 /**
  * Modal adaptado para la búsqueda de neumáticos y productos en Compras.
@@ -21,7 +21,9 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
 
 
   // Extrae categorías únicas de los resultados para el dropdown
-  const categories = [...new Set(filtered.map((p) => p.categoria))];
+  //const categories = [...new Set(filtered.map((p) => p.categoria))];
+  const categories = [...new Set(filtered.map((p) => p.category?.name))];
+
 
   // RESET: Al abrir el modal, limpiamos estados y damos foco al input
   useEffect(() => {
