@@ -29,9 +29,9 @@ export function InvoiceTable({ invoices, loading, error }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-[12px] border border-slate-200">
+    <div className="max-h-[64vh] overflow-y-auto rounded-[5px] border border-slate-200">
       <table className="w-full text-[14px] text-slate-700">
-        <thead>
+        <thead className="sticky top-0 z-10 bg-background">
           <tr className="border-b border-slate-200 bg-background text-[13px] font-bold text-slate-500">
             <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Factura N°</th>
             <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proveedor</th>
