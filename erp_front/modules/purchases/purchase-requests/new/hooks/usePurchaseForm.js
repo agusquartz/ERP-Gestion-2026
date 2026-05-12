@@ -1,20 +1,38 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { whoAmI } from "@/lib/http/client/auth"; 
 
 
 /**
  * Hook para la creación de pedidos de compra.
  * Gestiona ítems, cantidades y totales para posterior revisión.
  */
-export function usePurchaseForm() {
- // Estado para los ítems (inicializado con mock para pruebas) 
+export function usePurchaseForm() { 
   const [items, setItems] = useState([]);
   const [submitError, setSubmitError] = useState("");
+  
 
   // Solo subtotal, sin IVA
   const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
   const totalItems = items.length;
   const totalUnidades = items.reduce((s, i) => s + (Number(i.cantidad) || 0), 0);
+  const [employeeId, setEmployeeId] = useState(null);
+
+    useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await whoAmI();
+        // OJO: Verifica cómo viene la respuesta de tu backend.
+        // Si el JSON es { "id": 5, "username": "admin" }, usas user.id
+        // Si es { "employee_id": 5 }, usas user.employee_id
+        setEmployeeId(user.id); 
+      } catch (error) {
+        console.error("Error al obtener la sesión del usuario:", error);
+      }
+    };
+
+    fetchUser();
+    }, []); // El array vacío asegura que solo se ejecute una vez al cargar
 
   const addItem = (product, qty) => {
     // En compras usamos el precio de costo del producto
@@ -67,13 +85,15 @@ export function usePurchaseForm() {
   };
 
   const buildPayload = () => {
+    // Pequeña validación de seguridad
+    if (!employeeId) {
+      console.warn("Advertencia: No se ha cargado el ID del empleado aún.");
+    }
     return {
-      // Coincide con 'pub created_at: NaiveDate' (camelCase -> createdAt)
       createdAt: new Date().toISOString().split('T')[0], 
       
-      // Coincide con 'pub employee_id: i32' (camelCase -> employeeId)
-      // Aquí deberías usar el ID del usuario logueado. Por ahora un quemado:
-      employeeId: 1, 
+      // Aquí deberías usar el ID del usuario logueado:
+      employeeId: employeeId, 
       
       // Coincide con 'pub details: Vec<CreatePurchaseRequestDetailDto>'
       details: items.map((i) => ({

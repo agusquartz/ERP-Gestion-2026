@@ -72,7 +72,7 @@ const handleSave = async () => {
           </div>
           
           {/* Botón Guardar */}
-          <PurchaseActions onSave={handleSave}/>
+          <PurchaseActions onRegister={handleSave}/>
       </div>
 
         {/* COLUMNA DERECHA: Paneles de control */}
