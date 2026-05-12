@@ -25,8 +25,11 @@ export default function CategoriesTable({ categories = [] }) {
       <p className={label.section}>Categorias del Pedido</p>
 
       {/* Card wrapper — rounded-[5px] matches the design border radius spec */}
-      <div className={`${card.base} shadow-panel flex flex-col flex-1 min-h-0`} style={{borderRadius: "5px"}}>
-        
+      <div
+        className={`${card.base} shadow-panel flex flex-col flex-1 min-h-0`}
+        style={{ borderRadius: "5px" }}
+      >
+
         {/* Fixed header — stays visible while body scrolls */}
         <table className={`${table.base} table-fixed w-full`}>
           <thead>
@@ -38,29 +41,45 @@ export default function CategoriesTable({ categories = [] }) {
             </tr>
           </thead>
         </table>
-        
+
         {/*
          * Scrollable body container.
-         * max-h controls visible rows before scroll activates.
+         * flex-1 + min-h-0 makes it fully responsive to parent height.
+         * This avoids fixed max-height issues and adapts to screen size.
          */}
-        <div className="overflow-y-auto max-h-48">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <table className={`${table.base} table-fixed w-full`}>
             <tbody>
               {categories.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted">
+                  <td
+                    colSpan={4}
+                    className="px-4 py-8 text-center text-sm text-muted"
+                  >
                     No hay categorias registradas.
                   </td>
                 </tr>
               )}
+
               {categories.map((cat, index) => (
                 <tr key={cat.category} className={table.row}>
-                  <td className={`${table.tdMuted} w-8`}>{index + 1}</td>
-                  <td className="px-4 py-3">
-                    <span className={badge.category}>{cat.category}</span>
+                  <td className={`${table.tdMuted} w-8`}>
+                    {index + 1}
                   </td>
-                  <td className={table.tdCenter}>{cat.productCount}</td>
-                  <td className={table.tdCenter}>{cat.assignedSuppliers}</td>
+
+                  <td className="px-4 py-3">
+                    <span className={badge.category}>
+                      {cat.category}
+                    </span>
+                  </td>
+
+                  <td className={table.tdCenter}>
+                    {cat.productCount}
+                  </td>
+
+                  <td className={table.tdCenter}>
+                    {cat.assignedSuppliers}
+                  </td>
                 </tr>
               ))}
             </tbody>

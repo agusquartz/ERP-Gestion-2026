@@ -6,7 +6,7 @@
  * Displays the list of suppliers assigned to a purchase order with their
  * quotation status and per-row action buttons.
  *
- * The table body is scrollable (max-h + overflow-y-auto) so the page layout
+ * The table body is scrollable (flex-1 + min-h-0) so the page layout
  * never grows beyond the viewport — the parent page stays fixed-height.
  *
  * Header button behavior (controlled by `allGenerated` from usePurchaseOrder):
@@ -30,8 +30,7 @@
  * @returns {JSX.Element} The suppliers & quotations section.
  */
 
-
-import { card, table, badge, label, btn, } from "../styles/purchaseRequestsStyles";
+import { card, table, badge, label, btn } from "../styles/purchaseRequestsStyles";
 import { STATUS } from "../hooks/usePurchaseRequests";
 
 export default function SuppliersTable({
@@ -41,7 +40,6 @@ export default function SuppliersTable({
   onGenerateOrPrintAll,
   onOpenSupplierSearch,
 }) {
-  
   const hasSuppliers = suppliers.length > 0;
 
   return (
@@ -49,7 +47,9 @@ export default function SuppliersTable({
 
       {/* ── Section header with action buttons ── */}
       <div className="flex items-center justify-between mb-3">
-        <p className={`${label.section} mt-2`}>Proveedores &amp; Cotizaciones</p>
+        <p className={`${label.section} mt-2`}>
+          Proveedores &amp; Cotizaciones
+        </p>
 
         <div className="flex gap-2">
           {/*
@@ -64,7 +64,7 @@ export default function SuppliersTable({
             className={`${btn.secondarySm} shadow-panel disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {allGenerated ? "Imprimir Todos" : "Generar Todos"}
-          </button> 
+          </button>
 
           {/* Opens SupplierSearchModal to add one or more new suppliers */}
           <button
@@ -91,10 +91,13 @@ export default function SuppliersTable({
           </thead>
         </table>
 
-        {/* Scrollable body — add max-h here to control how tall the table gets */}
-        <div className="overflow-y-auto max-h-48">
+        {/*
+         * Scrollable body container.
+         * flex-1 + min-h-0 makes layout fully responsive and prevents page growth.
+         */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <table className={`${table.base} table-fixed w-full`}>
-            <tbody> 
+            <tbody>
               {suppliers.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted">
@@ -102,42 +105,45 @@ export default function SuppliersTable({
                   </td>
                 </tr>
               )}
+
               {suppliers.map((supplier, index) => (
                 <tr key={supplier.id} className={table.row}>
-                  <td className={`${table.tdMuted} w-8`}>{index + 1}</td>
-                  <td className={`${table.td} font-medium`}>{supplier.name}</td>
+                  <td className={`${table.tdMuted} w-8`}>
+                    {index + 1}
+                  </td>
 
-                  {/* Quotation action button */}
+                  <td className={`${table.td} font-medium`}>
+                    {supplier.name}
+                  </td>
+
                   <td className="px-4 py-3 text-center">
-                  {/*CREATED → "Generar": first interaction, transitions to UNSENT*/}
                     {supplier.statusId === STATUS.CREATED ? (
-                      <button 
+                      <button
                         onClick={() => onOpenQuotation(supplier)}
                         className={`${btn.primarySm} shadow-panel`}
                       >
                         Generar
                       </button>
-                    ) : ( 
-                      // UNSENT / PENDING / READY-OK → "Ver": open modal to view or edit
+                    ) : (
                       <button
                         onClick={() => onOpenQuotation(supplier)}
                         className={`${btn.secondarySm} shadow-panel`}
                       >
                         Ver
                       </button>
-                   )} 
+                    )}
                   </td>
 
-                  {/* Status badge — empty cell for "generar" */}
                   <td className="px-4 py-3 text-center">
-                    {/* CREATED -> no badge */}
                     {(supplier.statusId === STATUS.UNSENT ||
                       supplier.statusId === STATUS.PENDING) && (
                       <span className={badge.pendiente}>• Pendiente</span>
                     )}
-                    {(supplier.statusId === STATUS.CANCELLED) && (
+
+                    {supplier.statusId === STATUS.CANCELLED && (
                       <span className={badge.cancelado}>• Cancelado</span>
                     )}
+
                     {supplier.statusId === STATUS.READY && (
                       <span className={badge.listo}>• Listo</span>
                     )}
@@ -147,6 +153,7 @@ export default function SuppliersTable({
             </tbody>
           </table>
         </div>
+
       </div>
     </section>
   );

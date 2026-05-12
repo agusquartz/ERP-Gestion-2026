@@ -17,17 +17,18 @@
  * @returns {JSX.Element} A bordered, scrollable table of order items.
  */
 
-
-import { card, table, badge, label, } from "../styles/purchaseRequestsStyles";
+import { card, table, badge, label } from "../styles/purchaseRequestsStyles";
 
 export default function OrderItemsTable({ items = [] }) {
-  
   return (
-    <section className="shrink-0">
+    <section className="flex flex-col min-h-0 flex-1">
       <p className={label.section}>Items del pedido</p>
 
       {/* Card wrapper — rounded-[5px] matches the design border radius spec */}
-      <div className={`${card.base} shadow-panel flex flex-col min-h-0`} style={{ borderRadius: "5px" }}>
+      <div
+        className={`${card.base} shadow-panel flex flex-col flex-1 min-h-0`}
+        style={{ borderRadius: "5px" }}
+      >
 
         {/* Fixed header — stays visible while body scrolls */}
         <table className={`${table.base} table-fixed w-full`}>
@@ -44,9 +45,10 @@ export default function OrderItemsTable({ items = [] }) {
 
         {/*
          * Scrollable body container.
-         * max-h controls how many rows are visible before scrolling kicks in.
+         * flex-1 + min-h-0 makes it fully responsive to parent height.
+         * This avoids fixed max-height issues and adapts to screen size.
          */}
-        <div className="overflow-y-auto max-h-48">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <table className={`${table.base} table-fixed w-full`}>
             <tbody>
               {items.length === 0 && (
@@ -56,6 +58,7 @@ export default function OrderItemsTable({ items = [] }) {
                   </td>
                 </tr>
               )}
+
               {items.map((item, index) => (
                 <tr key={item.id} className={table.row}>
                   <td className={`${table.tdMuted} w-8`}>{index + 1}</td>
@@ -74,6 +77,7 @@ export default function OrderItemsTable({ items = [] }) {
             </tbody>
           </table>
         </div>
+
       </div>
     </section>
   );
