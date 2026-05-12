@@ -1,13 +1,12 @@
 
 "use client";
+
 import { useState } from "react";
 import { usePurchaseForm } from "../hooks/usePurchaseForm";
 import { useDisclosure } from "@/shared/hooks/useDisclosure";
-import { Toaster, toast } from 'sonner'; // Importamos Sonner
+import { Toaster, toast } from 'sonner';
 import { createPurchaseRequest } from "@/lib/http/client/purchase-request";
 
-
-// Components (Asumiendo que creaste versiones para Purchase o reutilizas las de Sales);
 import { PurchaseItemsTable } from "../components/PurchaseItemsTable"; 
 import { AddPurchaseProductPanel } from "../components/AddPurchaseProductPanel.jsx";
 import { PurchaseSummaryPanel } from "../components/PurchaseSummaryPanel";
@@ -16,38 +15,51 @@ import { s } from "../styles/NewPurchasesStyles";
 import { PurchaseSearchModal } from "../modals/PurchaseSearchModal";
 import { PurchaseActions } from "../components/PurchaseActions";
 
+/**
+ * Main Page Component for Creating New Purchase Requests.
+ * Orchestrates the integration between the purchase hook, product search, and API submission.
+ */
 export default function NewPurchasePage() {
+  // Destructuring state and methods from the custom purchase logic hook
   const {
     items, totalItems, totalUnidades, subtotal,
-    addItem, updateItemQty, removeItem, reset
+    addItem, updateItemQty, removeItem, reset, buildPayload // Ensure buildPayload is exposed here
   } = usePurchaseForm();
 
-
+  // Control state for the advanced search modal visibility
   const productSearchModal = useDisclosure();
 
-  const [pendingProduct, setPendingProduct] = useState("");
+  // Temporary state for products selected but not yet confirmed (if needed)
+  const [pendingProduct] = useState("");
 
-const handleSave = async () => {
-    // 1. Validación: No guardar si está vacío
-  if (items.length === 0) {
-    return toast.warning("Solicitud incompleta", {
-      description: "Debes agregar al menos un producto antes de guardar."
-    });
-  }
+  /**
+   * Handles the final submission of the purchase request.
+   * Validates the form and triggers a toast notification with promise tracking.
+   */
+  const handleSave = async () => {
+    // Validation: Prevent submission if the items list is empty
+    if (items.length === 0) {
+      return toast.warning("Solicitud incompleta", {
+        description: "Debes agregar al menos un producto antes de guardar."
+      });
+    }
 
-    // 2. Creamos la promesa para el guardado
+    /**
+     * Internal async function to wrap the API call and payload construction.
+     */
     const savePromise = async () => {
-      // Estructuramos los datos según el estándar del backend (CamelCase)
-      const requestData = buildPayLoad();
+      // Structure data following the backend DTO standard (CamelCase)
+      const requestData = buildPayload(); 
 
       return await createPurchaseRequest(requestData);
     };
 
-    // 3. Disparamos el Toast con estado de carga, éxito y error
+    // Trigger Sonner toast with loading, success, and error states
     toast.promise(savePromise(), {
       loading: 'Registrando pedido de productos...',
       success: () => {
-        reset(); // Limpiamos la tabla solo si se guardó bien
+        // Clear the table state only upon successful persistence
+        reset(); 
         return 'Pedido registrado. Listo para cotizar.';
       },
       error: 'Error: No se pudo registrar el pedido.',
@@ -57,12 +69,14 @@ const handleSave = async () => {
   return (
     <div className={s.container}>
       <Toaster position="top-right" richColors />
+      
+      {/* HEADER SECTION */}
       <div className={s.titleSection}>
         <h1 className={s.pageTitle}>Nuevo Pedido</h1>
       </div>
 
       <div className={s.contentLayout}>
-        {/* COLUMNA IZQUIERDA: Tabla y Botón Guardar */}
+        {/* LEFT COLUMN: Main items table and action triggers */}
         <div className="flex flex-col min-h-0 h-full">
           <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
              <PurchaseItemsTable 
@@ -71,32 +85,38 @@ const handleSave = async () => {
               onRemove={removeItem}/>
           </div>
           
-          {/* Botón Guardar */}
+          {/* Action Footer: Primary save button */}
           <PurchaseActions onRegister={handleSave}/>
-      </div>
+        </div>
 
-        {/* COLUMNA DERECHA: Paneles de control */}
+        {/* RIGHT COLUMN: Control panels for product entry and summaries */}
         <div className="flex flex-col gap-4 min-h-0">
+          {/* Quick-add panel via code scan */}
           <AddPurchaseProductPanel 
             onOpenSearch={productSearchModal.open} 
             onAdd={addItem}
             selectedProduct={pendingProduct} 
             onClearProduct={() => ("")}/>
+          
+          {/* Advanced product search modal */}
           <PurchaseSearchModal 
             open={productSearchModal.isOpen} 
             onClose={productSearchModal.close}
-            onSelect={(product) => {
-              // Adaptamos el objeto si es necesario antes de agregarlo
+            onSelect={(product) => { 
               addItem({
                 ...product,
-                cantidad: 1 // Por defecto al seleccionar desde el modal
+                cantidad: 1
               });
             }}
           />
+
+          {/* Dynamic numeric summary of the current request */}
           <PurchaseSummaryPanel 
             totalItems={totalItems} 
             totalUnidades={totalUnidades} 
             subtotal={subtotal}/>
+            
+          {/* Static contextual information or help panel */}
           <PurchaseInformation />
         </div>
       </div>

@@ -2,58 +2,64 @@
 import { useState, useEffect } from "react";
 import { whoAmI } from "@/lib/http/client/auth"; 
 
-
 /**
- * Hook para la creación de pedidos de compra.
- * Gestiona ítems, cantidades y totales para posterior revisión.
+ * Hook for managing purchase order creation.
+ * Handles items, quantities, and totals calculation for later review.
  */
 export function usePurchaseForm() { 
   const [items, setItems] = useState([]);
   const [submitError, setSubmitError] = useState("");
-  
+  const [employeeId, setEmployeeId] = useState(null);
 
-  // Solo subtotal, sin IVA
+  // Totals calculation: Subtotal (without taxes), line count, and total units
   const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
   const totalItems = items.length;
   const totalUnidades = items.reduce((s, i) => s + (Number(i.cantidad) || 0), 0);
-  const [employeeId, setEmployeeId] = useState(null);
 
-    useEffect(() => {
+  /**
+   * Effect to retrieve the currently logged-in user's session data on mount.
+   * Maps the user ID to the employeeId state for the purchase payload.
+   */
+  useEffect(() => {
     const fetchUser = async () => {
       try {
         const user = await whoAmI();
-        // OJO: Verifica cómo viene la respuesta de tu backend.
-        // Si el JSON es { "id": 5, "username": "admin" }, usas user.id
-        // Si es { "employee_id": 5 }, usas user.employee_id
+        // Check backend response structure: typically user.id or user.employee_id
         setEmployeeId(user.id); 
       } catch (error) {
-        console.error("Error al obtener la sesión del usuario:", error);
+        console.error("Failed to retrieve user session:", error);
       }
     };
 
     fetchUser();
-    }, []); // El array vacío asegura que solo se ejecute una vez al cargar
+  }, []); // Empty dependency array ensures this runs only once on component mount
 
+  /**
+   * Adds a product to the purchase list or updates quantity if it already exists.
+   * Uses product cost for procurement logic.
+   */
   const addItem = (product, qty) => {
-    // En compras usamos el precio de costo del producto
+    // Procurement logic: focus on cost price instead of retail price
     const precio = Number(product.cost) || 0;
     const cantidad = Number(qty) || 1;
     const existing = items.find((i) => i.codigo === product.code);
 
     if (existing) {
+      // Update existing item quantity and recalculate its subtotal
       setItems((prev) =>
         prev.map((i) =>
           i.codigo === product.code
             ? { ...i, cantidad: i.cantidad + cantidad, 
-              subtotal: (i.cantidad + cantidad) * i.costo }
+                subtotal: (i.cantidad + cantidad) * i.costo }
             : i
         )
       );
     } else {
+      // Create a new entry in the items array
       setItems((prev) => [
         ...prev,
         {
-          id: Date.now(),
+          id: Date.now(), // Local unique identifier for UI rendering
           productoId: product.id,
           codigo: product.code,
           descripcion: product.description,
@@ -66,6 +72,9 @@ export function usePurchaseForm() {
     }
   };
 
+  /**
+   * Updates the quantity and subtotal of a specific item by its ID.
+   */
   const updateItemQty = (id, val) => {
     const cantidad = Math.max(1, Number(val) || 1);
     setItems((prev) =>
@@ -77,29 +86,40 @@ export function usePurchaseForm() {
     );
   };
 
+  /**
+   * Removes an item from the list based on its local ID.
+   */
   const removeItem = (id) => setItems((prev) => prev.filter((i) => i.id !== id));
 
+  /**
+   * Clears all items and resets error states.
+   */
   const reset = () => {
     setItems([]);
     setSubmitError("");
   };
 
+  /**
+   * Constructs the final data object to be sent to the backend (Rust/Supabase).
+   * Aligns with the expected 'CreatePurchaseRequestDto' structure.
+   */
   const buildPayload = () => {
-    // Pequeña validación de seguridad
+    // Safety check to ensure the employee session is loaded before submission
     if (!employeeId) {
-      console.warn("Advertencia: No se ha cargado el ID del empleado aún.");
+      console.warn("Warning: Employee ID has not been loaded yet.");
     }
+    
     return {
+      // Standard ISO date string for the 'NaiveDate' backend field
       createdAt: new Date().toISOString().split('T')[0], 
       
-      // Aquí deberías usar el ID del usuario logueado:
+      // Real logged-in user ID mapped from the auth service
       employeeId: employeeId, 
       
-      // Coincide con 'pub details: Vec<CreatePurchaseRequestDetailDto>'
+      // Array of details matching the backend DTO expected properties
       details: items.map((i) => ({
-        // Dentro de details, camelCase aplica también:
-        productId: i.productoId, // 'product_id' en Rust
-        quantity: i.cantidad,    // 'quantity' en Rust
+        productId: i.productoId, 
+        quantity: i.cantidad,    
       })),
     };
   };

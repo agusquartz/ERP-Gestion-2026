@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Modal } from "@/shared/components/Modal";
 import { ChevronDownIcon } from "@/shared/components/Icons";
-// Importamos el servicio específico de compras
 import { getProductByQuery } from "@/lib/http/client/sales";
 
 /**
- * Modal adaptado para la búsqueda de neumáticos y productos en Compras.
- * Incluye navegación por teclado y filtros dinámicos.
+ * Modal adapted for searching tires and products within the Procurement module.
+ * Features keyboard navigation and dynamic multi-layer filtering.
  */
 export function PurchaseSearchModal({ open, onClose, onSelect }) {
   const [query, setQuery] = useState("");
@@ -20,12 +19,11 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
   const inputRef = useRef(null);
 
 
-  // Extrae categorías únicas de los resultados para el dropdown
-  //const categories = [...new Set(filtered.map((p) => p.categoria))];
+  // Extract unique categories from search results for the dropdown filter
   const categories = [...new Set(filtered.map((p) => p.category?.name))];
 
 
-  // RESET: Al abrir el modal, limpiamos estados y damos foco al input
+  // RESET: Clear states and auto-focus the main input when the modal opens
   useEffect(() => {
     if (open) {
       setQuery("");
@@ -38,7 +36,7 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
     }
   }, [open]);
 
-  // DEBOUNCE SEARCH: Espera 300ms tras escribir para evitar llamadas excesivas a la API
+  // DEBOUNCE SEARCH: Wait 300ms after typing to prevent excessive API calls
   useEffect(() => {
     if (query.length < 3) {
       setFiltered([]);
@@ -47,10 +45,10 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
 
     const timer = setTimeout(async () => {
       try {
-        // Buscamos productos que coincidan con el término principal
+        // Fetch products matching the main search term
         let f = await getProductByQuery(query);
 
-        // Filtramos localmente por descripción/código si el usuario escribió en el segundo input
+        // Client-side filtering by description/code for refined searches
         if (descFilter) {
           const term = descFilter.toLowerCase();
           f = f.filter(
@@ -60,7 +58,7 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
           );
         }
 
-        // Filtro por categoría seleccionada
+        // Filter results by selected category
         if (catFilter) f = f.filter((p) => p.category?.name === catFilter);
 
         setFiltered(f);
@@ -73,7 +71,7 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
     return () => clearTimeout(timer);
   }, [query, descFilter, catFilter]);
 
-  // ACCESIBILIDAD: Manejo de flechas y Enter para selección rápida
+  // ACCESSIBILITY: Handle keyboard arrows and Enter for rapid selection
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && filtered.length > 0) {
       handleSelect(filtered[activeRow]);
@@ -84,12 +82,18 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
     }
   };
 
+  /**
+   * Finalizes the selection by passing the product to the parent component.
+   */
   const handleSelect = (product) => {
     if (!product) return;
-    onSelect(product); // Llama a la función que viene del padre
-    onClose();        // Cierra el modal
+    onSelect(product); 
+    onClose();        
   };
 
+  /**
+   * Resets all search and filter inputs.
+   */
   const clearAll = () => {
     setQuery("");
     setDescFilter("");
@@ -101,7 +105,7 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
       <div className="space-y-5 p-2">
         <h2 className="text-2xl font-bold text-slate-800">Buscar productos</h2>
 
-        {/* BARRA DE FILTROS*/}
+        {/* FILTER BAR SECTION */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1.5fr_auto_auto_auto] items-end">
           <div className="space-y-1">
             <label className="text-[11px] font-bold text-slate-400 uppercase ml-1">Buscar</label>
@@ -125,6 +129,7 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
             />
           </div>
 
+          {/* CATEGORY DROPDOWN SELECTOR */}
           <div className="relative">
             <button
               onClick={() => setShowCatDrop(!showCatDrop)}
@@ -133,7 +138,7 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
               <span>{catFilter || "Categoría"}</span>
               <ChevronDownIcon />
             </button>
-            {/* Dropdown de categorías */}
+            {/* Category selection dropdown */}
             {showCatDrop && (
               <div className="absolute z-30 mt-2 w-full rounded-lg border border-slate-200 bg-white shadow-xl p-1">
                 <button onClick={() => {setCatFilter(""); setShowCatDrop(false)}} className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 rounded">Todas</button>
@@ -149,7 +154,7 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
           </button>
         </div>
 
-        {/* TABLA DE RESULTADOS */}
+        {/* RESULTS TABLE SECTION */}
         <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm bg-white">
           <div className="max-h-[450px] overflow-auto">
             <table className="w-full text-left text-sm border-collapse">
@@ -192,6 +197,7 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
           </div>
         </div>
 
+        {/* NAVIGATION HINT */}
         <p className="text-center text-[11px] text-slate-400 italic">
           Use ↑ and ↓ to navigate and Enter to select.
         </p>

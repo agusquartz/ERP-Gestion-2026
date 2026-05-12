@@ -6,7 +6,7 @@ export function PurchaseItemsTable({ items = [], onQtyChange, onRemove }) {
   
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Contenedor con scroll: 'overflow-auto' aquí */}
+      {/*scroll: 'overflow-auto' here */}
       <div className="flex-1 overflow-auto min-h-0">
         <table className="w-full border-collapse">
           <thead>
