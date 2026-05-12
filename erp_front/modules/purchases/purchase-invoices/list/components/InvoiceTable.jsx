@@ -32,40 +32,40 @@ export function InvoiceTable({ invoices, loading, error }) {
     <div className="overflow-x-auto rounded-[12px] border border-slate-200">
       <table className="w-full text-[14px] text-slate-700">
         <thead>
-          <tr className="border-b border-slate-200 bg-[#f8fafc] text-[13px] font-bold text-slate-500">
-            <th className="px-5 py-3.5 text-left">Factura N°</th>
-            <th className="px-5 py-3.5 text-left">Proveedor</th>
-            <th className="px-5 py-3.5 text-left">Orden N°</th>
-            <th className="px-5 py-3.5 text-left">Fecha</th>
-            <th className="px-5 py-3.5 text-right">Total $</th>
-            <th className="px-5 py-3.5 text-center">Estado</th>
-            <th className="px-5 py-3.5 text-center">Accion</th>
+          <tr className="border-b border-slate-200 bg-background text-[13px] font-bold text-slate-500">
+            <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Factura N°</th>
+            <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Proveedor</th>
+            <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Orden N°</th>
+            <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fecha</th>
+            <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total $</th>
+            <th className="px-5 py-3.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
+            <th className="px-5 py-3.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Accion</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {invoices.map((inv) => {
-            const { label, color, bg, dot } = getStatusStyle(inv.payment_status);
+            const { label, color, bg, dot, border } = getStatusStyle(inv.payment_status);
             return (
               <tr
                 key={inv.id}
-                className="hover:bg-[#f8fafc] transition-colors"
+                className="hover:bg-[#F2F3F7] transition-colors"
               >
                 <td className="px-5 py-3.5 font-medium">{inv.invoice_nr}</td>
                 <td className="px-5 py-3.5 text-slate-600">{inv.supplier_name}</td>
                 <td className="px-5 py-3.5 text-slate-600">{inv.purchase_order_id}</td>
                 <td className="px-5 py-3.5 text-slate-600">{formatDate(inv.created_at)}</td>
                 <td className="px-5 py-3.5 text-right font-medium">
-                  $ {inv.total}
+                  $ {Number(inv.total).toLocaleString("es-PY")}
                 </td>
                 <td className="px-5 py-3.5 text-center">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-semibold ${bg} ${color}`}>
+                  <span className={`border ${border} inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1 text-[12px] font-semibold ${bg} ${color}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
                     {label}
                   </span>
                 </td>
                 <td className="px-5 py-3.5 text-center">
                   <button
-                    className="inline-flex items-center justify-center rounded-[6px] border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 hover:text-[#2b6df5] transition-colors"
+                    className="inline-flex items-center justify-center rounded-[5px] p-1.5 text-slate-500 duration-200 hover:bg-primary/10"
                     onClick={() => console.log("ver factura", inv.id)} // ← replace this later
                   >
                     <EyeIcon />
