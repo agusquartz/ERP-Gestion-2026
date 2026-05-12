@@ -7,24 +7,29 @@ import { usePurchaseInvoices } from "../hooks/usePurchaseInvoices";
 
 export function  PurchaseInvoicesPage() {
 	const [filters, setFilters] = useState({
-		search: "",
-		from: 	"",
-		to: 	"",
-		status: "",
+		search: 	"",
+		filter: 	"",
+		from: 		"",
+		to: 		"",
+		status: 	"",
 	});
 
 	const { invoices, loading, error } = usePurchaseInvoices(filters);
 
 	return(
-	  <div className="flex flex-col gap-6 p-6">
+	  <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
+	  	<h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[34px]">
+	  		Facturas de Compra
+	  	</h1>
+	  	
+	  	<InvoiceFilters onSearch={setFilters} />
+
 	  	<div>
-	  		<h1 className="text-[22px] font-bold text-slate-800">Facturas de Compra</h1>
-	  		<p className="text-[13px] text-slate-400 mt-1">
+	  		<p className="text-[13px] text-slate-400">
 	  			Mostrando {invoices.length} resultado{invoices.length !== 1 ? "s" : ""}
 	  		</p>
 	  	</div>
 
-	  	<InvoiceFilters onSearch={setFilters} />
 	  	<InvoiceTable invoices={invoices} loading={loading} error={error} />
 	  </div>
 	);

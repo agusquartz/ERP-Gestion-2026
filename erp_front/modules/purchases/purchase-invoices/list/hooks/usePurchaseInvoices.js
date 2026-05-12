@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-//import { fetchPurchaseInvoices } from "../services/purchaseInvoicesService";
 import { fetchPurchaseInvoices } from "../../../../../lib/http/client/purchase-invoices.js";
 
 export function usePurchaseInvoices(filters) {
@@ -27,7 +26,7 @@ export function usePurchaseInvoices(filters) {
 		load();
 		return () => { cancelled = true; };
 
-	}, [filters.search, filters.from, filters.to, filters.status]);
+	}, [filters.search, filters.filter, filters.from, filters.to, filters.status]);
 
 	return {invoices, loading, error };
 }

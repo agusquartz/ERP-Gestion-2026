@@ -1,8 +1,9 @@
 import { clientRequest } from "./request";
 
-export async function fetchPurchaseInvoices({ search, from, to, status } = {}) {
+export async function fetchPurchaseInvoices({ search, filter, from, to, status } = {}) {
 	const query = new URLSearchParams();
 	if (search) query.set("search", search);
+	if (filter)	query.set("filter", filter);
 	if (from) 	query.set("from", from);
 	if (to)  	query.set("to", to);
 	if (status) query.set("status", status);
