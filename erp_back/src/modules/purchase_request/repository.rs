@@ -1,283 +1,176 @@
-
-
 use std::collections::BTreeMap;
-
+use chrono::Local;
 use tokio_postgres::Row;
 
 
 use crate::db_config::{self, DbError};
-
-use crate::modules::purchase_request::dto::create::CreatePurchaseRequestDto;
-use crate::modules::purchase_request::model::{
-    ProductSearch,
+use crate::modules::purchase_request::{
+    model::{
+    NewPurchaseRequest,
+    NewQuoteAggregate,
+    PatchedQuoteAggregate,
+    PurchaseRequestAggregate,
     PurchaseRequest,
-    PurchaseRequestDetail,
-    PurchaseRequestEmployee,
-    PurchaseRequestProduct,
-    PurchaseRequestWithDetails,
+    QuoteAggregate,
+    QuoteDetail,
+    RequestItem,
+    },
+    dto::{
+        create::QuoteDetailLine,
+        response::PurchaseRequestResponse,
+    },
 };
 
-// ============================================================
-// REPOSITORY
-// ============================================================
+use crate::modules::purchase_request::status::{STATUS_CREATED, STATUS_PENDING, STATUS_OK};
 
 
-  
-    const BASE_QUERY: &str = r#"
-        SELECT
-            pr.id          AS purchase_request_id,
-            pr.created_at  AS purchase_request_created_at,
-            pr.employee_id AS purchase_request_employee_id,
+const PURCHASE_REQUEST_SELECT_BASE: &str = r#" 
+SELECT
+pr.id AS request_id,
+pr.created_at AS created_at,
+e.id AS employee_id,
+e.name AS employee_name,
+e.surname AS employee_surname,
+p.id AS product_id,
+p.code AS product_code,
+p.description AS product_description,
+cat.id AS category_id,
+cat.name AS category_name,
+prd.quantity AS quantity,
+FROM purchase_requests AS pr
+INNER JOIN employees AS e ON pr.employee_id = e.id
+INNER JOIN purchase_request_detail ON pr.id = prd.purchase_request_id
+INNER JOIN products AS p ON prd.product_id = p.id
+INNER JOIN categories AS cat ON p.category_id = cat.id
+"#;
 
-            e.id           AS employee_id,
-            e.name         AS employee_name,
-            e.surname      AS employee_surname,
+pub async fn query_requests(contains: Option<&str>) -> Result<Vec<PurchaseRequestAggregate>, db_config::DbError> {
+    let client = db_config::get_client().await?;
+    if let Some(q) = contains {
+        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR p.description ILIKE '%' || $1 || '%' OR cat.name ILIKE '%' || $1 || '%') ORDER BY pr.id, prd.id", PURCHASE_REQUEST_SELECT_BASE); 
 
-            prd.id         AS detail_id,
-            prd.quantity   AS detail_quantity,
-
-            p.id           AS product_id,
-            p.description  AS product_description,
-            p.code         AS product_code
-
-        FROM purchase_requests pr
-        JOIN employees e ON pr.employee_id = e.id
-        LEFT JOIN purchase_request_details prd
-            ON pr.id = prd.purchase_request_id
-        LEFT JOIN products p
-            ON prd.product_id = p.id
-    "#;
-
-    // ---------------- CREATE PURCHASE REQUEST ----------------
-
-    pub async fn create_purchase_request(
-        dto: CreatePurchaseRequestDto,
-    ) -> Result<PurchaseRequestWithDetails, DbError> {
-        if dto.details.is_empty() {
-            return Err(DbError::Other(
-                "Purchase request must contain at least one detail".to_string(),
-            ));
-        }
-
-        let mut client = db_config::get_client().await?;
-        let tx = client.transaction().await?;
-
-        let row = tx
-            .query_one(
-                r#"
-                INSERT INTO purchase_requests (created_at, employee_id)
-                VALUES ($1, $2)
-                RETURNING id
-                "#,
-                &[&dto.created_at, &dto.employee_id],
-            )
-            .await?;
-
-        let purchase_request_id: i32 = row.get("id");
-
-        for detail in dto.details {
-            if detail.quantity <= 0 {
-                return Err(DbError::Other(
-                    "Product quantity must be greater than zero".to_string(),
-                ));
-            }
-
-            tx.execute(
-                r#"
-                INSERT INTO purchase_request_details
-                (purchase_request_id, product_id, quantity)
-                VALUES ($1, $2, $3)
-                "#,
-                &[
-                    &purchase_request_id,
-                    &detail.product_id,
-                    &detail.quantity,
-                ],
-            )
-            .await?;
-        }
-
-        tx.commit().await?;
-
-        get_purchase_request_by_id(purchase_request_id)
-            .await?
-            .ok_or(DbError::NotFound)
+        let rows = client.query(&sql, &[&q]).await?;
+        let aggregates = rows_to_aggregate(rows);
+        return Ok(aggregates)
     }
+    let sql = PURCHASE_REQUEST_SELECT_BASE.to_string();
+    let rows = client.query(&sql, &[]).await?;
+    Ok(rows_to_aggregate(rows))
+}
 
-    // ---------------- GET PURCHASE REQUEST BY ID ----------------
+/// Transforms a flat list of database rows into purchase request aggregates.
+///
+/// Responsibilities:
+/// - Groups rows by id
+/// - Reconstructs hierarchical domain structures from denormalized results
+///
+/// Algorithm:
+/// - Uses a `BTreeMap` keyed by ID
+/// - Initializes an aggregate on first encounter
+/// - Appends line items for each subsequent row
+///
+/// Assumptions:
+/// - Every row represents a valid line item (guaranteed by INNER JOINs)
+/// - No NULL handling is required
+///
+/// Complexity:
+/// - O(n) over number of rows
+fn rows_to_aggregate(rows: Vec<Row>) -> Vec<PurchaseRequestAggregate> {
+    let mut map: BTreeMap<i32, PurchaseRequestAggregate> = BTreeMap::new();
 
-    pub async fn get_purchase_request_by_id(
-        id: i32,
-    ) -> Result<Option<PurchaseRequestWithDetails>, DbError> {
-        let client = db_config::get_client().await?;
+    for row in rows {
+        let request_id: i32 = row.get("purchase_order_id");
 
-        let sql = format!(
-            r#"
-            {BASE_QUERY}
-            WHERE pr.id = $1
-            ORDER BY pr.id, prd.id
-            "#
+        let entry = map.entry(request_id).or_insert_with(|| PurchaseRequestAggregate {
+            request: PurchaseRequest {
+                id: request_id,
+                created_at: row.get("created_at"),
+                employee_name: row.get("employee_name"),
+            },
+            items: Vec::new(),
+            quotes: Vec::new(),
+        }
         );
 
-        let rows = client.query(&sql, &[&id]).await?;
-        let data = rows_to_aggregate(rows);
+        let detail = RequestItem {
+            id: 0,                  // Why does RequestItem have its id in a model? Totally
+                                    // uncalled for. Unnecessary. Inefficient.
+            product_id: row.get("product_id"),
+            product_code: row.get("product_code"),
+            product_name: row.get("product_name"),
+            category: row.get("category_name"),
+            quantity: row.get("quantity"),
+        };
 
-        Ok(data.into_iter().next())
+        //I hate this thing. It is so unclear. However, We're filling the details of the request
+        //now
+        entry.items.push(detail);
+        //And leaving the quotes array empty. If it becomes necessary to pass a list of every
+        //request WITH its respective quotes all at once, here's where you would do it.
+        //you would have to make an even bigger SQL query though. 
+        // let quote = QuoteAggregate { ... bla bla bla
     }
+    map.into_values().collect()
+}
 
-    // ---------------- LIST PURCHASE REQUESTS ----------------
-    //
-    // GET /purchase-requests
-    // GET /purchase-requests?contains=juan
-    //
-    // Filtra por:
-    // - id de solicitud
-    // - nombre del empleado
-    // - apellido del empleado
-    // - descripción del producto
-    // - código del producto
 
-    pub async fn get_purchase_requests(
-        contains: Option<String>,
-    ) -> Result<Vec<PurchaseRequestWithDetails>, DbError> {
-        let client = db_config::get_client().await?;
+/// Persists a new purchase request and its associated line items.
+///
+/// Behavior:
+/// - Inserts the purchase request 
+/// - Inserts all associated line items
+/// - Commits the transaction
+/// - Returns a complete domain object
+///
+/// Guarantees:
+/// - Atomic operation (all-or-nothing)
+/// - Returned aggregate reflects committed state
+///
+///
+/// Failure modes:
+/// - Any database error aborts the transaction
+/// - If the inserted request cannot be retrieved after commit,
+///   an invariant violation is raised
+pub async fn store_new_request(new_request: NewPurchaseRequest) -> Result<PurchaseRequestAggregate, db_config::DbError> {
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await?;
 
-        let mut sql = BASE_QUERY.to_string();
-        let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
-
-        let mut pattern = String::new();
-
-        if let Some(value) = contains {
-            pattern = format!("%{}%", value);
-
-            sql.push_str(
-                r#"
-                WHERE (
-                    pr.id::text ILIKE $1
-                    OR e.name ILIKE $1
-                    OR e.surname ILIKE $1
-                    OR EXISTS (
-                        SELECT 1
-                        FROM purchase_request_details prd2
-                        JOIN products p2 ON prd2.product_id = p2.id
-                        WHERE prd2.purchase_request_id = pr.id
-                        AND (
-                            p2.description ILIKE $1
-                            OR p2.code ILIKE $1
-                            OR p2.id::text ILIKE $1
-                        )
-                    )
-                )
-                "#,
-            );
-
-            params.push(&pattern);
+    let row = match  tx.query_one(
+        "INSERT INTO purchase_requests 
+        (created_at, employee_id)
+        VALUES ($1, $2)
+        RETURNING id",
+        &[
+        &new_request.created_at,
+        &new_request.employee_id,
+        ],
+    ).await {
+        Ok(row) => row,
+        Err(e) => {
+            println!("Db Error: {:?}", e);
+            return Err(e.into());
         }
+    };
 
-        sql.push_str(" ORDER BY pr.id DESC, prd.id");
+    let request_id: i32 = row.get(0);
 
-        let rows = client.query(&sql, &params).await?;
-
-        Ok(rows_to_aggregate(rows))
+    for detail in new_request.details {
+        tx.execute(
+            "INSERT INTO purchase_request_details 
+            (purchase_request_id, product_id, quantity)
+            VALUES ($1, $2, $3)",
+            &[
+            &request_id,
+            &detail.product_id,
+            &detail.quantity,
+            ],
+        ).await?;
     }
+    tx.commit().await?;
 
-    // ---------------- SEARCH PRODUCTS ----------------
-    //
-    // GET /purchase-request-products
-    // GET /purchase-request-products?contains=mouse
-    //
-    // Esta función sirve para buscar productos al crear una solicitud de compra.
+    let aggregate = query_purchase_request_by_id(request_id)
+        .await? 
+        .ok_or(db_config::DbError::InvariantViolation("Inserted invoice not found after commit".into()));
+    aggregate
+}
 
-    pub async fn search_products(
-        contains: Option<String>,
-    ) -> Result<Vec<ProductSearch>, DbError> {
-        let client = db_config::get_client().await?;
-
-        let mut sql = String::from(
-            r#"
-            SELECT
-                p.id,
-                p.description,
-                p.code
-            FROM products p
-            "#,
-        );
-
-        let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
-        let mut pattern = String::new();
-
-        if let Some(value) = contains {
-            pattern = format!("%{}%", value);
-
-            sql.push_str(
-                r#"
-                WHERE (
-                    p.description ILIKE $1
-                    OR p.code ILIKE $1
-                    OR p.id::text ILIKE $1
-                )
-                "#,
-            );
-
-            params.push(&pattern);
-        }
-
-        sql.push_str(" ORDER BY p.description ASC");
-
-        let rows = client.query(&sql, &params).await?;
-
-        Ok(rows
-            .into_iter()
-            .map(|row| ProductSearch {
-                id: row.get("id"),
-                description: row.get("description"),
-                code: row.get("code"),
-            })
-            .collect())
-    }
-
-    // ---------------- ROW AGGREGATION HELPER ----------------
-
-    fn rows_to_aggregate(rows: Vec<Row>) -> Vec<PurchaseRequestWithDetails> {
-        let mut map: BTreeMap<i32, PurchaseRequestWithDetails> = BTreeMap::new();
-
-        for row in rows {
-            let purchase_request_id: i32 = row.get("purchase_request_id");
-
-            let entry = map
-                .entry(purchase_request_id)
-                .or_insert_with(|| PurchaseRequestWithDetails {
-                    purchase_request: PurchaseRequest {
-                        id: purchase_request_id,
-                        created_at: row.get("purchase_request_created_at"),
-                        employee_id: row.get("purchase_request_employee_id"),
-                    },
-
-                    employee: PurchaseRequestEmployee {
-                        id: row.get("employee_id"),
-                        name: row.get("employee_name"),
-                        surname: row.get("employee_surname"),
-                    },
-
-                    details: vec![],
-                });
-
-            let detail_id: Option<i32> = row.get("detail_id");
-
-            if let Some(detail_id) = detail_id {
-                entry.details.push(PurchaseRequestDetail {
-                    id: detail_id,
-                    purchase_request_id,
-                    quantity: row.get("detail_quantity"),
-
-                    product: PurchaseRequestProduct {
-                        id: row.get("product_id"),
-                        description: row.get("product_description"),
-                        code: row.get("product_code"),
-                    },
-                });
-            }
-        }
-
-        map.into_values().collect()
-    }

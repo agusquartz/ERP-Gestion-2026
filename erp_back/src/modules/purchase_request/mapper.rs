@@ -2,14 +2,53 @@
 // MAPPER
 // ============================================================
 
-use crate::modules::purchase_request::dto::response::{
-    PurchaseRequestDetailResponseDto,
-    PurchaseRequestEmployeeResponseDto,
-    PurchaseRequestProductResponseDto,
-    PurchaseRequestResponseDto,
+use crate::modules::purchase_request::{
+    dto::{
+        response::{
+            PurchaseRequestResponse,
+            PurchaseRequestItemsResponse,
+            PurchaseQuoteResponse,
+            PurchaseQuoteDetailResponse,
+            CreatePurchaseQuoteResponse,
+            UpdatePurchaseQuoteResponse,
+            SaveQuoteDetailsResponse,
+        },
+        create::{
+            CreatePurchaseRequestDto,
+            CreatePurchaseRequestDtoLine,
+        },
+    },
+    model::{
+        NewPurchaseRequest,
+        NewPurchaseRequestLine,
+        NewQuoteAggregate,
+        PatchedQuoteAggregate,
+        PurchaseRequestAggregate,
+        QuoteAggregate,
+        QuoteDetail,
+        RequestItem,
+    },
 };
 
-use crate::modules::purchase_request::dto::search::ProductSearchResponseDto;
+pub fn map_create_request(dto: CreatePurchaseRequestDto) -> NewPurchaseRequest {
+    NewPurchaseRequest {
+        created_at: dto.created_at,
+        employee_id: dto.employee_id,
+        details: dto.details.into_iter().map(map_create_request_lines).collect(),
+    }
+
+}
+
+pub fn map_create_request_lines(line: CreatePurchaseRequestDtoLine) -> NewPurchaseRequestLine {
+    NewPurchaseRequestLine {
+        product_id: line.product_id,
+        quantity: line.quantity
+    }
+}
+
+// =============================================================================
+// GET /purchase-requests/:id
+// =============================================================================
 
 use crate::modules::purchase_request::model::{
     ProductSearch,

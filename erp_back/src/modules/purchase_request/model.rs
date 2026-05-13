@@ -43,6 +43,20 @@ pub struct PurchaseRequestWithDetails {
 #[derive(Debug)]
 pub struct ProductSearch {
     pub id: i32,
-    pub description: String,
-    pub code: String,
+    pub status_id: i32,
+    pub status_name: String,
+    pub date_sent: Option<NaiveDate>,
+    pub date_received: Option<NaiveDate>,
+}
+
+
+pub struct NewPurchaseRequest {
+    pub created_at: NaiveDate,
+    pub employee_id: i32,
+    pub details: Vec<NewPurchaseRequestLine>,
+}
+
+pub struct NewPurchaseRequestLine {
+    pub product_id: i32,
+    pub quantity: i32,
 }

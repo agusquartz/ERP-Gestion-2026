@@ -24,6 +24,7 @@ mod modules {
     pub mod purchase_request;
     pub mod purchase_order;
     pub mod purchase_invoice;
+    pub mod supplier;
 }
 
 mod shared {
