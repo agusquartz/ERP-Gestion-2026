@@ -1,7 +1,7 @@
 "use client";
 
 import { getStatusStyle, formatDate } from "./utils";
-import { EyeIcon } from "@/shared/components/Icons"
+import { EyeIcon } from "@/shared/components/Icons";
 
 export function InvoiceTable({ invoices, loading, error }) {
   if (loading) {
@@ -44,16 +44,17 @@ export function InvoiceTable({ invoices, loading, error }) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {invoices.map((inv) => {
-            const { label, color, bg, dot, border } = getStatusStyle(inv.payment_status);
+            const { label, color, bg, dot, border } = getStatusStyle(inv.paymentStatus);
             return (
               <tr
                 key={inv.id}
                 className="hover:bg-[#F2F3F7] transition-colors"
               >
-                <td className="px-5 py-3.5 font-medium">{inv.invoice_nr}</td>
-                <td className="px-5 py-3.5 text-slate-600">{inv.supplier_name}</td>
-                <td className="px-5 py-3.5 text-slate-600">{inv.purchase_order_id}</td>
-                <td className="px-5 py-3.5 text-slate-600">{formatDate(inv.created_at)}</td>
+                <td className="px-5 py-3.5 font-medium">{inv.invoiceNr}</td>
+                {/* supplier is now an object — access .name */}
+                <td className="px-5 py-3.5 text-slate-600">{inv.supplier.name}</td>
+                <td className="px-5 py-3.5 text-slate-600">{inv.purchaseOrderId}</td>
+                <td className="px-5 py-3.5 text-slate-600">{formatDate(inv.createdAt)}</td>
                 <td className="px-5 py-3.5 text-right font-medium">
                   $ {Number(inv.total).toLocaleString("es-PY")}
                 </td>
@@ -66,7 +67,7 @@ export function InvoiceTable({ invoices, loading, error }) {
                 <td className="px-5 py-3.5 text-center">
                   <button
                     className="inline-flex items-center justify-center rounded-[5px] p-1.5 text-slate-500 duration-200 hover:bg-primary/10"
-                    onClick={() => console.log("ver factura", inv.id)} // ← replace this later
+                    onClick={() => console.log("ver factura", inv.id)}
                   >
                     <EyeIcon />
                   </button>

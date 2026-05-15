@@ -3,21 +3,27 @@
 import { useState } from "react";
 import { ChevronDownIcon } from "@/shared/components/Icons";
 
-const STATUS_OPTION = [
-	{ label: "Pagado",        value: "paid" },
-	{ label: "Pago Parcial",  value: "partial_payment" },
-	{ label: "Pago Pendiente",value: "payment_pending" },
+const STATUS_OPTIONS = [
+	{ label: "Pagado",         value: "paid"            },
+	{ label: "Pago Parcial",   value: "partial_payment" },
+	{ label: "Pago Pendiente", value: "payment_pending" },
 ];
 
 export function InvoiceFilters({ onSearch }) {
-	const [search, setSearch] = useState("");
-	const [filter, setFilter] = useState("");
-	const [from,   setFrom]   = useState("");
-	const [to,     setTo]     = useState("");
-	const [status, setStatus] = useState("");
-	const [showStatusDrop, setShowStatusDrop] = useState(false);
+	const [search, setSearch]         			= useState("");
+	const [filter, setFilter]					= useState("");
+	const [from, setFrom]           			= useState("");
+	const [to, setTo]             				= useState("");
+	const [status, setStatus]       			= useState("");
+	const [showStatusDrop, setShowStatusDrop] 	= useState(false);
 
-	const clearAll = () => {
+	// Builds and emits the full filter state every time any field changes.
+	// Empty strings are kept here — the hook strips them before sending to the API.
+	function emit(overrides) {
+		onSearch({ search, filter, from, to, status, ...overrides });
+	}
+
+	function clearAll() {
 		setSearch("");
 		setFilter("");
 		setFrom("");
@@ -25,40 +31,40 @@ export function InvoiceFilters({ onSearch }) {
 		setStatus("");
 		setShowStatusDrop(false);
 		onSearch({ search: "", filter: "", from: "", to: "", status: "" });
-	};
+	}
 
 	return (
 		<div className="w-full space-y-4 py-4">
 			<div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_auto_auto_auto_auto_auto] lg:items-end">
 
-				{/* Search */}
+				{/* Search — covers invoice number and supplier name on the backend */}
 				<div className="flex flex-col gap-1.5">
 					<label className="text-[13px] font-bold text-slate-800 ml-1">Buscar</label>
 					<input
 						className="w-full rounded-[5px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
-						placeholder="Proveedor"
+						placeholder="Factura Nro, Proveedor..."
 						value={search}
 						onChange={(e) => {
 							const val = e.target.value;
 							setSearch(val);
-							onSearch({ search: val, filter, from, to, status });
+							emit({ search: val });
 						}}
 					/>
 				</div>
 
 				{/* Filter */}
 				<div className="flex flex-col gap-1.5">
-					<label className="text-[13px] font-bold text-slate-800 ml-1">Filtrar</label>
-					<input
-						className="w-full rounded-[5px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
-						placeholder="Factura Nro, Orden Nro"
-						value={filter}
-						onChange={(e) => {
-							const val = e.target.value;
-							setFilter(val);
-							onSearch({ search, filter: val, from, to, status });
-						}}
-					/>
+    			<label className="text-[13px] font-bold text-slate-800 ml-1">Filtrar</label>
+			    <input
+			        className="w-full rounded-[5px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
+			        placeholder="Orden Nro"
+			        value={filter}
+			        onChange={(e) => {
+			            const val = e.target.value;
+			            setFilter(val);
+			            emit({ filter: val });
+			        }}
+			    />
 				</div>
 
 				{/* From */}
@@ -71,7 +77,7 @@ export function InvoiceFilters({ onSearch }) {
 						onChange={(e) => {
 							const val = e.target.value;
 							setFrom(val);
-							onSearch({ search, filter, from: val, to, status });
+							emit({ from: val });
 						}}
 					/>
 				</div>
@@ -86,21 +92,21 @@ export function InvoiceFilters({ onSearch }) {
 						onChange={(e) => {
 							const val = e.target.value;
 							setTo(val);
-							onSearch({ search, filter, from, to: val, status });
+							emit({ to: val });
 						}}
 					/>
 				</div>
 
-				{/* Dropdown: Status */}
+				{/* Status dropdown */}
 				<div className="relative flex flex-col gap-1.5">
 					<label className="text-[13px] font-bold text-slate-800 ml-1">Estado</label>
 					<button
 						type="button"
 						className="flex min-w-[160px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-						onClick={() => setShowStatusDrop(!showStatusDrop)}
+						onClick={() => setShowStatusDrop((prev) => !prev)}
 					>
 						<span>
-							{STATUS_OPTION.find((s) => s.value === status)?.label || "Estado"}
+							{STATUS_OPTIONS.find((s) => s.value === status)?.label ?? "Estado"}
 						</span>
 						<ChevronDownIcon
 							className={`w-4 h-4 transition-transform ${showStatusDrop ? "rotate-180" : ""}`}
@@ -114,19 +120,19 @@ export function InvoiceFilters({ onSearch }) {
 								onClick={() => {
 									setStatus("");
 									setShowStatusDrop(false);
-									onSearch({ search, filter, from, to, status: "" });
+									emit({ status: "" });
 								}}
 							>
 								Todos
 							</button>
-							{STATUS_OPTION.map((s) => (
+							{STATUS_OPTIONS.map((s) => (
 								<button
 									key={s.value}
 									className="w-full rounded-md px-3 py-2 text-left text-[14px] text-slate-600 hover:bg-[#f0f7ff] hover:text-[#2b6df5] transition-colors"
 									onClick={() => {
 										setStatus(s.value);
 										setShowStatusDrop(false);
-										onSearch({ search, filter, from, to, status: s.value });
+										emit({ status: s.value });
 									}}
 								>
 									{s.label}
