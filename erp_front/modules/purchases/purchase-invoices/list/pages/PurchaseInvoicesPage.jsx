@@ -5,32 +5,36 @@ import { InvoiceFilters } from "../components/InvoiceFilters";
 import { InvoiceTable } from "../components/InvoiceTable";
 import { usePurchaseInvoices } from "../hooks/usePurchaseInvoices";
 
-export function  PurchaseInvoicesPage() {
-	const [filters, setFilters] = useState({
-		search: 	"",
-		filter: 	"",
-		from: 		"",
-		to: 		"",
-		status: 	"",
-	});
+// Shape matches exactly what the backend query params expect:
+// search, status, from, to, cursor, limit
+const INITIAL_FILTERS = {
+	search: "",
+	filter: "",
+	status: "",
+	from:   "",
+	to:     "",
+};
 
-	const { invoices, loading, error } = usePurchaseInvoices(filters);
+export function PurchaseInvoicesPage() {
+	const [filters, setFilters] = useState(INITIAL_FILTERS);
 
-	return(
-	  <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
-	  	<h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[34px]">
-	  		Facturas de Compra
-	  	</h1>
-	  	
-	  	<InvoiceFilters onSearch={setFilters} />
+	const { invoices, total, loading, error } = usePurchaseInvoices(filters);
 
-	  	<div>
-	  		<p className="text-[13px] text-slate-400">
-	  			Mostrando {invoices.length} resultado{invoices.length !== 1 ? "s" : ""}
-	  		</p>
-	  	</div>
+	return (
+		<div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
+			<h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[34px]">
+				Facturas de Compra
+			</h1>
 
-	  	<InvoiceTable invoices={invoices} loading={loading} error={error} />
-	  </div>
+			<InvoiceFilters onSearch={setFilters} />
+
+			<div>
+				<p className="text-[13px] text-slate-400">
+					Mostrando {total} resultado{total !== 1 ? "s" : ""}
+				</p>
+			</div>
+
+			<InvoiceTable invoices={invoices} loading={loading} error={error} />
+		</div>
 	);
 }
