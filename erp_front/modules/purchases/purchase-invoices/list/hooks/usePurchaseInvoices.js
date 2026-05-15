@@ -1,22 +1,25 @@
 import { useState, useEffect } from "react";
 import { fetchPurchaseInvoices } from "../../../../../lib/http/client/purchase-invoices.js";
 
+// Generic debounce hook — delays updating a value until the user stops typing
 function useDebounce(value, delay = 400) {
 	const [debounced, setDebounced] = useState(value);
 
 	useEffect(() => {
 		const timer = setTimeout(() => setDebounced(value), delay);
 		return () => clearTimeout(timer);
-	},[value, delay]);
+	}, [value, delay]);
 
 	return debounced;
 }
 
 export function usePurchaseInvoices(filters) {
 	const [invoices, setInvoices] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
+	const [total,    setTotal]    = useState(0);
+	const [loading,  setLoading]  = useState(true);
+	const [error,    setError]    = useState(null);
 
+	// Only search is debounced — date and status changes are instant
 	const debouncedSearch = useDebounce(filters.search, 400);
 	const debouncedFilter = useDebounce(filters.filter, 400);
 
@@ -26,17 +29,26 @@ export function usePurchaseInvoices(filters) {
 		async function load() {
 			setLoading(true);
 			setError(null);
+
 			try {
-				const data = await fetchPurchaseInvoices({
-					search: debouncedSearch,
-					filter: debouncedFilter,
-					from:   filters.from,
-          			to:     filters.to,
-          			status: filters.status,
+				// fetchPurchaseInvoices builds the query string from these params.
+				// The backend returns { data, nextCursor, hasMore } — we only
+				// use data here since pagination is not yet wired to the UI.
+				const response = await fetchPurchaseInvoices({
+					search:  debouncedSearch || undefined,
+					filter:  debouncedFilter || undefined,
+					status:  filters.status  || undefined,
+					from:    filters.from    || undefined,
+					to:      filters.to      || undefined,
 				});
-				if (!cancelled) setInvoices(data);
-			} catch(e) {
-				if(!cancelled) setError(e.message);
+
+				if (!cancelled) {
+					// response.data is the array of invoices from the paginated envelope
+					setInvoices(response.data ?? []);
+					setTotal(response.data?.length ?? 0);
+				}
+			} catch (e) {
+				if (!cancelled) setError(e.message);
 			} finally {
 				if (!cancelled) setLoading(false);
 			}
@@ -45,7 +57,8 @@ export function usePurchaseInvoices(filters) {
 		load();
 		return () => { cancelled = true; };
 
-	}, [debouncedSearch, debouncedFilter, filters.from, filters.to, filters.status]);
+	// filter and status are not debounced — they trigger immediately
+	}, [debouncedSearch, debouncedFilter, filters.status, filters.from, filters.to]);
 
-	return {invoices, loading, error };
+	return { invoices, total, loading, error };
 }
