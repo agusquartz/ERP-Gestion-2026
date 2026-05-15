@@ -17,24 +17,6 @@ export function usePurchaseForm() {
   const totalUnidades = items.reduce((s, i) => s + (Number(i.cantidad) || 0), 0);
 
   /**
-   * Effect to retrieve the currently logged-in user's session data on mount.
-   * Maps the user ID to the employeeId state for the purchase payload.
-   */
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await whoAmI();
-        // Check backend response structure: typically user.id or user.employee_id
-        setEmployeeId(user.id); 
-      } catch (error) {
-        console.error("Failed to retrieve user session:", error);
-      }
-    };
-
-    fetchUser();
-  }, []); // Empty dependency array ensures this runs only once on component mount
-
-  /**
    * Adds a product to the purchase list or updates quantity if it already exists.
    * Uses product cost for procurement logic.
    */
@@ -114,7 +96,7 @@ export function usePurchaseForm() {
       createdAt: new Date().toISOString().split('T')[0], 
       
       // Real logged-in user ID mapped from the auth service
-      employeeId: employeeId, 
+      employeeId: 1, 
       
       // Array of details matching the backend DTO expected properties
       details: items.map((i) => ({
