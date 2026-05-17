@@ -6,7 +6,7 @@ export function PurchaseItemsTable({ items = [], onQtyChange, onRemove }) {
   
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Contenedor con scroll: 'overflow-auto' aquí */}
+      {/*scroll: 'overflow-auto' here */}
       <div className="flex-1 overflow-auto min-h-0">
         <table className="w-full border-collapse">
           <thead>
@@ -42,7 +42,7 @@ export function PurchaseItemsTable({ items = [], onQtyChange, onRemove }) {
                     className="w-full bg-transparent border-none text-sm text-center focus:ring-0 outline-none"
                   />
                 </td>
-                <td className="px-2 py-3 text-sm text-gray-600">${item.precio}</td>
+                <td className="px-2 py-3 text-sm text-gray-600">${item.costo}</td>
                 <td className="px-2 py-3 text-sm font-semibold text-gray-800">${item.subtotal}</td>
                 <td className="px-2 py-3 text-center">
                   <button onClick={() => onRemove(item.id)} className="text-gray-400 hover:text-red-500">

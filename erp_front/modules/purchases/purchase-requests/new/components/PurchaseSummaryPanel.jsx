@@ -1,6 +1,6 @@
 "use client";
 
-import { s } from "../../styles/NewPurchase/NewPurchasesStyles";
+import { s } from "../styles/NewPurchasesStyles";
 
 export function PurchaseSummaryPanel({ totalItems = 0, totalUnidades = 0, subtotal = 0 }) {
   const totalFinal = subtotal;
