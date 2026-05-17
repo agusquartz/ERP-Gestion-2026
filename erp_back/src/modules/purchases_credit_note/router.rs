@@ -12,7 +12,7 @@ use crate::modules::{
     }
 };
 
-pub fn purchase_order_router() -> Router {
+pub fn purchase_credit_note_router() -> Router {
     let protected = Router::new()
         .route("/purchases/supplier-credit-notes", get(list_credit_note).post(create_credit_note))
         .route("/purchases/supplier-credit-notes/{id}", get(get_credit_note));
