@@ -2,6 +2,7 @@
 
 import { getStatusStyle, formatDate } from "./utils";
 import { EyeIcon } from "@/shared/components/Icons";
+import { useRouter } from "next/navigation";
 
 export function InvoiceTable({ invoices, loading, error }) {
   if (loading) {
@@ -67,7 +68,7 @@ export function InvoiceTable({ invoices, loading, error }) {
                 <td className="px-5 py-3.5 text-center">
                   <button
                     className="inline-flex items-center justify-center rounded-[5px] p-1.5 text-slate-500 duration-200 hover:bg-primary/10"
-                    onClick={() => console.log("ver factura", inv.id)}
+                    onClick={() => router.push(`/purchases/purchase-invoices/${inv.id}`)}
                   >
                     <EyeIcon />
                   </button>
