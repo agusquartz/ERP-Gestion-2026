@@ -39,3 +39,13 @@ export function searchProductsForPurchaseRequest({ contains } = {}) {
     }
   );
 }
+
+export function createPurchaseRequest(payload){
+
+  console.log("Enviando a Rust:", payload);
+
+  return clientRequest(`/purchase-requests`, {
+    method:'POST',
+    body: JSON.stringify(payload),
+  })
+}

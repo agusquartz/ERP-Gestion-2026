@@ -1,5 +1,5 @@
 "use client";
-import { s } from "../../styles/NewPurchase/NewPurchasesStyles";
+import { s } from "../styles/NewPurchasesStyles";
 
 export function PurchaseActions({onRegister }) {
   return (
