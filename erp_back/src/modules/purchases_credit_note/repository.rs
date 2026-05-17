@@ -117,7 +117,7 @@ pub async fn store_new_credit_note(new_cn: new_credit_note_model::NewCreditNote)
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await?;
 
-    // 1. Insertar Cabecera
+    // 1. Insert Header
     let row = tx.query_one(
         "INSERT INTO return_credit_notes 
         (note_number, return_note_id, created_at, total)
@@ -133,9 +133,9 @@ pub async fn store_new_credit_note(new_cn: new_credit_note_model::NewCreditNote)
 
     let cn_id: i32 = row.get(0);
 
-    // 2. Insertar Detalles y Descontar Stock
+    // 2. Insert Details and Deduct Stock
     for detail in new_cn.details {
-        // Insertamos en la tabla de detalles
+        // Insert item into the details table
         tx.execute(
             "INSERT INTO return_credit_note_details 
             (return_credit_note_id, product_id, quantity, unit_cost, subtotal)
@@ -149,8 +149,8 @@ pub async fn store_new_credit_note(new_cn: new_credit_note_model::NewCreditNote)
             ],
         ).await?;
 
-        // DESCUENTO DE STOCK: Restamos la cantidad devuelta al stock actual
-        // Añadimos una salvaguarda para evitar stock negativo si el negocio lo requiere
+        // STOCK DEDUCTION: Deduct the returned quantity from the current stock.
+        // Enforce a safeguard condition to prevent negative stock levels.
         let affected = tx.execute(
             "UPDATE products 
              SET stock = stock - $1 
@@ -165,10 +165,10 @@ pub async fn store_new_credit_note(new_cn: new_credit_note_model::NewCreditNote)
         }
     }
 
-    // Si todo salió bien, confirmamos la transacción
+    // Commit the transaction if all operations succeed
     tx.commit().await?;
 
-    // 3. Re-fetch el agregado completo para retornar
+    // 3. Re-fetch the complete domain aggregate to return it
     let aggregate = query_credit_note_by_id(cn_id)
         .await?
         .ok_or(db_config::DbError::InvariantViolation("Inserted credit note not found".into()))?;
