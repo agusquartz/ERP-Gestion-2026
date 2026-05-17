@@ -11,26 +11,26 @@ use crate::modules::purchase_credit_note::{
     errors,
 };
 
-/// Lista todas las notas de crédito, con filtro opcional.
+/// Lists all supplier credit notes, optionally filtered by a search term.
 pub async fn list_credit_notes(contains: Option<String>) -> Result<Vec<CreditNoteResponse>, errors::ServiceError> {
     let aggregates = repository::query_credit_notes(contains.as_deref()).await?;
     Ok(aggregates.into_iter().map(CreditNoteResponse::from).collect())
 }
 
-/// Obtiene una nota de crédito específica por su ID.
+/// Retrieves a single supplier credit note by its identifier.
 pub async fn get_credit_note(id: i32) -> Result<Option<CreditNoteResponse>, errors::ServiceError> {
     let aggregate = repository::query_credit_note_by_id(id).await?;
     Ok(aggregate.map(CreditNoteResponse::from))
 }
 
-/// Crea una nueva nota de crédito de compra y descuenta el stock correspondiente.
+/// Creates a new supplier credit note and deducts the corresponding inventory stock.
 /// 
-/// Lógica de Negocio:
-/// 1. Valida que cada producto en los detalles exista en el sistema.
-/// 2. Transforma el DTO de entrada al modelo de dominio (NewCreditNote).
-/// 3. Persiste los datos y actualiza el inventario de manera atómica a través del repository.
+/// Business Logic:
+/// 1. Validates that every referenced product in the details exists in the system.
+/// 2. Transforms the incoming request DTO into the domain creation model (NewCreditNote).
+/// 3. Persists the records and updates the inventory atomically through the repository layer.
 pub async fn create_credit_note(dto: CreateCreditNoteDto) -> Result<CreditNoteResponse, errors::ServiceError> {
-    // 1. Validación de existencia de productos
+    // 1. Product existence validation
     for detail in &dto.details {
         product::service::get_product(detail.product_id)
             .await?
@@ -39,7 +39,7 @@ pub async fn create_credit_note(dto: CreateCreditNoteDto) -> Result<CreditNoteRe
             }))?;
     }
 
-    // 2. Transformación de DTO a Modelo de Dominio
+    // 2. Map DTO to Domain Model
     let details: Vec<NewCreditNoteDetail> = dto.details
         .into_iter()
         .map(|d| NewCreditNoteDetail {
@@ -58,9 +58,9 @@ pub async fn create_credit_note(dto: CreateCreditNoteDto) -> Result<CreditNoteRe
         details,
     };
 
-    // 3. Persistencia (El repositorio ahora maneja el descuento de stock dentro de la TX)
+    // 3. Persistence (The repository handles stock deduction within the transaction)
     let aggregate = repository::store_new_credit_note(new_cn).await?;
     
-    // 4. Mapeo a respuesta
+    // 4. Map domain aggregate to response DTO
     Ok(CreditNoteResponse::from(aggregate))
 }

@@ -32,7 +32,7 @@ pub struct CreditNoteDetailResponse {
     pub subtotal: Decimal,
 }
 
-// Implementación del mapeo desde el Modelo de Dominio (Aggregate) al DTO de Respuesta
+
 impl From<CreditNoteAggregate> for CreditNoteResponse {
     fn from(agg: CreditNoteAggregate) -> Self {
         Self {
