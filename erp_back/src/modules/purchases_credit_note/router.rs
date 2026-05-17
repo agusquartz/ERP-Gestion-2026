@@ -5,7 +5,7 @@ use axum::{
 
 use crate::modules::{
     auth::middleware::auth::protect_routes, 
-    purchase_order::handler::{
+    purchases_credit_note::handler::{
         list_credit_note,
         get_credit_note,
         create_credit_note,
