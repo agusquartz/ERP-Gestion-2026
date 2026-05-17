@@ -16,43 +16,34 @@ use chrono::NaiveDate;
 // POST /purchase-quotes
 // =============================================================================
 
-/// Request body for creating a new supplier quote.
-///
-/// Received when the user confirms a supplier selection in the
-/// SupplierSearchModal and the frontend calls POST /purchase-quotes.
-///
-/// The backend automatically sets:
-///   - status_id  → STATUS_CREATED (id=2)
-///   - created_at → today's date
-///
-/// Fields:
-///   purchase_request_id — The purchase request this quote belongs to.
-///                         Must exist in the DB or the request will be rejected.
-///   supplier_id         — The supplier being added to the request.
-///                         Must exist in the DB or the insert will fail (FK).
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CreatePurchaseRequestDto {
+pub struct CreatePurchaseQuoteDto {
+    pub purchase_request_id: i32,
+    pub supplier_id: i32,
     pub created_at: NaiveDate,
-    pub employee_id: i32,
-    pub details: Vec<CreatePurchaseRequestDetailDto>,
+    pub details: Vec<QuoteDetailLine>
 }
 
+
+/// One product line to save within a supplier quote.
+///
+/// Fields:
+///   product_id          — FK to products(id)
+///   confirmed_quantity  — Units the supplier confirmed they can provide
+///   unit_cost           — Price per unit offered by the supplier
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CreatePurchaseRequestDetailDto {
+pub struct QuoteDetailLine {
     pub product_id: i32,
-
-    /// How many units the supplier confirmed (must be > 0 for "reading" status)
     pub confirmed_quantity: i32,
-
-    /// Unit price offered by the supplier (must be > 0 for "reading" status)
     pub unit_cost: Decimal,
 }
 
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreatePurchaseRequestDto {
     pub created_at: NaiveDate,
     pub employee_id: i32,
@@ -60,6 +51,7 @@ pub struct CreatePurchaseRequestDto {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreatePurchaseRequestDtoLine {
     pub product_id: i32,
     pub quantity: i32,

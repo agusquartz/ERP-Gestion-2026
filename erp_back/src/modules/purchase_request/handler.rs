@@ -1,5 +1,3 @@
-
-
 use axum::{
     extract::{Json, Path, Query},
     http::StatusCode,
@@ -11,13 +9,13 @@ use crate::modules::purchase_request::{
         PurchaseRequestListQuery,
         create::{
             CreatePurchaseQuoteDto, 
-            SaveQuoteDetailsDto,
             CreatePurchaseRequestDto,
         },
         update::PatchPurchaseQuoteDto,
         response::PurchaseRequestResponse,
     },
     service,
+    errors,
 };
 
 pub async fn list_purchase_requests(
@@ -33,13 +31,11 @@ pub async fn list_purchase_requests(
 /// Obtiene una solicitud de compra específica.
 pub async fn get_purchase_request_handler(
     Path(id): Path<i32>,
-) -> Result<Json<PurchaseRequestResponseDto>, (StatusCode, String)> {
-    match service::get_purchase_request_by_id(id).await {
-        Ok(data) => Ok(Json(data)),
-        Err(e) => Err((
-            StatusCode::NOT_FOUND,
-            e.to_string(),
-        )),
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    match service::get_purchase_request(id).await {
+        Ok(Some(response)) => Ok((StatusCode::OK, Json(response))),
+        Ok(None)           => Err((StatusCode::NOT_FOUND, format!("Purchase request {} not found", id))),
+        Err(e)             => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     }
 }
 
@@ -66,31 +62,50 @@ pub async fn create_purchase_request(
 // POST /purchase-quotes
 // =============================================================================
 
-// =============================================================================
-// POST /purchase-quotes/:id/details
-// =============================================================================
-
-/// Handles POST /purchase-quotes/:id/details
+/// Handles POST /purchase-quotes
 ///
-/// Saves confirmed quantities and unit costs for a supplier quote.
-/// Replaces all existing details atomically (DELETE + INSERT in transaction).
+/// Creates a new supplier quote for a purchase request.
+/// Triggered when the user confirms a supplier in SupplierSearchModal.
 ///
-/// Path params:
-///   id — purchase_quotes.id
-///
-/// Body: SaveQuoteDetailsDto { details: Vec<QuoteDetailLine> }
+/// Body: CreatePurchaseQuoteDto { purchase_request_id, supplier_id }
 ///
 /// Responses:
-///   200 OK — SaveQuoteDetailsResponse (JSON)
-///   500    — Database error or transaction failure
-pub async fn save_quote_details(
-    Path(id): Path<i32>,
-    Json(body): Json<SaveQuoteDetailsDto>,
+///   201 Created — CreatePurchaseQuoteResponse (JSON)
+///   404         — Purchase request not found
+///   500         — Database error
+pub async fn create_purchase_quote(
+    Json(body): Json<CreatePurchaseQuoteDto>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
 
-    match service::save_quote_details(id, body).await {
-        Ok(response) => Ok((StatusCode::OK, Json(response))),
-        Err(e)       => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+    match service::create_purchase_quote(body).await {
+        Ok(response)           => Ok((StatusCode::CREATED, Json(response))),
+        Err(errors::ServiceError::Database(DbError::NotFound)) => Err((StatusCode::NOT_FOUND, "Purchase request not found".to_string())),
+        Err(e)                 => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
+    }
+}
+
+pub async fn patch_purchase_quote(
+    Path(req_id): Path<i32>,
+    Json(body): Json<PatchPurchaseQuoteDto>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+
+    match service::patch_purchase_quote(req_id,body).await {
+        Ok(response)     => Ok((StatusCode::OK, Json(response))),
+
+        Err(errors::ServiceError::NotFound(errors::Context{ entity, id })) => {
+            let message = match id {
+                Some(id) => format!("{entity} {id} not found!"),
+                None => format!("{entity} not found"),
+            };
+
+            Err((StatusCode::NOT_FOUND, message))
+        },
+
+        Err(errors::ServiceError::Validation(err)) => {
+            Err((StatusCode::BAD_REQUEST, err.context))
+        },
+
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     }
 }
 

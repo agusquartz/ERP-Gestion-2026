@@ -35,10 +35,7 @@ pub fn purchase_request_router() -> Router {
         )
         // Full purchase request payload for the "View Purchase Order" page
         .route(
-            "/purchase-requests",
-            post(create_purchase_request_handler)
-                .get(list_purchase_requests_handler),
-        );
-    protect_routes(protect)
-      
+            "/purchases/purchase-requests/{id}",
+            get(handler::get_purchase_request).post(handler::create_purchase_quote).patch(handler::patch_purchase_quote),
+        )
 }
