@@ -23,15 +23,14 @@ pub async fn get_credit_note(id: i32) -> Result<Option<CreditNoteResponse>, erro
     Ok(aggregate.map(CreditNoteResponse::from))
 }
 
-/// Crea una nueva nota de crédito de compra.
+/// Crea una nueva nota de crédito de compra y descuenta el stock correspondiente.
 /// 
 /// Lógica de Negocio:
 /// 1. Valida que cada producto en los detalles exista en el sistema.
 /// 2. Transforma el DTO de entrada al modelo de dominio (NewCreditNote).
-/// 3. Persiste los datos a través del repository.
+/// 3. Persiste los datos y actualiza el inventario de manera atómica a través del repository.
 pub async fn create_credit_note(dto: CreateCreditNoteDto) -> Result<CreditNoteResponse, errors::ServiceError> {
     // 1. Validación de existencia de productos
-    // Recorremos los detalles para asegurar que no intentemos acreditar algo que no existe
     for detail in &dto.details {
         product::service::get_product(detail.product_id)
             .await?
@@ -59,7 +58,7 @@ pub async fn create_credit_note(dto: CreateCreditNoteDto) -> Result<CreditNoteRe
         details,
     };
 
-    // 3. Persistencia
+    // 3. Persistencia (El repositorio ahora maneja el descuento de stock dentro de la TX)
     let aggregate = repository::store_new_credit_note(new_cn).await?;
     
     // 4. Mapeo a respuesta

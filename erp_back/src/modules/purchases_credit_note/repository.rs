@@ -113,12 +113,11 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<credit_note_model::CreditNoteAggrega
     map.into_values().collect()
 }
 
-/// Stores a new Credit Note and its details within a transaction.
 pub async fn store_new_credit_note(new_cn: new_credit_note_model::NewCreditNote) -> Result<credit_note_model::CreditNoteAggregate, db_config::DbError> {
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await?;
 
-    // 1. Insert Header
+    // 1. Insertar Cabecera
     let row = tx.query_one(
         "INSERT INTO return_credit_notes 
         (note_number, return_note_id, created_at, total)
@@ -134,8 +133,9 @@ pub async fn store_new_credit_note(new_cn: new_credit_note_model::NewCreditNote)
 
     let cn_id: i32 = row.get(0);
 
-    // 2. Insert Details
+    // 2. Insertar Detalles y Descontar Stock
     for detail in new_cn.details {
+        // Insertamos en la tabla de detalles
         tx.execute(
             "INSERT INTO return_credit_note_details 
             (return_credit_note_id, product_id, quantity, unit_cost, subtotal)
@@ -148,11 +148,27 @@ pub async fn store_new_credit_note(new_cn: new_credit_note_model::NewCreditNote)
                 &detail.subtotal,
             ],
         ).await?;
+
+        // DESCUENTO DE STOCK: Restamos la cantidad devuelta al stock actual
+        // Añadimos una salvaguarda para evitar stock negativo si el negocio lo requiere
+        let affected = tx.execute(
+            "UPDATE products 
+             SET stock = stock - $1 
+             WHERE id = $2 AND stock >= $1", 
+            &[&detail.quantity, &detail.product_id],
+        ).await?;
+
+        if affected == 0 {
+            return Err(db_config::DbError::InvariantViolation(format!(
+                "Insufficient stock to return product ID {}", detail.product_id
+            )));
+        }
     }
 
+    // Si todo salió bien, confirmamos la transacción
     tx.commit().await?;
 
-    // 3. Re-fetch the aggregate to return the complete object
+    // 3. Re-fetch el agregado completo para retornar
     let aggregate = query_credit_note_by_id(cn_id)
         .await?
         .ok_or(db_config::DbError::InvariantViolation("Inserted credit note not found".into()))?;
