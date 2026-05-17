@@ -1,7 +1,8 @@
+use core::error;
 use std::collections::BTreeMap;
 use tokio_postgres::Row;
 
-use crate::modules::purchase_credit_note::model::{
+use crate::modules::purchases_credit_note::model::{
     credit_note_model,
     new_credit_note_model
 };
@@ -19,7 +20,7 @@ SELECT
     cn.total AS total,
     s.id AS supplier_id,
     s.name AS supplier_name,
-    s.satmping AS supplier_stamp,
+    s.stamp AS supplier_stamp,
     cnd.unit_cost AS unit_cost,
     cnd.quantity AS quantity,
     cnd.subtotal AS subtotal,
@@ -48,6 +49,8 @@ pub async fn query_credit_note_by_id(id: i32) -> Result<Option<credit_note_model
 
 /// Retrieves all credit notes, optionally filtered by supplier name or note number.
 pub async fn query_credit_notes(contains: Option<&str>) -> Result<Vec<credit_note_model::CreditNoteAggregate>, db_config::DbError> {
+
+    println!("Llega hasta repository");
     let client = db_config::get_client().await?;
     
     let mut sql = PURCHASES_CREDIT_NOTE_SELECT_BASE.to_string();
@@ -62,10 +65,19 @@ pub async fn query_credit_notes(contains: Option<&str>) -> Result<Vec<credit_not
 
     // Dynamic param mapping
     let rows = if params.is_empty() {
-        client.query(&sql, &[]).await?
+        match client.query(&sql, &[]).await{
+            Ok(rows) => rows,
+            Err(e) => {
+                eprintln!("Query Error {:?}", e);
+                return Err(db_config::DbError::Other("Query error".to_string()))
+            }
+        }
+        
     } else {
         client.query(&sql, &[&params[0]]).await?
     };
+
+    
 
     Ok(rows_to_aggregate(rows))
 }
@@ -76,7 +88,7 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<credit_note_model::CreditNoteAggrega
 
     for row in rows {
         let cn_id: i32 = row.get("credit_note_id");
-
+        
         let supplier = credit_note_model::Supplier {
             id: row.get("supplier_id"),
             name: row.get("supplier_name"),
@@ -91,7 +103,7 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<credit_note_model::CreditNoteAggrega
                 invoice_id: row.get("invoice_id"),
                 created_at: row.get("created_at"),
                 total: row.get("total"),
-                supplier_id: row.get("supplier_id"),
+                supplier_id: supplier.id,
                 details: Vec::new(),
             },
             supplier,

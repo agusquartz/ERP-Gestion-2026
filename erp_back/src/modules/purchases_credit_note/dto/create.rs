@@ -1,12 +1,12 @@
 use serde::Deserialize;
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 use rust_decimal::Decimal;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateCreditNoteDto {
     pub note_number: String,
     pub return_note_id: i32,
-    pub created_at: DateTime<Utc>,
+    pub created_at: NaiveDate,
     pub total: Decimal,
     pub details: Vec<CreateCreditNoteDetailDto>,
 }

@@ -1,5 +1,5 @@
 use crate::modules::product;
-use crate::modules::purchase_credit_note::{
+use crate::modules::purchases_credit_note::{
     repository,
     model::{
         new_credit_note_model::{NewCreditNote, NewCreditNoteDetail}
@@ -13,6 +13,7 @@ use crate::modules::purchase_credit_note::{
 
 /// Lists all supplier credit notes, optionally filtered by a search term.
 pub async fn list_credit_notes(contains: Option<String>) -> Result<Vec<CreditNoteResponse>, errors::ServiceError> {
+    
     let aggregates = repository::query_credit_notes(contains.as_deref()).await?;
     Ok(aggregates.into_iter().map(CreditNoteResponse::from).collect())
 }

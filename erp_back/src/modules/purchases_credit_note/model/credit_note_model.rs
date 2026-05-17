@@ -13,7 +13,7 @@ pub struct CreditNoteHeader{
 }
 
 pub struct CreditNoteDetail{
-    pub Product: ProductInfo,
+    pub product: ProductInfo,
     pub unit_cost: Decimal,
     pub quantity: i32,
     pub subtotal: Decimal,
