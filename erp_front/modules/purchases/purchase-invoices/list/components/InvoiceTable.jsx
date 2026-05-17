@@ -29,7 +29,7 @@ export function InvoiceTable({ invoices, loading, error }) {
   }
 
   return (
-    <div className="max-h-[64vh] overflow-y-auto rounded-[5px] border border-slate-200">
+    <div className="max-h-[60vh] overflow-y-auto rounded-[5px] border border-slate-200">
       <table className="w-full text-[14px] text-slate-700">
         <thead className="sticky top-0 z-10 bg-background">
           <tr className="border-b border-slate-200 bg-background text-[13px] font-bold text-slate-500">

@@ -5,7 +5,6 @@ import { ChevronDownIcon } from "@/shared/components/Icons";
 
 const STATUS_OPTIONS = [
 	{ label: "Pagado",         value: "paid"            },
-	{ label: "Pago Parcial",   value: "partial_payment" },
 	{ label: "Pago Pendiente", value: "payment_pending" },
 ];
 

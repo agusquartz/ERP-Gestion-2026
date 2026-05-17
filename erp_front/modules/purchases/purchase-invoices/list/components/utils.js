@@ -8,14 +8,6 @@ export function getStatusStyle(status) {
 				dot: 	"bg-[#00085D]",
 				border: "border-[#4A83FF]", 
 			};
-		case "partial_payment":
-			return {
-				label: 	"Pago Parcial",
-				color: 	"text-[#5D5200]",
-				bg: 	"bg-[#FFFDE5]",
-				dot: 	"bg-[#5D5200]",
-				border: "border-[#FFE44A]",
-			};
 		case "payment_pending":
 			return {
 				label: 	"Pago Pendiente",
