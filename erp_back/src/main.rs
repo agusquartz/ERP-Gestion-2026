@@ -12,6 +12,8 @@ use tokio::net::TcpListener;
 use std::net::SocketAddr;
 use shared::db_config;
 
+use crate::modules::return_notes;
+
 mod modules {
     pub mod auth;
     pub mod observability;
@@ -23,6 +25,7 @@ mod modules {
     pub mod credit_notes;
     pub mod purchase_request;
     pub mod purchase_order;
+    pub mod return_notes;
 }
 
 mod shared {
@@ -109,6 +112,7 @@ async fn main() {
         .merge(modules::credit_notes::router::credit_note_router())
         .merge(modules::purchase_order::router::purchase_order_router())
         .merge(modules::purchase_request::router::list_purchase_request_router())
+        .merge(return_notes::router::routes())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
