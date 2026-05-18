@@ -1,7 +1,7 @@
 use axum::{
-    extract::Query,
-    http::StatusCode,
-    Json,
+    Json, 
+    extract::{Path, Query},
+     http::StatusCode
 };
 
 use crate::modules::return_notes::{
@@ -20,4 +20,22 @@ pub async fn list_return_notes(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(result))
+}
+
+
+
+pub async fn get_return_note_by_id(
+    Path(id): Path<i32>,
+
+) -> Result<Json<ReturnNoteResponseDto>, StatusCode>{
+    println!("Llegó al handler get_return_note_by_id con id: {}", id);
+    let result = service::get_return_note_by_id(id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    match result {
+        Some(note) => Ok(Json(note)),
+        None => Err(StatusCode::NOT_FOUND),
+    }
+
+
 }
