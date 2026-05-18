@@ -6,6 +6,9 @@ use crate::modules::return_notes::{
         ReturnNoteProductResponseDto,
         ReturnNoteResponseDto,
         ReturnNoteStatusResponseDto,
+        ReturnNoteSupplierResponseDto,
+
+
     },
     model,
 };
@@ -36,6 +39,12 @@ pub fn map_return_note(
         motive: value.return_note.motive,
         created_at: value.return_note.created_at,
         total,
+        supplier: ReturnNoteSupplierResponseDto {
+            id: value.supplier.id,
+            name: value.supplier.name,
+        },
+
+
         status: ReturnNoteStatusResponseDto {
             id: value.status.id,
             name: value.status.name,
