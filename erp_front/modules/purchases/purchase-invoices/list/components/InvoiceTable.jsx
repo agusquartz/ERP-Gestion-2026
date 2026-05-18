@@ -5,6 +5,7 @@ import { EyeIcon } from "@/shared/components/Icons";
 import { useRouter } from "next/navigation";
 
 export function InvoiceTable({ invoices, loading, error }) {
+  const router = useRouter();
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-slate-400 text-[14px]">
