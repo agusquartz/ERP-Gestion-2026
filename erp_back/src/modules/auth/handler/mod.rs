@@ -136,16 +136,24 @@ pub async fn login(
     jwt_cookie.set_path("/");
     jwt_cookie.set_http_only(true);
     jwt_cookie.set_secure(true);
-    jwt_cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
-    jwt_cookie.set_domain(&CONFIG.cookie_domain);
+    jwt_cookie.set_same_site(tower_cookies::cookie::SameSite::None);
+    // jwt_cookie.set_domain(&CONFIG.cookie_domain);
+    // jwt_cookie.set_domain("localhost");
+    if let Some(domain) = &CONFIG.cookie_domain {
+        jwt_cookie.set_domain(domain);
+    }
     cookies.add(jwt_cookie);
 
     // CSRF cookie (accessible by JS)
     let mut csrf_cookie = Cookie::new("csrfToken", csrf_token.clone());
     csrf_cookie.set_path("/");
     csrf_cookie.set_secure(true);
-    csrf_cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
-    csrf_cookie.set_domain(&CONFIG.cookie_domain);
+    csrf_cookie.set_same_site(tower_cookies::cookie::SameSite::None);
+    // csrf_cookie.set_domain(&CONFIG.cookie_domain);
+    // csrf_cookie.set_domain("localhost");
+    if let Some(domain) = &CONFIG.cookie_domain {
+        csrf_cookie.set_domain(domain);
+    }
     cookies.add(csrf_cookie);
 
     // -----------------------------
@@ -160,14 +168,18 @@ pub async fn logout(cookies: Cookies) -> impl IntoResponse {
     jwt_cookie.set_http_only(true);
     jwt_cookie.set_secure(true);
     jwt_cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
-    jwt_cookie.set_domain(&CONFIG.cookie_domain);
+    if let Some(domain) = &CONFIG.cookie_domain {
+        jwt_cookie.set_domain(domain);
+    }
     jwt_cookie.set_max_age(time::Duration::seconds(0));
 
     let mut csrf_cookie = Cookie::new("csrfToken", "");
     csrf_cookie.set_path("/");
     csrf_cookie.set_secure(true);
     csrf_cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
-    csrf_cookie.set_domain(&CONFIG.cookie_domain);
+    if let Some(domain) = &CONFIG.cookie_domain {
+        csrf_cookie.set_domain(domain);
+    }
     csrf_cookie.set_max_age(time::Duration::seconds(0));
 
     cookies.add(jwt_cookie);

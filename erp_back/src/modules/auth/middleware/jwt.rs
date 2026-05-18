@@ -103,12 +103,28 @@ pub fn create_jwt(
         exp: (current_timestamp + ttl_seconds) as usize,
     };
 
+
+    // ========= TEST
+    // println!("🟢 JWT CREATE DEBUG");
+    // println!("SECRET: {}", CONFIG.jwt_secret);
+    // println!("SUB: {}", subject);
+    // println!("ROLE: {}", role);
+    // println!("TTL: {}", ttl_seconds);
+    // println!("IAT: {}", current_timestamp);
+    // println!("EXP: {}", current_timestamp + ttl_seconds);
+    // =========
+
     // Encode the token with default header (alg: HS256, typ: JWT)
     encode(
         &Header::default(),
         &jwt_claims,
         &EncodingKey::from_secret(CONFIG.jwt_secret.as_bytes()),
     )
+
+    // println!("TOKEN GENERATED:");
+    // println!("{:?}", token);
+
+    // token
 }
 
 /// Verifies a JWT token and extracts its claims.
@@ -132,12 +148,23 @@ pub fn create_jwt(
 pub fn verify_jwt(
     token: &str,
 ) -> Result<Claims, jsonwebtoken::errors::Error> {
+
+    // ===== TEST
+    println!("🔵 JWT VERIFY DEBUG");
+    println!("SECRET: {}", CONFIG.jwt_secret);
+    println!("TOKEN RECEIVED:");
+    println!("{}", token);
+    // =====
+
     // Decode the token and verify signature
     let decoded_token = decode::<Claims>(
         token,
         &DecodingKey::from_secret(CONFIG.jwt_secret.as_bytes()),
         &Validation::default(),
     )?;
+
+    println!("CLAIMS DECODED:");
+    println!("{:#?}", decoded_token.claims);
 
     // Return the claims
     Ok(decoded_token.claims)
