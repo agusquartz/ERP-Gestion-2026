@@ -1,4 +1,3 @@
-
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -16,10 +15,20 @@ pub struct ReturnNoteResponseDto {
     /// Total calculado sumando los amount de los detalles.
     pub total: Decimal,
 
+    pub supplier: ReturnNoteSupplierResponseDto,
+
     pub status: ReturnNoteStatusResponseDto,
     pub details: Vec<ReturnNoteDetailResponseDto>,
 }
 
+
+//
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReturnNoteSupplierResponseDto {
+    pub id: i32,
+    pub name: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
