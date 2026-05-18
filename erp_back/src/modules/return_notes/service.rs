@@ -23,3 +23,13 @@ pub async fn list_return_notes(
 
     Ok(response)
 }
+
+
+
+pub async fn get_return_note_by_id(
+    id: i32,
+) -> Result<Option<ReturnNoteResponseDto>, db_config::DbError> {
+    let aggregate = repository::query_return_note_by_id(id).await?;
+
+    Ok(aggregate.map(mapper::map_return_note))
+}
