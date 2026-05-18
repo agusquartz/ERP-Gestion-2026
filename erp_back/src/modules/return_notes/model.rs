@@ -40,12 +40,18 @@ pub struct ReturnNoteProduct {
 }
 
 
+#[derive(Debug, Clone)]
+pub struct ReturnNoteSupplier {
+    pub id: i32,
+    pub name: String,
+}
 
 ///--------------------[AGREGRATE]------------------------------
 /// Full return note aggregate used by repository/service
 #[derive(Debug, Clone)]
 pub struct ReturnNoteAggregate {
     pub return_note: ReturnNote,
+    pub supplier: ReturnNoteSupplier,
     pub status: ReturnNoteStatus,
     pub details: Vec<ReturnNoteDetailAggregate>,
 }
@@ -78,3 +84,5 @@ pub struct NewReturnNoteDetail {
     pub returned_quantity: i32,
     pub amount: Decimal,
 }
+
+
