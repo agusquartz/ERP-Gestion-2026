@@ -13,7 +13,7 @@ use crate::modules::purchase_order::{
         create::CreatePurchaseOrderDto,
         update::PatchPurchaseOrderDto
     },
-    errors
+    errors,
 };
 
 /// Lists purchase orders, optionally filtered by a search term.
@@ -129,4 +129,44 @@ pub async fn patch_purchase_order(
 ) -> Result<Option<PurchaseOrderResponse>, errors::ServiceError> {
     let order = repository::patch_purchase_order(id, &patch).await?;
     Ok(order.map(PurchaseOrderResponse::from))
+}
+
+
+/// increments the received quantity of a product on a given order
+///
+/// Meant to be called from the invoice module, at the time it is created, 
+/// so it also updates the order with which it is associated
+pub async fn increase_received_quantity(
+    tx: &tokio_postgres::Transaction<'_>,
+    order_id: i32,
+    product_id: i32,
+    amount: i32,
+) -> Result<(), errors::ServiceError> {
+    if amount <= 0 {
+        return Err(errors::ServiceError::Validation( errors::ValidationError { context:String::from("amount should be >0")}));
+    }
+
+    repository::increase_received_quantity(tx, order_id, product_id, amount).await?;
+
+    Ok(())
+}
+
+
+/// decrements the received quantity of a product on a given order
+///
+/// Meant to be called from the invoice module, if there's a need to annull 
+/// some invoice and its effects
+pub async fn decrease_received_quantity(
+    tx: &tokio_postgres::Transaction<'_>,
+    order_id: i32,
+    product_id: i32,
+    amount: i32,
+) -> Result<(), errors::ServiceError> {
+    if amount <= 0 {
+        return Err(errors::ServiceError::Validation( errors::ValidationError { context:String::from("amount should be >0")}));
+    }
+
+    repository::decrease_received_quantity(tx, order_id, product_id, amount).await?;
+
+    Ok(())
 }

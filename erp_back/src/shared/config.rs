@@ -12,7 +12,7 @@ pub struct AppConfig {
     pub jwt_secret: String,
     pub jwt_ttl_seconds: u64,
     pub cors_allowed_origin: String,
-    pub cookie_domain: String,
+    pub cookie_domain: Option<String>,
     pub csrf_token_bytes: usize,
 }
 
@@ -23,13 +23,13 @@ impl AppConfig {
         let origin = env::var("CORS_ALLOWED_ORIGIN")
             .expect("CORS_ALLOWED_ORIGIN must be set");
 
-        let url = Url::parse(&origin)
-            .expect("CORS_ALLOWED_ORIGIN must be a valid URL");
+        // let url = Url::parse(&origin)
+        //     .expect("CORS_ALLOWED_ORIGIN must be a valid URL");
 
-        let domain = url
-            .host_str()
-            .expect("Invalid host in CORS_ALLOWED_ORIGIN")
-            .to_string();
+        // let domain = url
+        //     .host_str()
+        //     .expect("Invalid host in CORS_ALLOWED_ORIGIN")
+        //     .to_string();
         Self {
             jwt_secret: env::var("JWT_SECRET")
                 .expect("JWT_SECRET must be set"),
@@ -40,7 +40,11 @@ impl AppConfig {
                 .expect("JWT_TTL_SECONDS must be a number"),
 
             cors_allowed_origin: origin,
-            cookie_domain: domain,
+            // - In localhost => localhost
+            // - In production => COOKIE_DOMAIN=wxqzb.xyz
+            cookie_domain: env::var("COOKIE_DOMAIN")
+                .ok()
+                .filter(|v| !v.trim().is_empty()),
 
             csrf_token_bytes: env::var("CSRF_TOKEN_BYTES")
                 .expect("CSRF_TOKEN_BYTES must be set")

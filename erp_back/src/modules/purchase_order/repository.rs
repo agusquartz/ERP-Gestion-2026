@@ -271,16 +271,18 @@ pub async fn patch_purchase_order(
         return Ok(None);
     }
 
-    //Our update dto will always have at least one detail it's updating. And it is the first thing
+    //Our update dto may not have a detail if the order is being cancelled. But it it has one, it is the first thing
     //it should update. So:
-    for d in &patch.details{
-        let sql = "UPDATE purchase_order_details SET received_quantity = $1 WHERE purchase_order_id = $2 AND product_id = $3";
-        let affected = tx.execute(sql, &[&d.received_quantity, &id, &d.product_id])
-            .await?;
+    if let Some(details) = &patch.details {
+        for d in details{
+            let sql = "UPDATE purchase_order_details SET received_quantity = $1 WHERE purchase_order_id = $2 AND product_id = $3";
+            let affected = tx.execute(sql, &[&d.received_quantity, &id, &d.product_id])
+                .await?;
 
-        if affected == 0 {
-            //implicit rollback here
-            return Ok(None);
+            if affected == 0 {
+                //implicit rollback here
+                return Ok(None);
+            }
         }
     }
 
@@ -288,6 +290,7 @@ pub async fn patch_purchase_order(
     if let Some(status_id) = &patch.status_id {
         tx.execute("UPDATE purchase_orders SET status_id = $1 WHERE id = $2", &[&status_id, &id])
             .await?;
+        
     }
 
     let sql = format!("{} WHERE po.id = $1 ORDER BY po.id, pod.id", PURCHASE_ORDER_SELECT_BASE);
@@ -300,4 +303,36 @@ pub async fn patch_purchase_order(
     Ok(Some(purchase_order))
 }
 
+/// increases the received quantity of a product on a given order
+pub async fn increase_received_quantity(
+    tx: &tokio_postgres::Transaction<'_>,
+    order_id: i32,
+    product_id: i32,
+    amount: i32,
+) -> Result<bool, db_config::DbError> {
+    let rows = tx.execute(
+        "UPDATE purchase_order_details
+         SET received_quantity = received_quantity + $1
+         WHERE purchase_order_id = $2 AND product_id = $3",
+        &[&amount, &order_id, &product_id],
+    ).await?;
 
+    Ok(rows == 1)
+}
+
+/// decreases the received quantity of a product on a given order
+pub async fn decrease_received_quantity(
+    tx: &tokio_postgres::Transaction<'_>,
+    order_id: i32,
+    product_id: i32,
+    amount: i32,
+) -> Result<bool, db_config::DbError> {
+    let rows = tx.execute(
+        "UPDATE purchase_order_details
+         SET received_quantity = received_quantity - $1
+         WHERE purchase_order_id = $2 AND product_id = $3 AND received_quantity >= $1",
+        &[&amount, &order_id, &product_id],
+    ).await?;
+
+    Ok(rows == 1)
+}
