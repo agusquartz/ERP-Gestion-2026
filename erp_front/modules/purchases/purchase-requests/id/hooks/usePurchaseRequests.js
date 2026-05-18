@@ -364,11 +364,25 @@ export function usePurchaseOrder(orderId) {
       }
     } else {
       try {
-        const result = await printAllQuotations(orderId);
-        console.log("Print result:", result);
-      } catch (err) {
-        console.error("Error printing all quotations:", err);
-      }
+          const printableSuppliers = suppliers.filter(
+            (s) =>
+              s.statusId === STATUS.UNSENT ||
+              s.statusId === STATUS.PENDING
+          );
+
+          if (printableSuppliers.length === 0) {
+            console.warn("No hay proveedores para imprimir");
+            return;
+          }
+
+          console.log("Imprimiendo proveedores:", printableSuppliers);
+
+          // si tu impresión es global:
+          window.print();
+
+        } catch (err) {
+          console.error("Error printing all quotations:", err);
+        }
     }
   }
 
