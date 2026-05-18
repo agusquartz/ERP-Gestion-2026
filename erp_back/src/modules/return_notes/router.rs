@@ -8,6 +8,5 @@ use crate::modules::return_notes::handler;
 pub fn routes() -> Router {
     Router::new()
         .route("/return-notes", get(handler::list_return_notes))
-
-    // protect_routes()
+        .route("/return-notes/{id}", get(handler::get_return_note_by_id))
 }
