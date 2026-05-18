@@ -7,6 +7,14 @@ use crate::modules::purchase_request::{
     status
 };
 
+/// Maps a purchase request creation DTO into a domain model.
+///
+/// This is a pure transformation:
+/// - no validation
+/// - no database interaction
+/// - no business rules
+///
+/// Only reshapes API input into domain-friendly structures.
 pub fn map_create_request(dto: create::CreatePurchaseRequestDto) -> model::NewPurchaseRequest {
     model::NewPurchaseRequest {
         created_at: dto.created_at,
@@ -16,6 +24,7 @@ pub fn map_create_request(dto: create::CreatePurchaseRequestDto) -> model::NewPu
 
 }
 
+/// Maps a purchase request line DTO into a domain request line.
 pub fn map_create_request_lines(line: create::CreatePurchaseRequestDtoLine) -> model::NewPurchaseRequestLine {
     model::NewPurchaseRequestLine {
         product_id: line.product_id,
@@ -23,6 +32,11 @@ pub fn map_create_request_lines(line: create::CreatePurchaseRequestDtoLine) -> m
     }
 }
 
+/// Maps a purchase quote creation DTO into a domain model.
+///
+/// `initial_status` is injected externally because:
+/// - creation logic defines the initial lifecycle state
+/// - DTOs must remain stateless
 pub fn map_create_quote(dto: create::CreatePurchaseQuoteDto, initial_status: i32) -> model::NewQuote {
     model::NewQuote {
         created_at: dto.created_at,
@@ -34,6 +48,7 @@ pub fn map_create_quote(dto: create::CreatePurchaseQuoteDto, initial_status: i32
     }
 }
 
+/// Maps a quote detail DTO into a domain model line.
 pub fn map_create_quote_lines(detail: create::QuoteDetailLine) -> model::NewQuoteDetail {
     model::NewQuoteDetail {
         product_id: detail.product_id,
@@ -42,13 +57,15 @@ pub fn map_create_quote_lines(detail: create::QuoteDetailLine) -> model::NewQuot
     }
 }
 
-/// Converts a full PurchaseRequestAggregate into the HTTP response DTO.
+/// Converts a domain aggregate into an API response DTO.
 ///
-/// Receives:
-///   aggregate — Built by the repository from joined DB rows
+/// This function performs a full hydration mapping:
+/// - request header
+/// - employee
+/// - request details
+/// - associated quotes
 ///
-/// Returns:
-///   PurchaseRequestResponse — the JSON payload sent to the frontend
+/// No logic is applied; only structural transformation.
 pub fn map_purchase_request(aggregate: model::PurchaseRequestAggregate) -> response::PurchaseRequestResponse {
     response::PurchaseRequestResponse {
         id:            aggregate.request.id,
@@ -63,9 +80,7 @@ pub fn map_purchase_request(aggregate: model::PurchaseRequestAggregate) -> respo
     }
 }
 
-/// Converts one RequestItem model into its response DTO.
-///
-/// Called per row when mapping the items list in a purchase request.
+/// Maps a purchase request line into its response representation.
 fn map_request_item(item: model::RequestItem) -> response::PurchaseRequestItemsResponse {
     response::PurchaseRequestItemsResponse {
         product:    response::LineProductResponse {
@@ -81,6 +96,9 @@ fn map_request_item(item: model::RequestItem) -> response::PurchaseRequestItemsR
     }
 }
 
+/// Maps a quote domain model into its API response representation.
+///
+/// Includes supplier, status, lifecycle dates, and quote details.
 fn map_quote(quote: model::Quote) -> response::PurchaseQuoteResponse {
     response::PurchaseQuoteResponse {
         id:            quote.id,
@@ -100,6 +118,7 @@ fn map_quote(quote: model::Quote) -> response::PurchaseQuoteResponse {
     }
 }
 
+/// Maps a quote detail domain model into response format.
 fn map_quote_detail(detail: model::QuoteDetail) -> response::PurchaseQuoteDetailResponse {
     response::PurchaseQuoteDetailResponse {
         product_id: detail.product.id,

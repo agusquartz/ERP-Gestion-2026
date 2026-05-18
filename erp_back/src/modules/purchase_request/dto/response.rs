@@ -1,4 +1,3 @@
-
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use serde::{Serialize, Deserialize};
@@ -7,8 +6,7 @@ use crate::modules::purchase_request::{
     mapper,
 };
 
-use serde::{Deserialize, Serialize};
-
+/// Response DTO representing a purchase request with its details and quotes.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PurchaseRequestResponse {
@@ -21,6 +19,7 @@ pub struct PurchaseRequestResponse {
     pub quotes: Vec<PurchaseQuoteResponse>,
 }
 
+/// Summary information about an employee.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EmployeeSummaryResponse {
@@ -29,6 +28,7 @@ pub struct EmployeeSummaryResponse {
     pub surname: String,
 }
 
+/// Response DTO representing a requested product line.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PurchaseRequestItemsResponse {
@@ -36,6 +36,7 @@ pub struct PurchaseRequestItemsResponse {
     pub quantity: i32,
 }
 
+/// Summary information about a product used in request or quote lines.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LineProductResponse {
@@ -45,6 +46,7 @@ pub struct LineProductResponse {
     pub category: CategoryResponse,
 }
 
+/// Summary information about a product category.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CategoryResponse {
@@ -52,6 +54,7 @@ pub struct CategoryResponse {
     pub name: String,
 }
 
+/// Response DTO representing a purchase quote linked to a purchase request.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PurchaseQuoteResponse {
@@ -64,6 +67,7 @@ pub struct PurchaseQuoteResponse {
     pub details: Vec<PurchaseQuoteDetailResponse>,
 }
 
+/// Summary information about a supplier.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SupplierSummaryResponse {
@@ -72,6 +76,7 @@ pub struct SupplierSummaryResponse {
     pub stamp: String,
 }
 
+/// Summary information about an entity status.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StatusResponse {
@@ -79,6 +84,7 @@ pub struct StatusResponse {
     pub name: String,
 }
 
+/// Response DTO representing a quoted product line.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PurchaseQuoteDetailResponse {
@@ -87,14 +93,7 @@ pub struct PurchaseQuoteDetailResponse {
     pub unit_cost: Decimal,
 }
 
-/// Conversion from domain aggregate to response DTO.
-///
-/// This implementation delegates transformation logic to the mapper layer,
-/// ensuring separation of concerns between domain representation and API output.
-///
-/// Design notes:
-/// - Consumes the aggregate (`value`) to avoid unnecessary cloning
-/// - Centralizes mapping logic in `mapper::map_purchase_order`
+/// Converts a purchase request aggregate model into its API response representation.
 impl From<model::PurchaseRequestAggregate> for PurchaseRequestResponse {
     fn from(value: model::PurchaseRequestAggregate) -> Self {
         mapper::map_purchase_request(value)

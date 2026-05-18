@@ -1,9 +1,11 @@
 use axum::{
-    extract::{Json, Path, Query},
+    extract::{Json, Path, Query, Extension},
     http::StatusCode,
+    response::IntoResponse,
 };
 
 use crate::db_config::DbError;
+use crate::modules::auth::middleware::jwt::Claims;
 use crate::modules::purchase_request::{
     dto::{
         PurchaseRequestListQuery,
@@ -18,6 +20,10 @@ use crate::modules::purchase_request::{
     errors,
 };
 
+/// Retrieves a list of purchase requests.
+///
+/// Supports optional filtering via `contains`, delegated to the service layer.
+/// Returns HTTP 500 on unexpected service errors.
 pub async fn list_purchase_requests(
     Query(query): Query<PurchaseRequestListQuery>,
 ) -> Result<Json<Vec<PurchaseRequestResponse>>,StatusCode> {
@@ -25,11 +31,13 @@ pub async fn list_purchase_requests(
     Ok(Json(result))
 }
 
-
-/// GET /purchase-requests/{id}
+/// Retrieves a purchase request by ID.
 ///
-/// Obtiene una solicitud de compra específica.
-pub async fn get_purchase_request_handler(
+/// Returns:
+/// - 200 with payload if found
+/// - 404 if not found
+/// - 500 for unexpected errors
+pub async fn get_purchase_request(
     Path(id): Path<i32>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     match service::get_purchase_request(id).await {
@@ -39,40 +47,28 @@ pub async fn get_purchase_request_handler(
     }
 }
 
-/// Creates a new purchase_request.
+/// Creates a new purchase request for the authenticated employee.
 ///
-/// # Endpoint
-/// POST /purchase-requests
-///
-/// # Body
-/// JSON `CreatePurchaseRequestDto`
-///
-/// # Returns
-/// - 200 with created request
+/// The employee identity is extracted from JWT claims.
+/// Returns 200 with the created resource or 500 on failure.
 pub async fn create_purchase_request(
+    Extension(claim): Extension<Claims>,
     Json(payload): Json<CreatePurchaseRequestDto>,
 ) -> Result<Json<PurchaseRequestResponse>, StatusCode> {
-    let request = service::create_purchase_request(payload)
+    let employee_name = claim.sub;
+    let request = service::create_purchase_request(employee_name, payload)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(request))
 }
-// =============================================================================
-// POST /purchase-quotes
-// =============================================================================
 
-/// Handles POST /purchase-quotes
+/// Creates a new purchase quote linked to a purchase request.
 ///
-/// Creates a new supplier quote for a purchase request.
-/// Triggered when the user confirms a supplier in SupplierSearchModal.
-///
-/// Body: CreatePurchaseQuoteDto { purchase_request_id, supplier_id }
-///
-/// Responses:
-///   201 Created — CreatePurchaseQuoteResponse (JSON)
-///   404         — Purchase request not found
-///   500         — Database error
+/// Possible responses:
+/// - 201 if creation succeeds
+/// - 404 if purchase request does not exist
+/// - 500 for unexpected errors
 pub async fn create_purchase_quote(
     Json(body): Json<CreatePurchaseQuoteDto>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -84,6 +80,17 @@ pub async fn create_purchase_quote(
     }
 }
 
+/// Updates status and lifecycle fields of a purchase quote.
+///
+/// Enforces business rules such as:
+/// - valid status transitions
+/// - required timestamps for specific transitions
+///
+/// Returns:
+/// - 200 if update succeeds
+/// - 404 if purchase request or quote is missing
+/// - 400 for validation failures
+/// - 500 for unexpected errors
 pub async fn patch_purchase_quote(
     Path(req_id): Path<i32>,
     Json(body): Json<PatchPurchaseQuoteDto>,

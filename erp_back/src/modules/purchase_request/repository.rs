@@ -15,7 +15,10 @@ use crate::modules::purchase_request::{
 
 use crate::modules::purchase_request::status::{STATUS_CREATED, STATUS_PENDING, STATUS_OK};
 
-
+/// Base SELECT statement used to retrieve purchase requests and their detail lines.
+///
+/// This query intentionally returns a denormalized row set which is later grouped
+/// into aggregates by `rows_to_request_aggregate`.
 const PURCHASE_REQUEST_SELECT_BASE: &str = r#" 
 SELECT
 pr.id AS purchase_request_id,
@@ -36,6 +39,10 @@ INNER JOIN products AS p ON prd.product_id = p.id
 INNER JOIN categories AS cat ON p.category_id = cat.id
 "#;
 
+/// Base SELECT statement used to retrieve purchase quotes and their detail lines.
+///
+/// The result set is later grouped into quote aggregates by
+/// `rows_to_quotes_aggregate`.
 const PURCHASE_QUOTE_SELECT_BASE: &str = r#"
 SELECT
 pq.id AS purchase_quote_id,
@@ -63,6 +70,13 @@ INNER JOIN products AS p ON pqd.product_id = p.id
 INNER JOIN categories AS cat ON p.category_id = cat.id
 "#;
 
+/// Retrieves purchase requests with optional product/category filtering.
+///
+/// When `contains` is provided, the query filters by:
+/// - product description
+/// - product category name
+///
+/// Returns fully populated aggregates including associated quotes.
 pub async fn query_requests(contains: Option<&str>) -> Result<Vec<model::PurchaseRequestAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
     let req_aggregates: Vec<model::PurchaseRequestAggregate>;
@@ -80,6 +94,12 @@ pub async fn query_requests(contains: Option<&str>) -> Result<Vec<model::Purchas
     Ok(complete_aggs)
 }
 
+/// Retrieves all quotes associated with the provided purchase request aggregates.
+///
+/// Quotes are fetched in bulk using `ANY($1::int4[])` to avoid issuing
+/// one query per request.
+///
+/// The function mutates the provided aggregates by attaching matching quotes.
 pub async fn get_the_quotes(
     client: &deadpool_postgres::Client,
     mut reqs: Vec<model::PurchaseRequestAggregate>
@@ -104,6 +124,12 @@ pub async fn get_the_quotes(
     Ok(reqs)
 }
 
+/// Converts a denormalized purchase request query result into domain aggregates.
+///
+/// Multiple SQL rows belonging to the same purchase request are grouped together
+/// using a `BTreeMap`.
+///
+/// Each row contributes one request detail line.
 fn rows_to_request_aggregate(rows: Vec<Row>) -> Vec<model::PurchaseRequestAggregate> {
     let mut map: BTreeMap<i32, model::PurchaseRequestAggregate> = BTreeMap::new();
 
@@ -143,7 +169,10 @@ fn rows_to_request_aggregate(rows: Vec<Row>) -> Vec<model::PurchaseRequestAggreg
     map.into_values().collect()
 }
 
-///The caller handles the sql for the quotes
+/// Converts a denormalized quote query result into quote aggregates.
+///
+/// Multiple rows belonging to the same quote are grouped together,
+/// where each row contributes one quote detail line.
 fn rows_to_quotes_aggregate(rows: Vec<Row>) -> Vec<model::Quote>{
     let mut map: BTreeMap<i32, model::Quote> = BTreeMap::new();
     for row in rows{
@@ -184,24 +213,14 @@ fn rows_to_quotes_aggregate(rows: Vec<Row>) -> Vec<model::Quote>{
     map.into_values().collect()
 }
 
-
-/// Persists a new purchase request and its associated line items.
+/// Persists a new purchase request and all associated detail lines.
 ///
-/// Behavior:
-/// - Inserts the purchase request 
-/// - Inserts all associated line items
-/// - Commits the transaction
-/// - Returns a complete domain object
+/// The operation is executed inside a database transaction to guarantee
+/// atomicity between:
+/// - purchase request creation
+/// - detail line insertion
 ///
-/// Guarantees:
-/// - Atomic operation (all-or-nothing)
-/// - Returned aggregate reflects committed state
-///
-///
-/// Failure modes:
-/// - Any database error aborts the transaction
-/// - If the inserted request cannot be retrieved after commit,
-///   an invariant violation is raised
+/// After commit, the newly created aggregate is re-queried and returned.
 pub async fn store_new_request(new_request: model::NewPurchaseRequest) -> Result<model::PurchaseRequestAggregate, db_config::DbError> {
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await?;
@@ -245,18 +264,6 @@ pub async fn store_new_request(new_request: model::NewPurchaseRequest) -> Result
     aggregate
 }
 
-// =============================================================================
-// GET /purchase-requests/:id
-// =============================================================================
-
-/// Fetches a full purchase request aggregate by ID.
-///
-/// Returns:
-///   Some(PurchaseRequestAggregate) if found
-///   None if no request matches the given ID
-///
-/// Errors:
-///   DbError if any query fails
 pub async fn query_purchase_request_by_id(
     id: i32,
 ) -> Result<Option<model::PurchaseRequestAggregate>, db_config::DbError> {
@@ -272,10 +279,15 @@ pub async fn query_purchase_request_by_id(
     Ok(complete_aggs.into_iter().next())
 }
 
-// =============================================================================
-// POST /purchase-quotes
-// =============================================================================
-
+/// Persists a new purchase quote and all associated quote detail lines.
+///
+/// The operation is transactional to ensure that:
+/// - the quote header
+/// - all quote detail lines
+///
+/// are either fully persisted or fully rolled back.
+///
+/// After commit, the updated purchase request aggregate is returned.
 pub async fn store_purchase_quote(
     new_quote: model::NewQuote
 ) -> Result< model::PurchaseRequestAggregate, db_config::DbError> {
@@ -321,10 +333,17 @@ pub async fn store_purchase_quote(
     Ok(aggregate)
 }
 
-// =============================================================================
-// PATCH /purchase-quotes/:id
-// =============================================================================
-
+/// Updates the status and lifecycle dates of a purchase quote.
+///
+/// Date fields are updated conditionally depending on the target status:
+///
+/// - `STATUS_PENDING` updates `date_sent`
+/// - `STATUS_OK` updates `date_received`
+/// - other statuses only update `status_id`
+///
+/// This prevents unrelated lifecycle dates from being overwritten.
+///
+/// Returns the updated purchase request aggregate after modification.
 pub async fn patch_purchase_quote(
     purchase_request_id: i32,
     dto: update::PatchPurchaseQuoteDto

@@ -1,5 +1,8 @@
 
-use crate::shared::db_config;
+use crate::shared::{
+    db_config,
+    errors,
+};
 use crate::modules::product;
 
 #[derive(Debug)]
@@ -80,6 +83,14 @@ impl From<product::service::ServiceError> for ServiceError {
 impl From<db_config::DbError> for ServiceError {
     fn from(value: db_config::DbError) -> Self {
         Self::Database(value)
+    }
+}
+
+impl From<errors::AppError> for ServiceError {
+    fn from(value: errors::AppError) -> Self {
+        Self::Dependency( DependencyError {
+            system: "user", message: value.to_string()
+        })
     }
 }
 

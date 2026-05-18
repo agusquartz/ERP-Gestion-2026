@@ -1,21 +1,10 @@
-//! dto/create.rs — purchase_request module
-//!
-//! Request body structs for POST endpoints.
-//! These define the exact JSON shape the frontend must send
-//! when creating new records.
-//!
-//! Endpoints covered:
-//!   POST /purchase-quotes            → CreatePurchaseQuoteRequest
-//!   POST /purchase-quotes/:id/details → SaveQuoteDetailsRequest
-
 use rust_decimal::Decimal;
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDate;
 
-// =============================================================================
-// POST /purchase-quotes
-// =============================================================================
-
+/// DTO used to create a supplier quote associated with a purchase request.
+///
+/// Represents the quote header and all quoted product lines.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreatePurchaseQuoteDto {
@@ -26,13 +15,7 @@ pub struct CreatePurchaseQuoteDto {
 }
 
 
-/// One product line to save within a supplier quote.
-///
-/// Fields:
-///   product_id          — FK to products(id)
-///   confirmed_quantity  — Units the supplier confirmed they can provide
-///   unit_cost           — Price per unit offered by the supplier
-
+/// DTO representing a single quoted product line.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuoteDetailLine {
@@ -41,7 +24,9 @@ pub struct QuoteDetailLine {
     pub unit_cost: Decimal,
 }
 
-
+/// DTO used to create a purchase request.
+///
+/// Contains the request header and all requested product lines.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreatePurchaseRequestDto {
@@ -50,6 +35,7 @@ pub struct CreatePurchaseRequestDto {
     pub details: Vec<CreatePurchaseRequestDtoLine>,
 }
 
+/// DTO representing a single product line inside a purchase request.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreatePurchaseRequestDtoLine {

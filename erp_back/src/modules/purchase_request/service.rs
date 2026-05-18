@@ -1,7 +1,8 @@
-// ============================================================
-// SERVICE
-// ============================================================
 use crate::db_config::DbError;
+use crate::modules::user::{
+    model::User,
+    service::get_user_by_name,
+};
 use crate::modules::purchase_request::{
     dto::{
         create,
@@ -16,19 +17,23 @@ use crate::modules::purchase_request::{
 };
 use crate::modules::purchase_request::status::is_valid_transition;
 
-// =============================================================================
-// GET /purchase-requests
-// =============================================================================
-
+/// Retrieves purchase requests with optional filtering.
+///
+/// When `contains` is provided, results are filtered by:
+/// - product description
+/// - product category name
+///
+/// Returns mapped API response DTOs.
 pub async fn list_purchase_requests(contains: Option<String>) -> Result<Vec<response::PurchaseRequestResponse>, errors::ServiceError> {
     let rows= repository::query_requests(contains.as_deref()).await?;
     Ok(rows.into_iter().map(|inv| response::PurchaseRequestResponse::from(inv)).collect())
 }
 
-// =============================================================================
-// GET /purchase-requests/:id
-// =============================================================================
-
+/// Retrieves a single purchase request by identifier.
+///
+/// Returns:
+/// - `Ok(Some(...))` if the purchase request exists
+/// - `Ok(None)` if it does not exist
 pub async fn get_purchase_request(
     id: i32,
 ) -> Result<Option<response::PurchaseRequestResponse>, DbError> {
@@ -37,12 +42,19 @@ pub async fn get_purchase_request(
     Ok(aggregate.map(mapper::map_purchase_request))
 }
 
-// =============================================================================
-// POST /purchase-requests
-// =============================================================================
+/// Creates a new purchase request associated with the provided employee.
+///
+/// The employee is resolved using the authenticated username.
+///
+/// The operation:
+/// - validates employee existence
+/// - maps DTO lines into domain models
+/// - persists the purchase request and its detail lines
+/// - returns the resulting aggregate as a response DTO
+pub async fn create_purchase_request(employee_name: String, dto: create::CreatePurchaseRequestDto) -> Result<response::PurchaseRequestResponse, errors::ServiceError> {
 
-pub async fn create_purchase_request(dto: create::CreatePurchaseRequestDto) -> Result<response::PurchaseRequestResponse, errors::ServiceError> {
-
+    let employee = get_user_by_name(&employee_name).await?;
+    
     // Transform DTO lines into domain model
     let mut details: Vec<model::NewPurchaseRequestLine> = Vec::new();
     for line in dto.details {
@@ -58,7 +70,7 @@ pub async fn create_purchase_request(dto: create::CreatePurchaseRequestDto) -> R
     // Build domain object
     let order = model::NewPurchaseRequest {
         created_at: dto.created_at,
-        employee_id: dto.employee_id,
+        employee_id: employee.id,
         details: details
     };
 
@@ -69,10 +81,13 @@ pub async fn create_purchase_request(dto: create::CreatePurchaseRequestDto) -> R
 
 }
 
-// =============================================================================
-// POST /purchase-quotes
-// =============================================================================
-
+/// Creates a new purchase quote associated with a purchase request.
+///
+/// Validation rules:
+/// - quote details cannot be empty
+/// - the referenced purchase request must exist
+///
+/// Newly created quotes are initialized with `STATUS_UNSENT`.
 pub async fn create_purchase_quote(
     dto: create::CreatePurchaseQuoteDto,
 ) -> Result<response::PurchaseRequestResponse, errors::ServiceError> {
@@ -101,29 +116,16 @@ pub async fn create_purchase_quote(
     Ok(request)
 }
 
-// =============================================================================
-// PATCH /purchase-quotes/:id
-// =============================================================================
-
-/// Updates the status of a supplier quote.
+/// Updates the status and lifecycle dates of a purchase quote.
 ///
-/// Fetches the current status first, then validates the transition.
-/// Rejects any transition that goes backwards or skips a state.
+/// Validation rules:
+/// - the purchase request must exist
+/// - the target quote must exist
+/// - status transitions must be valid
+/// - moving to `STATUS_PENDING` requires `date_sent`
+/// - moving to `STATUS_OK` requires `date_received`
 ///
-/// date_sent and date_received are set automatically in the repository
-/// based on the target status — the frontend never sends these.
-///
-/// Receives:
-///   id  — purchase_quotes.id
-///   dto — PatchPurchaseQuoteDto { status_id }
-///
-/// Returns:
-///   Some(PatchPurchaseQuoteResponse) with the updated fields
-///   None if the quote doesn't exist
-///
-/// Errors:
-///   DbError::Other if the transition is invalid
-///   DbError for any other database failure
+/// Only forward status transitions are allowed.
 pub async fn patch_purchase_quote(
     purchase_request_id: i32,
     dto: update::PatchPurchaseQuoteDto,
