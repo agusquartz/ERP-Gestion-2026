@@ -10,7 +10,7 @@ export function listPurchaseRequests({ contains } = {}) {
 
   const queryString = params.toString();
 
-  return clientRequest(`/purchase-requests${queryString ? `?${queryString}` : ""}`, {
+  return clientRequest(`/purchases/purchase-requests${queryString ? `?${queryString}` : ""}`, {
     method: "GET",
   });
 }
@@ -18,7 +18,7 @@ export function listPurchaseRequests({ contains } = {}) {
 export function getPurchaseRequestById(id) {
   if (id == null) throw new Error("Purchase Request ID is required");
 
-  return clientRequest(`/purchase-requests/${id}`, {
+  return clientRequest(`/purchases/purchase-requests/${id}`, {
     method: "GET",
   });
 }
@@ -44,7 +44,7 @@ export function createPurchaseRequest(payload){
 
   console.log("Enviando a Rust:", payload);
 
-  return clientRequest(`/purchase-requests`, {
+  return clientRequest(`/purchases/purchase-requests`, {
     method:'POST',
     body: JSON.stringify(payload),
   })
