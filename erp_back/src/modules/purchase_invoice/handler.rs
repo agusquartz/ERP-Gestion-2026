@@ -15,7 +15,7 @@ use axum::{
 
 use crate::modules::purchase_invoice::{
     dto::{
-        PurchaseInvoicesListQuery,
+        query::PurchaseInvoicesListQuery,
         create::CreatePurchaseInvoiceDto,
         response::{PaginatedInvoicesResponse, PurchaseInvoiceDetailResponse},
     },
@@ -24,7 +24,7 @@ use crate::modules::purchase_invoice::{
 
 /// GET /purchases/purchase-invoices
 ///
-/// Accepts optional query params: `search`, `filter`, `status`, `from`, `to`, `cursor`, `limit`.
+/// Accepts optional query params: `search`, `filter`, `status`, `since`, `to`, `cursor`, `limit`.
 /// Returns a paginated envelope with `data`, `nextCursor`, and `hasMore`.
 pub async fn list_purchase_invoices(
     Query(query): Query<PurchaseInvoicesListQuery>,

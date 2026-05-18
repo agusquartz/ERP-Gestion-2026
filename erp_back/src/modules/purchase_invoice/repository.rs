@@ -151,7 +151,7 @@ fn row_to_invoices(rows: Vec<Row>) -> Vec<PurchaseInvoice> {
 pub async fn query_invoices(
     search: Option<&str>,
     filter: Option<&str>,
-    from:   Option<NaiveDate>,
+    since:  Option<NaiveDate>,
     to:     Option<NaiveDate>,
     status: Option<&str>,
     cursor: Option<i32>,
@@ -186,7 +186,7 @@ pub async fn query_invoices(
 
     let rows = client.query(
         &sql,
-        &[&cursor, &search, &filter, &from, &to, &status, &limit],
+        &[&cursor, &search, &filter, &since, &to, &status, &limit],
     ).await?;
 
     Ok(row_to_invoices(rows))

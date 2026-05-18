@@ -7,7 +7,6 @@
 //! ```json
 //! {
 //!   "invoiceNumber": "001-002-0019574",
-//!   "timbrado": "12345678",
 //!   "supplierId": 3,
 //!   "orderId": 188,
 //!   "saleConditionId": 1,
@@ -48,7 +47,6 @@ use rust_decimal::Decimal;
 #[serde(rename_all = "camelCase")]
 pub struct CreatePurchaseInvoiceDto {
     pub invoice_number: String,
-    pub timbrado: String,
     pub supplier_id: i32,
     pub order_id: i32,
     pub sale_condition_id: i32,

@@ -11,7 +11,7 @@ const STATUS_OPTIONS = [
 export function InvoiceFilters({ onSearch }) {
 	const [search, setSearch]         			= useState("");
 	const [filter, setFilter]					= useState("");
-	const [from, setFrom]           			= useState("");
+	const [since, setSince]           			= useState("");
 	const [to, setTo]             				= useState("");
 	const [status, setStatus]       			= useState("");
 	const [showStatusDrop, setShowStatusDrop] 	= useState(false);
@@ -19,17 +19,17 @@ export function InvoiceFilters({ onSearch }) {
 	// Builds and emits the full filter state every time any field changes.
 	// Empty strings are kept here — the hook strips them before sending to the API.
 	function emit(overrides) {
-		onSearch({ search, filter, from, to, status, ...overrides });
+		onSearch({ search, filter, since, to, status, ...overrides });
 	}
 
 	function clearAll() {
 		setSearch("");
 		setFilter("");
-		setFrom("");
+		setSince("");
 		setTo("");
 		setStatus("");
 		setShowStatusDrop(false);
-		onSearch({ search: "", filter: "", from: "", to: "", status: "" });
+		onSearch({ search: "", filter: "", since: "", to: "", status: "" });
 	}
 
 	return (
@@ -66,17 +66,17 @@ export function InvoiceFilters({ onSearch }) {
 			    />
 				</div>
 
-				{/* From */}
+				{/* Since */}
 				<div className="flex flex-col gap-1.5">
 					<label className="text-[13px] font-bold text-slate-800 ml-1">Desde</label>
 					<input
 						type="date"
 						className="rounded-[5px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
-						value={from}
+						value={since}
 						onChange={(e) => {
 							const val = e.target.value;
-							setFrom(val);
-							emit({ from: val });
+							setSince(val);
+							emit({ since: val });
 						}}
 					/>
 				</div>

@@ -7,11 +7,11 @@ export function createPurchaseInvoice(payload) {
   });
 }
 
-export function fetchPurchaseInvoices({ search, filter, from, to, status, cursor, limit } = {}) {
+export function fetchPurchaseInvoices({ search, filter, since, to, status, cursor, limit } = {}) {
 	const query = new URLSearchParams();
 	if (search) query.set("search", search);
 	if (filter)	query.set("filter", filter);
-	if (from) 	query.set("from", from);
+	if (since) 	query.set("since", since);
 	if (to)  	query.set("to", to);
 	if (status) query.set("status", status);
 	if (cursor) query.set("cursor", cursor);

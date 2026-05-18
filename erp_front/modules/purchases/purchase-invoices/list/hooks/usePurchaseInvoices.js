@@ -33,7 +33,7 @@ export function usePurchaseInvoices(filters) {
     useEffect(() => {
         setCurrentPage(1);
         setCursors([undefined]);
-    }, [debouncedSearch, debouncedFilter, filters.status, filters.from, filters.to]);
+    }, [debouncedSearch, debouncedFilter, filters.status, filters.since, filters.to]);
 
     // Fetch whenever page or filters change
     useEffect(() => {
@@ -50,7 +50,7 @@ export function usePurchaseInvoices(filters) {
                     search:  debouncedSearch || undefined,
                     filter:  debouncedFilter || undefined,
                     status:  filters.status  || undefined,
-                    from:    filters.from    || undefined,
+                    since:   filters.since   || undefined,
                     to:      filters.to      || undefined,
                     cursor:  cursor,
                     limit:   PAGE_SIZE,
@@ -83,7 +83,7 @@ export function usePurchaseInvoices(filters) {
         load();
         return () => { cancelled = true; };
 
-    }, [currentPage, cursors, debouncedSearch, debouncedFilter, filters.status, filters.from, filters.to]);
+    }, [currentPage, cursors, debouncedSearch, debouncedFilter, filters.status, filters.since, filters.to]);
 
     const goToPage = useCallback((page) => {
         // Can only go forward if we have the cursor for that page

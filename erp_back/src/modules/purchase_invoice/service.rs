@@ -15,7 +15,7 @@
 //! - `product::service::increase_stock`
 use crate::modules::purchase_invoice::{
     dto::{
-        PurchaseInvoicesListQuery,
+        query::PurchaseInvoicesListQuery,
         create::CreatePurchaseInvoiceDto,
         response::{
             PaginatedInvoicesResponse,
@@ -50,7 +50,7 @@ pub async fn list_purchase_invoices(
     let mut invoices = repository::query_invoices(
         query.search.as_deref(),
         query.filter.as_deref(),
-        query.from,
+        query.since,
         query.to,
         query.status.as_deref(),
         query.cursor,
