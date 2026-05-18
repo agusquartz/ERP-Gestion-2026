@@ -144,3 +144,76 @@ pub async fn query_return_note_by_id(
 
     Ok(notes.pop())
 }
+
+
+pub async fn get_status_id_by_name(
+    status_name: &str,
+) -> Result<i32, db_config::DbError> {
+    let client = db_config::get_client().await?;
+
+    let row = client
+        .query_one(
+            "SELECT id FROM statuses WHERE status = $1",
+            &[&status_name],
+        )
+        .await?;
+
+    Ok(row.get("id"))
+}
+
+
+
+pub async fn store_new_return_note(
+    new_note: model::NewReturnNote,
+) -> Result<model::ReturnNoteAggregate, db_config::DbError> {
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await?;
+
+    let row = tx
+        .query_one(
+            "
+            INSERT INTO return_notes
+                (purchase_invoice_id, motive, created_at, status_id)
+            VALUES
+                ($1, $2, $3, $4)
+            RETURNING id
+            ",
+            &[
+                &new_note.purchase_invoice_id,
+                &new_note.motive,
+                &new_note.created_at,
+                &new_note.status_id,
+            ],
+        )
+        .await?;
+
+    let return_note_id: i32 = row.get(0);
+
+    for detail in new_note.details {
+        tx.execute(
+            "
+            INSERT INTO return_note_details
+                (return_note_id, product_id, returned_quantity, amount)
+            VALUES
+                ($1, $2, $3, $4)
+            ",
+            &[
+                &return_note_id,
+                &detail.product_id,
+                &detail.returned_quantity,
+                &detail.amount,
+            ],
+        )
+        .await?;
+    }
+
+    tx.commit().await?;
+
+    query_return_note_by_id(return_note_id)
+        .await?
+        .ok_or_else(|| {
+            db_config::DbError::InvariantViolation(
+                "Inserted return note not found after commit".into(),
+            )
+        })
+}
