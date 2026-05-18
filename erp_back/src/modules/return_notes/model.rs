@@ -66,6 +66,10 @@ pub struct ReturnNoteDetailAggregate {
 }
 
 
+
+///--------------------[NEW]------------------------------
+
+
 /// Detail with product data included
 #[derive(Debug, Clone)]
 pub struct NewReturnNote {
