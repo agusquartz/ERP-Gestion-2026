@@ -32,25 +32,25 @@ pub async fn auth_middleware(
         return next.run(request).await.into_response();
     }
 
-    //println!("auth middleware hit: {}", request.uri());
+    println!("auth middleware hit: {}", request.uri());
 
-    // println!(
-    //     "jwt cookie exists: {}",
-    //     cookies.get("jwt").is_some()
-    // );
+    println!(
+        "jwt cookie exists: {}",
+        cookies.get("jwt").is_some()
+    );
 
-    // println!(
-    //     "csrf cookie exists: {}",
-    //     cookies.get("csrfToken").is_some()
-    // );
+    println!(
+        "csrf cookie exists: {}",
+        cookies.get("csrfToken").is_some()
+    );
 
-    // println!(
-    //     "x-csrf-token header: {:?}",
-    //     request
-    //         .headers()
-    //         .get("x-csrf-token")
-    //         .and_then(|h| h.to_str().ok())
-    // );
+    println!(
+        "x-csrf-token header: {:?}",
+        request
+            .headers()
+            .get("x-csrf-token")
+            .and_then(|h| h.to_str().ok())
+    );
     
     // -----------------------------
     // 1. Verify JWT cookie
@@ -66,7 +66,9 @@ pub async fn auth_middleware(
             claims
         }
         Err(err) => {
-            //println!("JWT ERROR: {:?}", err);
+            println!("JWT ERROR DEBUG:");
+            println!("=> {:?}", err.kind());
+            println!("=> full: {:?}", err);
             return (StatusCode::UNAUTHORIZED, "Invalid JWT").into_response();
         }
     };
