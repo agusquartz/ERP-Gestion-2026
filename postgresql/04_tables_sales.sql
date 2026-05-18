@@ -19,6 +19,7 @@ create table suppliers (
 	name TEXT NOT NULL,
 	address TEXT,
 	email TEXT NOT NULL,
+	stamp TEXT NOT NULL,
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
 	credit_limit DECIMAL(17,2) NOT NULL,
 	curr_credit DECIMAL(17,2) NOT NULL DEFAULT 0

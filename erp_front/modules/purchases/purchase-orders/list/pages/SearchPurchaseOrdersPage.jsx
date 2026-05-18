@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useDebounce } from '../hooks/useDebounce.js'; 
 import { getPurchaseOrdersByQuery } from '../../../../../lib/http/client/purchase-orders.js';
 import PurchaseFilters from '../components/PurchaseFilters.jsx';
@@ -61,21 +62,14 @@ const SearchPurchaseOrdersPage = () => {
     setStatus('all');
 	setSelectedDate('');
   };
-/** * HANDOVER NOTE: 
- * This function is triggered by the 'Eye' icon in PurchaseTable.
- * Partners should replace the console.log with:
- * 1. Navigation logic (navigate(`/route/${id}`))
- * 2. Or opening a Side-Drawer/Modal
- */
-  const handleViewDetail = async (orderId) => {
-	  console.log("View Detail requested for Order ID:", orderId);
 
-  // Example for future routing:
-  // navigate(`/purchases/view/${orderId}`);
+  const router = useRouter();
+  const handleViewDetail = async (orderId) => {
+	  router.push(`/purchases/purchase-orders/${orderId}`);
   };
 
   return (
-    <div className="flex-1 flex min-h-[calc(100vh-32px] mx-auto">
+    <div className="flex-1 flex min-h-[calc(100vh-32px)] mx-auto">
 
         <div className="flex-1 bg-white rounded-[5px] shadow-sm border border-gray-200 overflow-hidden">
 

@@ -4,13 +4,15 @@ use axum::{
 };
 use dotenvy::from_filename;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::{AllowOrigin, CorsLayer};
-use axum::http::{HeaderName, Method, header, request};
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
+use axum::http::{Method, header, HeaderName};
 use axum::http::HeaderValue;
 use axum::serve;
 use tokio::net::TcpListener;
 use std::net::SocketAddr;
 use shared::db_config;
+
+use crate::modules::return_notes;
 
 mod modules {
     pub mod auth;
@@ -24,7 +26,12 @@ mod modules {
     pub mod purchase_request;
     pub mod purchase_order;
     pub mod purchases_credit_note;
+    pub mod return_notes;
+    pub mod purchase_invoice;
+    pub mod purchase_payment_order;
+    pub mod supplier;
 }
+
 
 mod shared {
     pub mod config;
@@ -111,6 +118,10 @@ async fn main() {
         .merge(modules::purchase_order::router::purchase_order_router())
         .merge(modules::purchase_request::router::list_purchase_request_router())
         .merge(modules::purchases_credit_note::router::purchase_credit_note_router())
+        .merge(return_notes::router::routes())
+        .merge(modules::purchase_invoice::router::purchase_invoice_router())
+        .merge(modules::purchase_payment_order::router::purchase_payment_order_router())
+        .merge(modules::supplier::router::supplier_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 

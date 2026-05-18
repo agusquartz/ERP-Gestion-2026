@@ -31,13 +31,13 @@ pub struct PatchPurchaseOrderDto {
     /// Optional new status for the purchase order.
     ///
     /// If `None`, the status remains unchanged.
-    pub status_id: Option<i8>,
+    pub status_id: Option<i32>,
 
     /// Line items to update.
     ///
     /// Each entry corresponds to an existing product in the purchase order.
-    /// At least one detail is expected.
-    pub details: Vec<PatchPurchaseOrderLineDto>,
+    /// If `None`, it should be because we're cancelling the order
+    pub details: Option<Vec<PatchPurchaseOrderLineDto>>,
 }
 
 /// Data Transfer Object representing an update to a single line item.

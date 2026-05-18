@@ -1,15 +1,15 @@
 import React from 'react';
 import { Eye } from 'lucide-react';
 
-import {formatDate, formatCurrency} from '../components/utils.js';
+import {formatDate, formatCurrency, translateOrderStatusName} from '../components/utils.js';
 
 const PurchaseTable = ({ data, totalResults, onView }) => {
   const filteredResults = data.length;
   const getStatusStyles = (status) => {
     const s = status?.toLowerCase();
-    if (s === 'pendiente') return "bg-[#FFE6E5] text-[#5D0000] border-[#91372B]";
-    if (s === 'parcial') return "bg-[#FFFDE5] text-[#5D5200] border-[#FFE44A]";
-	if (s === 'completado') return "bg-[#E5EAFF] text-[#00085D] border-[#4A83FF]";
+    if (s === 'pending') return "bg-[#FFE6E5] text-[#5D0000] border-[#91372B]";
+    if (s === 'partial') return "bg-[#FFFDE5] text-[#5D5200] border-[#FFE44A]";
+	if (s === 'completed') return "bg-[#E5EAFF] text-[#00085D] border-[#4A83FF]";
     return "bg-[#DADADA] text-[#374151] border-[#476559]";
   };
 
@@ -47,7 +47,7 @@ const PurchaseTable = ({ data, totalResults, onView }) => {
                 <div className="flex justify-center">
                   <span className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[10px] font-bold w-[90px] justify-center ${getStatusStyles(item.status.name)}`}>
                     <span className="h-1.5 w-1.5 rounded-full bg-current shrink-0" />
-                    {item.status.name}
+                    {translateOrderStatusName(item.status.name)}
                   </span>
                 </div>
               </td>

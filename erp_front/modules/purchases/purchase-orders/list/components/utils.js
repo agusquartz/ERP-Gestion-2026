@@ -20,3 +20,11 @@ export const formatCurrency = (value) => {
 	}).format(value);
 };
 
+// Helper to translate status names
+export const translateOrderStatusName = (name) => {
+	const s = name.toLowerCase();
+	if (s === 'pending') return 'pendiente';
+	if (s === 'cancelled') return 'cancelado';
+	if (s === 'partial') return 'parcial';
+	if (s === 'ok' || s === 'completed') return 'completado';
+}
