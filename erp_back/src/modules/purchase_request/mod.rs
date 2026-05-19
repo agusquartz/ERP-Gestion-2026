@@ -5,3 +5,5 @@ pub mod service;
 pub mod handler;
 pub mod router;
 pub mod mapper;
+pub mod errors;
+pub mod status;

@@ -26,7 +26,8 @@ CREATE TABLE purchase_quotes_details(
 	purchase_quote_id INT NOT NULL REFERENCES purchase_quotes(id),
 	product_id INT NOT NULL REFERENCES products(id),
 	confirmed_quantity INT NOT NULL,
-	unit_cost DECIMAL(17,2) NOT NULL
+	unit_cost DECIMAL(17,2) NOT NULL,
+	enabled BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE purchase_orders(

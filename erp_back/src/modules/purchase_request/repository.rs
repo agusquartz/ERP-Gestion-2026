@@ -1,283 +1,419 @@
-
-
 use std::collections::BTreeMap;
-
+use chrono::Local;
 use tokio_postgres::Row;
 
 
 use crate::db_config::{self, DbError};
-
-use crate::modules::purchase_request::dto::create::CreatePurchaseRequestDto;
-use crate::modules::purchase_request::model::{
-    ProductSearch,
-    PurchaseRequest,
-    PurchaseRequestDetail,
-    PurchaseRequestEmployee,
-    PurchaseRequestProduct,
-    PurchaseRequestWithDetails,
+use crate::modules::purchase_request::{
+    model,
+    dto::{
+        create::QuoteDetailLine,
+        response,
+        update,
+    },
 };
 
-// ============================================================
-// REPOSITORY
-// ============================================================
+use crate::modules::purchase_request::status::{STATUS_CREATED, STATUS_PENDING, STATUS_OK};
 
+/// Base SELECT statement used to retrieve purchase requests and their detail lines.
+///
+/// This query intentionally returns a denormalized row set which is later grouped
+/// into aggregates by `rows_to_request_aggregate`.
+const PURCHASE_REQUEST_SELECT_BASE: &str = r#" 
+SELECT
+pr.id AS purchase_request_id,
+pr.created_at AS created_at,
+e.id AS employee_id,
+e.name AS employee_name,
+e.surname AS employee_surname,
+p.id AS product_id,
+p.code AS product_code,
+p.description AS product_description,
+cat.id AS product_category_id,
+cat.name AS product_category_name,
+prd.quantity AS product_quantity
+FROM purchase_requests AS pr
+INNER JOIN employees AS e ON pr.employee_id = e.id
+INNER JOIN purchase_request_details AS prd ON pr.id = prd.purchase_request_id
+INNER JOIN products AS p ON prd.product_id = p.id
+INNER JOIN categories AS cat ON p.category_id = cat.id
+"#;
 
-  
-    const BASE_QUERY: &str = r#"
-        SELECT
-            pr.id          AS purchase_request_id,
-            pr.created_at  AS purchase_request_created_at,
-            pr.employee_id AS purchase_request_employee_id,
+/// Base SELECT statement used to retrieve purchase quotes and their detail lines.
+///
+/// The result set is later grouped into quote aggregates by
+/// `rows_to_quotes_aggregate`.
+const PURCHASE_QUOTE_SELECT_BASE: &str = r#"
+SELECT
+pq.id AS purchase_quote_id,
+pq.purchase_request_id AS purchase_request_id,
+s.id AS supplier_id,
+s.name AS supplier_name,
+s.stamp AS supplier_stamp,
+st.id AS status_id,
+st.status AS status_name,
+pq.created_at AS created_at,
+pq.date_sent AS date_sent,
+pq.date_received AS date_received,
+pqd.product_id AS product_id,
+p.code AS product_code,
+p.description AS product_description,
+p.category_id AS product_category_id,
+cat.name AS product_category_name,
+pqd.confirmed_quantity AS confirmed_quantity,
+pqd.unit_cost AS unit_cost,
+pqd.enabled AS enabled
+FROM purchase_quotes AS pq
+INNER JOIN suppliers AS s ON pq.supplier_id = s.id
+INNER JOIN statuses AS st ON pq.status_id = st.id
+INNER JOIN purchase_quotes_details AS pqd ON pqd.purchase_quote_id = pq.id
+INNER JOIN products AS p ON pqd.product_id = p.id
+INNER JOIN categories AS cat ON p.category_id = cat.id
+"#;
 
-            e.id           AS employee_id,
-            e.name         AS employee_name,
-            e.surname      AS employee_surname,
+/// Retrieves purchase requests with optional product/category filtering.
+///
+/// When `contains` is provided, the query filters by:
+/// - product description
+/// - product category name
+///
+/// Returns fully populated aggregates including associated quotes.
+pub async fn query_requests(contains: Option<&str>) -> Result<Vec<model::PurchaseRequestAggregate>, db_config::DbError> {
+    let client = db_config::get_client().await?;
+    let req_aggregates: Vec<model::PurchaseRequestAggregate>;
+    if let Some(q) = contains {
+        let req_sql = format!("{} WHERE (COALESCE($1, '') = '' OR p.description ILIKE '%' || $1 || '%' OR cat.name ILIKE '%' || $1 || '%') ORDER BY pr.id, prd.id", PURCHASE_REQUEST_SELECT_BASE); 
 
-            prd.id         AS detail_id,
-            prd.quantity   AS detail_quantity,
+        let req_rows = client.query(&req_sql, &[&q]).await?;
+        req_aggregates = rows_to_request_aggregate(req_rows);
+    } else {
+        let req_sql = PURCHASE_REQUEST_SELECT_BASE.to_string();
+        let req_rows = client.query(&req_sql, &[]).await?; 
+        req_aggregates = rows_to_request_aggregate(req_rows);
+    }
+    let complete_aggs = get_the_quotes( &client,req_aggregates).await?;
+    Ok(complete_aggs)
+}
 
-            p.id           AS product_id,
-            p.description  AS product_description,
-            p.code         AS product_code
+/// Retrieves all quotes associated with the provided purchase request aggregates.
+///
+/// Quotes are fetched in bulk using `ANY($1::int4[])` to avoid issuing
+/// one query per request.
+///
+/// The function mutates the provided aggregates by attaching matching quotes.
+pub async fn get_the_quotes(
+    client: &deadpool_postgres::Client,
+    mut reqs: Vec<model::PurchaseRequestAggregate>
+) -> Result<Vec<model::PurchaseRequestAggregate>, db_config::DbError> {
+    let ids: Vec<i32> = reqs
+        .iter()
+        .map(|agg| agg.request.id)
+        .collect();
+    println!("ids = {}", ids.len());
+    let quote_sql = format!("{} WHERE pq.purchase_request_id = ANY($1::int4[])", PURCHASE_QUOTE_SELECT_BASE);
+    let quote_rows = client.query(&quote_sql, &[&ids]).await?; 
+    println!("quote_rows = {}", quote_rows.len());
+    let quote_aggregates = rows_to_quotes_aggregate(quote_rows);
 
-        FROM purchase_requests pr
-        JOIN employees e ON pr.employee_id = e.id
-        LEFT JOIN purchase_request_details prd
-            ON pr.id = prd.purchase_request_id
-        LEFT JOIN products p
-            ON prd.product_id = p.id
-    "#;
-
-    // ---------------- CREATE PURCHASE REQUEST ----------------
-
-    pub async fn create_purchase_request(
-        dto: CreatePurchaseRequestDto,
-    ) -> Result<PurchaseRequestWithDetails, DbError> {
-        if dto.details.is_empty() {
-            return Err(DbError::Other(
-                "Purchase request must contain at least one detail".to_string(),
-            ));
+    for quote in quote_aggregates {
+        let req_id = quote.purchase_request_id;
+        if let Some(req) = reqs
+            .iter_mut().find(|req| req.request.id == req_id) {
+                req.quotes.push(quote);
         }
+    }
+    Ok(reqs)
+}
 
-        let mut client = db_config::get_client().await?;
-        let tx = client.transaction().await?;
+/// Converts a denormalized purchase request query result into domain aggregates.
+///
+/// Multiple SQL rows belonging to the same purchase request are grouped together
+/// using a `BTreeMap`.
+///
+/// Each row contributes one request detail line.
+fn rows_to_request_aggregate(rows: Vec<Row>) -> Vec<model::PurchaseRequestAggregate> {
+    let mut map: BTreeMap<i32, model::PurchaseRequestAggregate> = BTreeMap::new();
 
-        let row = tx
-            .query_one(
-                r#"
-                INSERT INTO purchase_requests (created_at, employee_id)
-                VALUES ($1, $2)
-                RETURNING id
-                "#,
-                &[&dto.created_at, &dto.employee_id],
-            )
-            .await?;
+    for row in rows {
+        let request_id: i32 = row.get("purchase_request_id");
 
-        let purchase_request_id: i32 = row.get("id");
+        let entry = map.entry(request_id).or_insert_with(|| model::PurchaseRequestAggregate {
+            request: model::PurchaseRequest {
+                id: request_id,
+                created_at: row.get("created_at"),
+                employee: model::EmployeeSummary {
+                    id: row.get("employee_id"),
+                    name: row.get("employee_name"),
+                    surname: row.get("employee_surname"),
+                },
+                details: Vec::new(),
+            },
+            quotes: Vec::new(),
+        }
+        );
 
-        for detail in dto.details {
-            if detail.quantity <= 0 {
-                return Err(DbError::Other(
-                    "Product quantity must be greater than zero".to_string(),
-                ));
-            }
+        let detail = model::RequestItem {
+            product: model::LineProduct {
+                id: row.get("product_id"),
+                code: row.get("product_code"),
+                description: row.get("product_description"),
+                category: model::Category {
+                    id: row.get("product_category_id"),
+                    name: row.get("product_category_name"),
+                },
+            },
+            quantity: row.get("product_quantity"),
+        };
 
+        entry.request.details.push(detail);
+    }
+    map.into_values().collect()
+}
+
+/// Converts a denormalized quote query result into quote aggregates.
+///
+/// Multiple rows belonging to the same quote are grouped together,
+/// where each row contributes one quote detail line.
+fn rows_to_quotes_aggregate(rows: Vec<Row>) -> Vec<model::Quote>{
+    let mut map: BTreeMap<i32, model::Quote> = BTreeMap::new();
+    for row in rows{
+        let quote_id = row.get("purchase_quote_id");
+        let entry = map.entry(quote_id).or_insert_with(|| model::Quote {
+            purchase_request_id: row.get("purchase_request_id"),
+            created_at: row.get("created_at"),
+            date_sent: row.get("date_sent"),
+            date_received: row.get("date_received"),
+            id: row.get("purchase_quote_id"),
+            supplier: model::SupplierSummary {
+                id: row.get("supplier_id"),
+                name: row.get("supplier_name"),
+                stamp: row.get("supplier_stamp"),
+            },
+            status: model::Status {
+                id: row.get("status_id"),
+                name: row.get("status_name"),
+            },
+            details: Vec::new(),
+        });
+
+        let detail = model::QuoteDetail {
+            product: model::LineProduct {
+                id: row.get("product_id"),
+                code: row.get("product_code"),
+                description: row.get("product_description"),
+                category: model::Category {
+                    id: row.get("product_category_id"),
+                    name: row.get("product_category_name"),
+                }
+            },
+            confirmed_quantity: row.get("confirmed_quantity"),
+            unit_cost: row.get("unit_cost"),
+            enabled: row.get("enabled"),
+        };
+        entry.details.push(detail);
+    }
+    map.into_values().collect()
+}
+
+/// Persists a new purchase request and all associated detail lines.
+///
+/// The operation is executed inside a database transaction to guarantee
+/// atomicity between:
+/// - purchase request creation
+/// - detail line insertion
+///
+/// After commit, the newly created aggregate is re-queried and returned.
+pub async fn store_new_request(new_request: model::NewPurchaseRequest) -> Result<model::PurchaseRequestAggregate, db_config::DbError> {
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await?;
+
+    let row = match  tx.query_one(
+        "INSERT INTO purchase_requests 
+        (created_at, employee_id)
+        VALUES ($1, $2)
+        RETURNING id",
+        &[
+        &new_request.created_at,
+        &new_request.employee_id,
+        ],
+    ).await {
+        Ok(row) => row,
+        Err(e) => {
+            println!("Db Error: {:?}", e);
+            return Err(e.into());
+        }
+    };
+
+    let request_id: i32 = row.get(0);
+
+    for detail in new_request.details {
+        tx.execute(
+            "INSERT INTO purchase_request_details 
+            (purchase_request_id, product_id, quantity)
+            VALUES ($1, $2, $3)",
+            &[
+            &request_id,
+            &detail.product_id,
+            &detail.quantity,
+            ],
+        ).await?;
+    }
+    tx.commit().await?;
+
+    let aggregate = query_purchase_request_by_id(request_id)
+        .await? 
+        .ok_or(db_config::DbError::InvariantViolation("Inserted invoice not found after commit".into()));
+    aggregate
+}
+
+pub async fn query_purchase_request_by_id(
+    id: i32,
+) -> Result<Option<model::PurchaseRequestAggregate>, db_config::DbError> {
+    let client = db_config::get_client().await?;
+
+    let req_sql = format!("{} WHERE pr.id = $1 ORDER BY pr.id, prd.id",PURCHASE_REQUEST_SELECT_BASE);
+    let req_rows = client.query(&req_sql, &[&id]).await?; 
+
+    let req_aggregate = rows_to_request_aggregate(req_rows);
+
+    let complete_aggs = get_the_quotes( &client,req_aggregate).await?;
+
+    Ok(complete_aggs.into_iter().next())
+}
+
+/// Persists a new purchase quote and all associated quote detail lines.
+///
+/// The operation is transactional to ensure that:
+/// - the quote header
+/// - all quote detail lines
+///
+/// are either fully persisted or fully rolled back.
+///
+/// After commit, the updated purchase request aggregate is returned.
+pub async fn store_purchase_quote(
+    new_quote: model::NewQuote
+) -> Result< model::PurchaseRequestAggregate, db_config::DbError> {
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await?;
+
+    let row = match  tx.query_one(
+        "INSERT INTO purchase_quotes 
+        (purchase_request_id, created_at, supplier_id, status_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id",
+        &[
+        &new_quote.purchase_request_id,
+        &new_quote.created_at,
+        &new_quote.supplier_id,
+        &new_quote.status_id,
+        ],
+    ).await {
+        Ok(row) => row,
+        Err(e) => {
+            println!("Db Error: {:?}", e);
+            return Err(e.into());
+        }
+    };
+
+    let quote_id: i32 = row.get(0);
+
+    for detail in new_quote.details {
+        tx.execute(
+            "INSERT INTO purchase_quotes_details 
+            (purchase_quote_id, product_id, confirmed_quantity, unit_cost)
+            VALUES ($1, $2, $3, $4)",
+            &[
+            &quote_id,
+            &detail.product_id,
+            &detail.confirmed_quantity,
+            &detail.unit_cost,
+            ],
+        ).await?;
+    }
+    tx.commit().await?;
+    let aggregate = query_purchase_request_by_id(new_quote.purchase_request_id).await?.expect("Should absolutely not be empty, we just inserted something to it without errors");
+    Ok(aggregate)
+}
+
+/// Updates the status and lifecycle dates of a purchase quote.
+///
+/// Date fields are updated conditionally depending on the target status:
+///
+/// - `STATUS_PENDING` updates `date_sent`
+/// - `STATUS_OK` updates `date_received`
+/// - other statuses only update `status_id`
+///
+/// This prevents unrelated lifecycle dates from being overwritten.
+/// "
+/// Returns the updated purchase request aggregate after modification.
+pub async fn patch_purchase_quote(
+    purchase_request_id: i32,
+    dto: update::PatchPurchaseQuoteDto
+) -> Result<model::PurchaseRequestAggregate, db_config::DbError> {
+
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await?;
+
+    // Build the UPDATE query based on target status
+    // so we never overwrite date fields unnecessarily
+    match dto.status_id {
+        s if s == STATUS_PENDING => {
             tx.execute(
-                r#"
-                INSERT INTO purchase_request_details
-                (purchase_request_id, product_id, quantity)
-                VALUES ($1, $2, $3)
-                "#,
-                &[
-                    &purchase_request_id,
-                    &detail.product_id,
-                    &detail.quantity,
-                ],
-            )
-            .await?;
-        }
-
-        tx.commit().await?;
-
-        get_purchase_request_by_id(purchase_request_id)
-            .await?
-            .ok_or(DbError::NotFound)
-    }
-
-    // ---------------- GET PURCHASE REQUEST BY ID ----------------
-
-    pub async fn get_purchase_request_by_id(
-        id: i32,
-    ) -> Result<Option<PurchaseRequestWithDetails>, DbError> {
-        let client = db_config::get_client().await?;
-
-        let sql = format!(
-            r#"
-            {BASE_QUERY}
-            WHERE pr.id = $1
-            ORDER BY pr.id, prd.id
-            "#
-        );
-
-        let rows = client.query(&sql, &[&id]).await?;
-        let data = rows_to_aggregate(rows);
-
-        Ok(data.into_iter().next())
-    }
-
-    // ---------------- LIST PURCHASE REQUESTS ----------------
-    //
-    // GET /purchase-requests
-    // GET /purchase-requests?contains=juan
-    //
-    // Filtra por:
-    // - id de solicitud
-    // - nombre del empleado
-    // - apellido del empleado
-    // - descripción del producto
-    // - código del producto
-
-    pub async fn get_purchase_requests(
-        contains: Option<String>,
-    ) -> Result<Vec<PurchaseRequestWithDetails>, DbError> {
-        let client = db_config::get_client().await?;
-
-        let mut sql = BASE_QUERY.to_string();
-        let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
-
-        let mut pattern = String::new();
-
-        if let Some(value) = contains {
-            pattern = format!("%{}%", value);
-
-            sql.push_str(
-                r#"
-                WHERE (
-                    pr.id::text ILIKE $1
-                    OR e.name ILIKE $1
-                    OR e.surname ILIKE $1
-                    OR EXISTS (
-                        SELECT 1
-                        FROM purchase_request_details prd2
-                        JOIN products p2 ON prd2.product_id = p2.id
-                        WHERE prd2.purchase_request_id = pr.id
-                        AND (
-                            p2.description ILIKE $1
-                            OR p2.code ILIKE $1
-                            OR p2.id::text ILIKE $1
-                        )
-                    )
+                    "UPDATE purchase_quotes
+                     SET status_id = $1, 
+                     date_sent = COALESCE(date_sent, $2)
+                     WHERE id = $3
+                     AND purchase_request_id = $4",
+                     &[&dto.status_id, &dto.date_sent, &dto.quote_id, &purchase_request_id],
                 )
-                "#,
-            );
-
-            params.push(&pattern);
+                .await?
         }
-
-        sql.push_str(" ORDER BY pr.id DESC, prd.id");
-
-        let rows = client.query(&sql, &params).await?;
-
-        Ok(rows_to_aggregate(rows))
-    }
-
-    // ---------------- SEARCH PRODUCTS ----------------
-    //
-    // GET /purchase-request-products
-    // GET /purchase-request-products?contains=mouse
-    //
-    // Esta función sirve para buscar productos al crear una solicitud de compra.
-
-    pub async fn search_products(
-        contains: Option<String>,
-    ) -> Result<Vec<ProductSearch>, DbError> {
-        let client = db_config::get_client().await?;
-
-        let mut sql = String::from(
-            r#"
-            SELECT
-                p.id,
-                p.description,
-                p.code
-            FROM products p
-            "#,
-        );
-
-        let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
-        let mut pattern = String::new();
-
-        if let Some(value) = contains {
-            pattern = format!("%{}%", value);
-
-            sql.push_str(
-                r#"
-                WHERE (
-                    p.description ILIKE $1
-                    OR p.code ILIKE $1
-                    OR p.id::text ILIKE $1
+        s if s == STATUS_OK => {
+            tx.execute(
+                    "UPDATE purchase_quotes
+                     SET status_id = $1, 
+                     date_received = COALESCE(date_received, $2)
+                     WHERE id = $3
+                     AND purchase_request_id = $4",
+                     &[&dto.status_id, &dto.date_received, &dto.quote_id, &purchase_request_id],
                 )
-                "#,
-            );
+                .await?
+        }
+        _ => {
+            tx.execute(
+                    "UPDATE purchase_quotes
+                     SET status_id = $1
+                     WHERE id = $2
+                     AND purchase_request_id = $3",
+                     &[&dto.status_id, &dto.quote_id, &purchase_request_id],
+                )
+                .await?
+        }
+    };
 
-            params.push(&pattern);
+    if let Some(details) = dto.details {
+        let sql = String::from("UPDATE purchase_quotes_details
+        SET confirmed_quantity = $1, unit_cost = $2
+        WHERE product_id = $3 AND purchase_quote_id = $4 
+        ");
+
+        for d in details {
+            tx.execute(
+                &sql,
+                &[&d.confirmed_quantity, &d.unit_cost, &d.product_id, &dto.quote_id]
+            ).await?;
         }
 
-        sql.push_str(" ORDER BY p.description ASC");
-
-        let rows = client.query(&sql, &params).await?;
-
-        Ok(rows
-            .into_iter()
-            .map(|row| ProductSearch {
-                id: row.get("id"),
-                description: row.get("description"),
-                code: row.get("code"),
-            })
-            .collect())
     }
 
-    // ---------------- ROW AGGREGATION HELPER ----------------
+    tx.commit().await?;
 
-    fn rows_to_aggregate(rows: Vec<Row>) -> Vec<PurchaseRequestWithDetails> {
-        let mut map: BTreeMap<i32, PurchaseRequestWithDetails> = BTreeMap::new();
+    let Some(agg) =
+        query_purchase_request_by_id(purchase_request_id).await?
+    else {
+        return Err(DbError::InvariantViolation("Purchase request disappeared after successfull update".to_string()));
+    };
 
-        for row in rows {
-            let purchase_request_id: i32 = row.get("purchase_request_id");
+    Ok(agg)
+}
 
-            let entry = map
-                .entry(purchase_request_id)
-                .or_insert_with(|| PurchaseRequestWithDetails {
-                    purchase_request: PurchaseRequest {
-                        id: purchase_request_id,
-                        created_at: row.get("purchase_request_created_at"),
-                        employee_id: row.get("purchase_request_employee_id"),
-                    },
-
-                    employee: PurchaseRequestEmployee {
-                        id: row.get("employee_id"),
-                        name: row.get("employee_name"),
-                        surname: row.get("employee_surname"),
-                    },
-
-                    details: vec![],
-                });
-
-            let detail_id: Option<i32> = row.get("detail_id");
-
-            if let Some(detail_id) = detail_id {
-                entry.details.push(PurchaseRequestDetail {
-                    id: detail_id,
-                    purchase_request_id,
-                    quantity: row.get("detail_quantity"),
-
-                    product: PurchaseRequestProduct {
-                        id: row.get("product_id"),
-                        description: row.get("product_description"),
-                        code: row.get("product_code"),
-                    },
-                });
-            }
-        }
-
-        map.into_values().collect()
-    }
