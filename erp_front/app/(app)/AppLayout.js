@@ -181,7 +181,7 @@ export default function AppLayout({
           },
           {
             label: "Notas de Credito",
-            href: "/purchases/credit-notes",
+            href: "/purchases/supplier-credit-notes",
             permissionPrefix: "purchases",
           },
         ],
