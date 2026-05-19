@@ -25,6 +25,7 @@ mod modules {
     pub mod credit_notes;
     pub mod purchase_request;
     pub mod purchase_order;
+    pub mod purchases_credit_note;
     pub mod return_notes;
     pub mod purchase_invoice;
     pub mod purchase_payment_order;
@@ -117,6 +118,7 @@ async fn main() {
         .merge(modules::purchase_order::router::purchase_order_router())
         .merge(modules::purchase_request::router::purchase_request_router())
         .merge(modules::return_notes::router::routes())
+        .merge(modules::purchases_credit_note::router::purchase_credit_note_router())
         .merge(modules::purchase_invoice::router::purchase_invoice_router())
         .merge(modules::purchase_payment_order::router::purchase_payment_order_router())
         .merge(modules::supplier::router::supplier_router())
