@@ -124,6 +124,7 @@ fn map_quote_detail(detail: model::QuoteDetail) -> response::PurchaseQuoteDetail
         product_id: detail.product.id,
         confirmed_quantity: detail.confirmed_quantity,
         unit_cost: detail.unit_cost,
+        enabled: detail.enabled,
     }
 }
 

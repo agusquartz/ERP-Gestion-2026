@@ -91,6 +91,7 @@ pub struct PurchaseQuoteDetailResponse {
     pub product_id: i32,
     pub confirmed_quantity: i32,
     pub unit_cost: Decimal,
+    pub enabled: bool,
 }
 
 /// Converts a purchase request aggregate model into its API response representation.

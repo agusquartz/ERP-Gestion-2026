@@ -1,4 +1,5 @@
 use crate::db_config::DbError;
+use rust_decimal::Decimal;
 use crate::modules::user::{
     model::User,
     service::get_user_by_name,
@@ -184,7 +185,31 @@ pub async fn patch_purchase_quote(
         );
     }
 
-    //Probably should also check that the dates are in good order
+    //If they're updating details...
+    if let Some(details) = &dto.details {
+        for detail in details {
+            //check that they aren't trying to modify a foreign product
+            if !quote.details.iter().any(|d| d.product.id == detail.product_id) {
+                return Err(
+                    errors::ServiceError::Validation(
+                        errors::ValidationError {
+                            context: format!("Details contain unknown product")
+                        }
+                    )
+                );
+            };
+            //Or that there are no negative values
+            if detail.confirmed_quantity < 0 || (detail.unit_cost < Decimal::ZERO) {
+                return Err(
+                    errors::ServiceError::Validation(
+                        errors::ValidationError {
+                            context: format!("Neither confirmed quantity nor the unit cost can be negative")
+                        }
+                    )
+                );
+            }
+        }
+    }
     let aggregate = repository::patch_purchase_quote(purchase_request_id, dto).await?;
     Ok(mapper::map_purchase_request(aggregate))
 }

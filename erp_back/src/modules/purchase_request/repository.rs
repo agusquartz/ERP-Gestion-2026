@@ -61,7 +61,8 @@ p.description AS product_description,
 p.category_id AS product_category_id,
 cat.name AS product_category_name,
 pqd.confirmed_quantity AS confirmed_quantity,
-pqd.unit_cost AS unit_cost
+pqd.unit_cost AS unit_cost,
+pqd.enabled AS enabled
 FROM purchase_quotes AS pq
 INNER JOIN suppliers AS s ON pq.supplier_id = s.id
 INNER JOIN statuses AS st ON pq.status_id = st.id
@@ -207,6 +208,7 @@ fn rows_to_quotes_aggregate(rows: Vec<Row>) -> Vec<model::Quote>{
             },
             confirmed_quantity: row.get("confirmed_quantity"),
             unit_cost: row.get("unit_cost"),
+            enabled: row.get("enabled"),
         };
         entry.details.push(detail);
     }
@@ -349,55 +351,67 @@ pub async fn patch_purchase_quote(
     dto: update::PatchPurchaseQuoteDto
 ) -> Result<model::PurchaseRequestAggregate, db_config::DbError> {
 
-    let client = db_config::get_client().await?;
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await?;
 
     // Build the UPDATE query based on target status
     // so we never overwrite date fields unnecessarily
     match dto.status_id {
         s if s == STATUS_PENDING => {
-            client
-                .query_one(
+            tx.execute(
                     "UPDATE purchase_quotes
                      SET status_id = $1, date_sent = $2
                      WHERE id = $3
-                     AND purchase_request_id = $4
-                     RETURNING id, status_id, date_sent, date_received",
+                     AND purchase_request_id = $4",
                      &[&dto.status_id, &dto.date_sent, &dto.quote_id, &purchase_request_id],
                 )
                 .await?
         }
         s if s == STATUS_OK => {
-            client
-                .query_one(
+            tx.execute(
                     "UPDATE purchase_quotes
                      SET status_id = $1, date_received = $2
                      WHERE id = $3
-                     AND purchase_request_id = $4
-                     RETURNING id, status_id, date_sent, date_received",
+                     AND purchase_request_id = $4",
                      &[&dto.status_id, &dto.date_received, &dto.quote_id, &purchase_request_id],
                 )
                 .await?
         }
         _ => {
-            client
-                .query_one(
+            tx.execute(
                     "UPDATE purchase_quotes
                      SET status_id = $1
                      WHERE id = $2
-                     AND purchase_request_id = $3
-                     RETURNING id, status_id, date_sent, date_received",
+                     AND purchase_request_id = $3",
                      &[&dto.status_id, &dto.quote_id, &purchase_request_id],
                 )
                 .await?
         }
     };
 
+    if let Some(details) = dto.details {
+        let sql = String::from("UPDATE purchase_quotes_details
+        SET confirmed_quantity = $1, unit_cost = $2
+        WHERE product_id = $3 AND purchase_quote_id = $4 
+        ");
+
+        for d in details {
+            tx.execute(
+                &sql,
+                &[&d.confirmed_quantity, &d.unit_cost, &d.product_id, &dto.quote_id]
+            ).await?;
+        }
+
+    }
+
+    tx.commit().await?;
+
     let Some(agg) =
         query_purchase_request_by_id(purchase_request_id).await?
-        else {
-            return Err(DbError::InvariantViolation("We aren't getting back an entity we just poked".to_string()));
-        };
+    else {
+        return Err(DbError::InvariantViolation("Purchase request disappeared after successfull update".to_string()));
+    };
 
-        Ok(agg)
+    Ok(agg)
 }
 

@@ -77,6 +77,7 @@ pub struct QuoteDetail {
     pub product: LineProduct,
     pub confirmed_quantity: i32,
     pub unit_cost: Decimal,
+    pub enabled: bool,
 }
  
 /// Domain model used to create a new purchase quote.
