@@ -14,6 +14,8 @@ pub struct SupplierResponse {
     pub id: i32,
     /// Human-readable name of the supplier.
     pub name: String,
+
+    pub stamp: String,
 }
 
 /// Response DTO representing the status of a purchase order.

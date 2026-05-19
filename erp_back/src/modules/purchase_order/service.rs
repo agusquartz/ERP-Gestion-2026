@@ -127,6 +127,18 @@ pub async fn patch_purchase_order(
     id: i32,
     patch: PatchPurchaseOrderDto,
 ) -> Result<Option<PurchaseOrderResponse>, errors::ServiceError> {
+    //Validate theyre sending a valid status 
+    if let Some(status_id) = patch.status_id {
+        if status_id == 1 || status_id == 2 {
+            return Err(
+                errors::ServiceError::Validation(
+                    errors::ValidationError{ 
+                        context: String::from("Not a valid status id!")
+                    }
+                )
+            );
+        }
+    }
     let order = repository::patch_purchase_order(id, &patch).await?;
     Ok(order.map(PurchaseOrderResponse::from))
 }

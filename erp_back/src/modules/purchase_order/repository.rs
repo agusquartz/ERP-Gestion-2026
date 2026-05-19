@@ -35,6 +35,7 @@ po.purchase_request_id AS purchase_request_id,
 po.created_at AS created_at,
 s.id AS supplier_id,
 s.name AS supplier_name,
+s.stamp AS supplier_stamp,
 st.id AS status_id,
 st.status AS status_name,
 p.id AS product_id,
@@ -132,6 +133,7 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<order_model::PurchaseOrderAggregate>
         let supplier = order_model::Supplier {
             id: row.get("supplier_id"),
             name: row.get("supplier_name"),
+            stamp: row.get("supplier_stamp"),
         };
 
         let status = order_model::Status {
