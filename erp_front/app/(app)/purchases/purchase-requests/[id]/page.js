@@ -1,7 +1,7 @@
-import PurchaseRequestsPage from "@/modules/purchases/purchase-requests/id/pages/PurchaseRequestsPage";
+import PurchaseRequestPage from "@/modules/purchases/purchase-requests/id/pages/PurchaseRequestPage";
 import { use } from "react";
 
 export default function Page({ params }) {
   const { id } = use(params);
-  return <PurchaseRequestsPage orderId={id} />;
+  return <PurchaseRequestPage orderId={id} />;
 }
