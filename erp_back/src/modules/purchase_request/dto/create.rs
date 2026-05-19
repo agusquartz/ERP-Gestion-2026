@@ -11,7 +11,13 @@ pub struct CreatePurchaseQuoteDto {
     pub purchase_request_id: i32,
     pub supplier_id: i32,
     pub created_at: NaiveDate,
-    pub details: Vec<QuoteDetailLine>
+    pub details: Vec<CreateQuoteLineDto>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateQuoteLineDto {
+    pub product_id: i32,
 }
 
 

@@ -344,7 +344,7 @@ pub async fn store_purchase_quote(
 /// - other statuses only update `status_id`
 ///
 /// This prevents unrelated lifecycle dates from being overwritten.
-///
+/// "
 /// Returns the updated purchase request aggregate after modification.
 pub async fn patch_purchase_quote(
     purchase_request_id: i32,
@@ -360,7 +360,8 @@ pub async fn patch_purchase_quote(
         s if s == STATUS_PENDING => {
             tx.execute(
                     "UPDATE purchase_quotes
-                     SET status_id = $1, date_sent = $2
+                     SET status_id = $1, 
+                     date_sent = COALESCE(date_sent, $2)
                      WHERE id = $3
                      AND purchase_request_id = $4",
                      &[&dto.status_id, &dto.date_sent, &dto.quote_id, &purchase_request_id],
@@ -370,7 +371,8 @@ pub async fn patch_purchase_quote(
         s if s == STATUS_OK => {
             tx.execute(
                     "UPDATE purchase_quotes
-                     SET status_id = $1, date_received = $2
+                     SET status_id = $1, 
+                     date_received = COALESCE(date_received, $2)
                      WHERE id = $3
                      AND purchase_request_id = $4",
                      &[&dto.status_id, &dto.date_received, &dto.quote_id, &purchase_request_id],

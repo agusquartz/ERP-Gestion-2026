@@ -1,3 +1,4 @@
+use rust_decimal::Decimal;
 use crate::modules::purchase_request::{
     dto::{
         response,
@@ -49,11 +50,12 @@ pub fn map_create_quote(dto: create::CreatePurchaseQuoteDto, initial_status: i32
 }
 
 /// Maps a quote detail DTO into a domain model line.
-pub fn map_create_quote_lines(detail: create::QuoteDetailLine) -> model::NewQuoteDetail {
+pub fn map_create_quote_lines(detail: create::CreateQuoteLineDto) -> model::NewQuoteDetail {
     model::NewQuoteDetail {
         product_id: detail.product_id,
-        confirmed_quantity: detail.confirmed_quantity,
-        unit_cost: detail.unit_cost,
+        //Both these fields go with zero on creation
+        confirmed_quantity: 0,
+        unit_cost: Decimal::ZERO,
     }
 }
 
