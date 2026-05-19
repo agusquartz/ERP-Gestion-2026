@@ -5,7 +5,7 @@ import React from "react";
 // Three tabs: Productos, Pagos de la Factura, Notas de Devolución.
 const TABS = [
   { key: "products", label: "Productos" },
-  { key: "payments", label: "Pagos de la Factura" },
+  { key: "payments", label: "Pagos" },
   { key: "returnNotes", label: "Notas de Devolución" },
 ];
 
