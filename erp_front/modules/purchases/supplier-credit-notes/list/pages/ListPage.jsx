@@ -5,6 +5,7 @@ import { CreditNoteSearch } from "../components/CreditNoteSearch";
 import { CreditNoteTable } from "../components/CreditNoteTable";
 import { s } from "../../../purchase-requests/new/styles/NewPurchasesStyles"
 import { useRouter } from "next/navigation";
+import { Pagination } from "../../../purchase-invoices/list/components/Pagination";
 
 // 1. IMPORTAS LA FUNCIÓN DESDE TU CAPA DE SERVICIOS
 import { listSupplierCreditNotes, getSupplierCreditNoteById } from "@/lib/http/client/supplier-credit-notes";

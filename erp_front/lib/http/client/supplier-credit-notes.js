@@ -34,3 +34,11 @@ export function getSupplierCreditNoteById(id) {
   });
 }
 
+export function createSupplierCreditNote(payload) {
+  if (!payload) throw new Error("Credit note body payload is required");
+
+  return clientRequest("/purchases/supplier-credit-notes", {
+    method: "POST",
+    body: payload, // Si clientRequest se encarga de stringificarlo internamente
+  });
+}

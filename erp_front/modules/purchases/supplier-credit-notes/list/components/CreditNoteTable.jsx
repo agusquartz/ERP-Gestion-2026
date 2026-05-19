@@ -19,7 +19,7 @@ export function CreditNoteTable({ creditNotes = [], onSelect, onView }) {
               {headers.map((h, idx) => (
                 <th
                   key={h}
-                  className={`sticky top-0 border-b border-slate-100 bg-[#DBE3EE] px-4 py-1 text-[13px] font-bold text-black ${
+                  className={`sticky top-0 border-b border-slate-100 bg-[#DBE3EE] px-4 py-1 text-[13px] font-bold text-[#374151] ${
                     idx === headers.length - 1 ? "text-center w-24" : "text-left"
                   } ${
                     // 2. Redondeamos la esquina superior izquierda del primer th
