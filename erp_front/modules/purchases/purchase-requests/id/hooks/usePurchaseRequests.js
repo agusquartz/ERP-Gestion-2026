@@ -3,418 +3,655 @@
  * @module modules/purchases/purchase-requests/id/hooks
  *
  * @description
- * Custom hook that centralizes all state and business logic for the
- * Purchase Order page. Components only receive handlers from here —
- * they never manage state or call services directly.
+ * Centraliza el estado y la lógica de negocio de la vista de Purchase Requests.
  *
  * Responsibilities:
- *  - Fetching purchase order data (header, items, suppliers) on mount.
- *  - Deriving the categories summary table from order items.
- *  - Managing QuotationModal and SupplierSearchModal open/close state.
- *  - Handling quotation save and supplier status transitions.
- *  - Tracking whether "Generar Todos" has been fired, so SuppliersTable
- *    can swap the button label to "Imprimir Todos". The label resets to
- *    "Generar Todos" whenever a new supplier is added.
- *
- * @param {string} orderId - The ID of the purchase order to load.
- *
- * @returns {Object} All state and handlers consumed by PurchaseOrderPage and its children.
+ * - Cargar el purchase request completo.
+ * - Derivar items, categorías y proveedores/cotizaciones.
+ * - Abrir/cerrar modal de cotización.
+ * - Abrir/cerrar modal de búsqueda de proveedores.
+ * - Generar cotizaciones nuevas (POST).
+ * - Guardar cambios de cotización (PATCH).
+ * - Imprimir una cotización o todas.
+ * - Mantener soporte para estados:
+ *   CREATED(1) -> proveedor agregado pero sin cotización aún
+ *   UNSENT(2)  -> cotización generada pero todavía no enviada
+ *   PENDING(3)  -> enviada / en proceso
+ *   OK(4)       -> completa
+ *   CANCELLED(5)-> cancelada
  */
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import {
-  getPurchaseOrder,
-  saveQuotation,
-  printAllQuotations,
-  addSuppliers,
-  updateQuotationStatus,
-} from "../services/purchaseRequestsService";
+  getPurchaseRequest,
+  createPurchaseQuote,
+  patchPurchaseQuote,
+} from "@/lib/http/client/purchase-request";
 
+import { getSuppliers } from "@/lib/http/client/supplier";
 
-// ─── Status IDs — must match the `statuses` table in the DB ──────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Status IDs
+// ─────────────────────────────────────────────────────────────────────────────
 //
-//  id | status
-//  ---+---------
-//   1 | created   ← supplier just added, no action yet
-//   2 | unsent    ← "Generar" clicked, quote sent but no response yet
-//   3 | pending   ← saved with incomplete fields
-//   4 | reading   ← all fields filled and saved (read-only)
+// 1 = created   -> local only, no quote generated yet
+// 2 = unsent    -> quote generated, not sent yet
+// 3 = pending   -> sent, still incomplete
+// 4 = ok        -> complete
+// 5 = cancelled -> no items active
 //
-// Exported so SuppliersTable can import and use them directly
-// without duplicating magic numbers.
 export const STATUS = {
-  CREATED:   1,
-  UNSENT:    2,
-  PENDING:   3,
-  READY:     4,
+  CREATED: 1,
+  UNSENT: 2,
+  PENDING: 3,
+  OK: 4,
   CANCELLED: 5,
 };
 
-export function usePurchaseOrder(orderId) {
-  // ── Remote data ─────────────────────────────────────────────────────────────
-  const [purchaseOrder, setPurchaseOrder] = useState(null);
-  const [orderItems, setOrderItems]       = useState([]);
-  const [suppliers, setSuppliers]         = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState(null);
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // ── Modal visibility ────────────────────────────────────────────────────────
-  /** The supplier whose QuotationModal is currently open. null = modal closed. */
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isFinalStatus(statusId) {
+  return statusId === STATUS.OK || statusId === STATUS.CANCELLED;
+}
+
+function normalizeCategoryNames(categories = []) {
+  return categories
+    .map((cat) => {
+      if (typeof cat === "string") return cat;
+      return cat?.name ?? cat?.category ?? cat?.label ?? "";
+    })
+    .filter(Boolean);
+}
+
+function isSupplierInCategory(itemCategoryName, supplierCategories = []) {
+  const normalized = normalizeCategoryNames(supplierCategories);
+  return normalized.includes(itemCategoryName);
+}
+
+function buildRowsForSupplier(orderItems = [], supplier = {}) {
+  const supplierCategories = normalizeCategoryNames(supplier.categories);
+
+  const itemsForSupplier =
+    supplierCategories.length > 0
+      ? orderItems.filter((item) =>
+          isSupplierInCategory(item.category, supplierCategories)
+        )
+      : orderItems;
+
+  return itemsForSupplier.map((item) => {
+    const existing = supplier.quotationItems?.find(
+      (qi) => qi.productId === item.productId
+    );
+
+    return {
+      orderItemId: item.id,
+      productId: item.productId,
+      confirmedQty: existing?.confirmedQty ?? 0,
+      unitPrice: existing?.unitPrice ?? 0,
+      // true = descartado / desmarcado en el UI
+      excluded: existing?.excluded ?? false,
+    };
+  });
+}
+
+function buildCategoriesFromQuoteDetails(quoteDetails = [], orderItems = []) {
+  const productIds = quoteDetails.map((d) => d.productId);
+  const categoryNames = orderItems
+    .filter((item) => productIds.includes(item.productId))
+    .map((item) => item.category);
+
+  return [...new Set(categoryNames)];
+}
+
+function shouldBeOk(rows = []) {
+  const activeRows = rows.filter((row) => !row.excluded);
+
+  if (activeRows.length === 0) return false;
+
+  return activeRows.every(
+    (row) =>
+      Number(row.confirmedQty) > 0 && Number(row.unitPrice) > 0
+  );
+}
+
+function buildNextStatus(currentStatus, rows = []) {
+  const activeRows = rows.filter((row) => !row.excluded);
+
+  if (activeRows.length === 0) {
+    return STATUS.CANCELLED;
+  }
+
+  if (currentStatus === STATUS.UNSENT) {
+    return shouldBeOk(rows) ? STATUS.PENDING : STATUS.UNSENT;
+  }
+
+  if (currentStatus === STATUS.PENDING) {
+    return shouldBeOk(rows) ? STATUS.OK : STATUS.PENDING;
+  }
+
+  return currentStatus;
+}
+
+function mapLoadedQuoteToSupplier(quote, orderItems = []) {
+  return {
+    id: quote.id, // quote id
+    supplierId: quote.supplier.id,
+    name: quote.supplier.name,
+    stamp: quote.supplier.stamp ?? "",
+    statusId: quote.status.id,
+    statusName: quote.status.name,
+    createdAt: quote.createdAt,
+    dateSent: quote.dateSent,
+    dateReceived: quote.dateReceived,
+    categories: buildCategoriesFromQuoteDetails(quote.details ?? [], orderItems),
+    quotationItems: (quote.details ?? []).map((detail) => ({
+      productId: detail.productId,
+      confirmedQty: detail.confirmedQuantity,
+      unitPrice: detail.unitCost,
+      // OJO:
+      // backend: enabled=true cuando el item fue marcado/descartado según tu flujo
+      excluded: Boolean(detail.enabled),
+    })),
+  };
+}
+
+function mapGeneratedQuoteToSupplier(quote, supplier, orderItems = []) {
+  return {
+    id: quote.id, // quote id
+    supplierId: supplier.supplierId,
+    name: supplier.name,
+    stamp: supplier.stamp ?? "",
+    statusId: quote.status.id,
+    statusName: quote.status.name,
+    createdAt: quote.createdAt,
+    dateSent: quote.dateSent ?? null,
+    dateReceived: quote.dateReceived ?? null,
+    categories: normalizeCategoryNames(supplier.categories),
+    quotationItems: buildRowsForSupplier(orderItems, supplier),
+  };
+}
+
+function mapSelectedSupplierToLocalRow(supplier) {
+  return {
+    id: null, // todavía no hay quote
+    supplierId: supplier.id,
+    name: supplier.name,
+    stamp: supplier.stamp ?? "",
+    statusId: STATUS.CREATED,
+    statusName: "",
+    createdAt: null,
+    dateSent: null,
+    dateReceived: null,
+    categories: normalizeCategoryNames(supplier.categories),
+    quotationItems: [],
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function usePurchaseRequests(id) {
+  // ── Remote data ────────────────────────────────────────────────────────────
+  const [purchaseRequest, setPurchaseRequest] = useState(null);
+  const [orderItems, setOrderItems] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // ── Modals ─────────────────────────────────────────────────────────────────
   const [activeSupplier, setActiveSupplier] = useState(null);
-
-  /** Whether the SupplierSearchModal is visible. */
   const [isSupplierSearchOpen, setIsSupplierSearchOpen] = useState(false);
 
-  // ── "Generar Todos" / "Imprimir Todos" toggle ────────────────────────────────
-  /**
-   * Derived from suppliers — no manual state needed.
-   * true  → all active (non-cancelled) suppliers are past CREATED → show "Imprimir Todos"
-   * false → at least one active supplier is still in CREATED      → show "Generar Todos"
-   *
-   * Recalculates automatically whenever suppliers changes, so adding a new supplier
-   * or saving a quotation always reflects the correct label without extra setAllGenerated calls.
-   */
-  const allGenerated = useMemo(() => {
-    const active = suppliers.filter((s) => s.statusId !== STATUS.CANCELLED);
-    return active.length > 0 && active.every((s) => s.statusId !== STATUS.CREATED);
-  }, [suppliers]);
-
-
-  // ── Data fetching ───────────────────────────────────────────────────────────
+  // ── Data fetching ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!orderId) return;
-    
-    /**
-     * Loads all purchase order data in parallel.
-     * Falls back to an error state if any request fails.
-     */
+    if (!id) return;
+
     async function fetchAll() {
-      setLoading(true);
-      setError(null);
       try {
-        const order = await getPurchaseOrder(orderId);
-        
-        setPurchaseOrder({
-            id:         order.id,
-            createdAt:  order.created_at,
-            requester:  order.employee_name,
+        setLoading(true);
+        setError(null);
+
+        const data = await getPurchaseRequest(id);
+        console.log("PURCHASE REQUEST RESPONSE");
+        console.log(data);
+
+        setPurchaseRequest({
+          id: data.id,
+          createdAt: data.createdAt,
+          requester: `${data.employee?.name ?? ""} ${data.employee?.surname ?? ""}`.trim(),
         });
-        
-        // Map items to fronted shape
-        setOrderItems(
-          (order.items ?? []).map((item) => ({
-            id:         item.id,
-            productId:  item.product_id,
-            code:       item.product_code,
-            product:    item.product_name,
-            category:   item.category,
-            quantity:   item.quantity,
-          }))
+
+        const mappedItems = (data.details ?? []).map((detail, index) => ({
+          id: detail.id ?? index + 1,
+          productId: detail.product.id,
+          code: detail.product.code,
+          product: detail.product.description,
+          category: detail.product.category.name,
+          categoryId: detail.product.category.id,
+          quantity: detail.quantity,
+        }));
+
+        setOrderItems(mappedItems);
+
+        const mappedSuppliers = (data.quotes ?? []).map((quote) =>
+          mapLoadedQuoteToSupplier(quote, mappedItems)
         );
 
-         // Mapear quotes → suppliers al formato del front
-         // quotationItems preserves excluded state when re-opening the modal
-        const mappedSuppliers = (order.quotes ?? []).map((q) => ({
-          id:           q.id,                  // quote_id - used for PATCH and POST /details
-          supplierId:   q.supplier_id,
-          name:         q.supplier_name,
-          statusId:     q.status_id, // "unsent" → "generar", etc.
-          categories:   q.categories,
-          quotationItems: (q.details ?? []).map((d) => ({
-            productId:      d.product_id,
-            confirmedQty:   d.confirmed_quantity,
-            unitPrice:      d.unit_cost,
-            excluded: false,
-          })),
-        }));
-        
         setSuppliers(mappedSuppliers);
-        
-
-
       } catch (err) {
-        console.error("Error loading purchase order:", err);
-        setError("No se pudo cargar el pedido de compra.");
+  console.error("ERROR fetchAll:", err);
+  console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
+  setError(err?.response?.data ?? err?.message ?? String(err));
       } finally {
         setLoading(false);
       }
     }
 
     fetchAll();
-  }, [orderId]);
-  
-  // ── Derived: categories summary ──────────────────────────────────────────────
-  /**
-   * Builds the category summary rows shown in CategoriesTable.
-   * Derived from orderItems so it always stays in sync without an extra API call.
-   *
-   * Each row: { category: string, productCount: number, assignedSuppliers: number }
-   *
-   * TODO: Replace `assignedSuppliers` with a per-category count once the backend
-   *       provides that breakdown. Currently it counts all non-"generar" suppliers
-   *       across the whole order, which is an approximation.
-   */
+  }, [id]);
+
+  // ── Derived: categories summary ────────────────────────────────────────────
   const categories = useMemo(() => {
     const map = {};
-    orderItems.forEach((item) => {
-      if (!map[item.category]) {
-        map[item.category] = { category: item.category, productCount: 0 };
-      }
-      map[item.category].productCount++;
-    });
-      
-    return Object.values(map).map((cat) => ({
-      ...cat,
-      // Count suppliers tht are past "created" and handle this category
-      assignedSuppliers: suppliers.filter((s) => {
-        if (s.statusId === STATUS.CREATED) return false;
-        
-        if (!s.quotationItems || s.quotationItems.length === 0) {
-          return s.categories?.some((c) => c === cat.category) ?? false;
-        }
-        
-        const itemIdsForCategory = orderItems
-          .filter((item) => item.category === cat.category)
-          .map((item) => item.productId);
 
-        return s.quotationItems.some(
-        (qi) =>  !qi.excluded && itemIdsForCategory.includes(qi.productId)
-        );
+    orderItems.forEach((item) => {
+      if (!map[item.categoryId]) {
+        map[item.categoryId] = {
+          id: item.categoryId,
+          name: item.category,
+          productCount: 0,
+          assignedSuppliers: 0,
+        };
+      }
+
+      map[item.categoryId].productCount += 1;
+    });
+
+    return Object.values(map).map((cat) => ({
+      category: cat.name,
+      categoryId: cat.id,
+      productCount: cat.productCount,
+      assignedSuppliers: suppliers.filter((supplier) => {
+        // Si aún no fue generado, no cuenta.
+        if (supplier.statusId === STATUS.CREATED) return false;
+
+        const supplierCategoryNames = normalizeCategoryNames(supplier.categories);
+
+        if (supplierCategoryNames.length === 0) {
+          return false;
+        }
+
+        return supplierCategoryNames.includes(cat.name);
       }).length,
     }));
   }, [orderItems, suppliers]);
-    
-  /**
-   * Flat list of unique category name strings.
-   * Passed to SupplierSearchModal and the service layer for backend filtering.
-   */
+
   const categoryNames = useMemo(
     () => [...new Set(orderItems.map((i) => i.category))],
     [orderItems]
   );
 
+  const categoryIds = useMemo(
+    () => [...new Set(orderItems.map((i) => i.categoryId))],
+    [orderItems]
+  );
 
-  // ── Quotation modal handlers ─────────────────────────────────────────────────
-  /**
-  * Opens QuotationModal for a supplier
-  * If status is CREATED, transitions to UNSENT first (marks quote as "generated")
-  */
-  
+  // ── Derived: all generated / printable ────────────────────────────────────
+  const allGenerated = useMemo(() => {
+    const active = suppliers.filter((s) => s.statusId !== STATUS.CANCELLED);
+    return active.length > 0 && active.every((s) => s.statusId !== STATUS.CREATED);
+  }, [suppliers]);
+
+  const hasPrintableSuppliers = useMemo(() => {
+    return suppliers.some(
+      (s) => s.statusId === STATUS.UNSENT || s.statusId === STATUS.PENDING
+    );
+  }, [suppliers]);
+
+  // ── Quotation modal handlers ───────────────────────────────────────────────
   const handleOpenQuotation = async (supplier) => {
-    if (supplier.statusId === STATUS.CREATED) {
-      try {
-        await updateQuotationStatus(supplier.id, STATUS.UNSENT);
-        const updated = { ...supplier, statusId: STATUS.UNSENT};
-        setSuppliers((prev) =>
-          prev.map((s) => (s.id === supplier.id ? updated : s))
-        );
-        setActiveSupplier(updated);
-      } catch (err) {
-        console.error("Error transition to unsent:", err);
-        // Open anyway with original status so the user isn't blocked
-        setActiveSupplier(supplier);
-      }
-    } else {
-      setActiveSupplier(supplier);
+    if (!supplier) return;
+
+    // Si todavía no tiene quote, lo generamos primero y luego abrimos modal.
+    if (supplier.statusId === STATUS.CREATED || supplier.id == null) {
+      await handleGenerateQuotation(supplier);
+      return;
     }
+
+    setActiveSupplier(supplier);
   };
-  
-  /** Closes QuotationModal without saving. */
+
   const handleCloseQuotation = () => setActiveSupplier(null);
-  
+
   /**
-   * Saves a supplier's quotation.
-   *
-   * allRows includes BOTH active and excluded rows so that:
-   *   - Excluded checkboxes persist when re-opening the modal
-   *   - Partially filled values persist when re-opening the modal
-   *
-   * Only activeRows (non-excluded) are sent to the backend.
-   *
-   * Status transitions:
-   *   UNSENT  → PENDING  if any active row is missing qty or price
-   *   UNSENT  → READY    if all active rows are fully filled
-   *   PENDING → READY    if remaining fields are now complete
-   *
-   * @param {number}  quoteId    - The quote (supplier row) being saved
-   * @param {Array}   allRows    - All rows including excluded ones (for UI persistence)
-   * @param {boolean} isComplete - True if all active rows have qty > 0 and price > 0
+   * Genera una cotización nueva para un proveedor que todavía no tiene quote.
+   * Hace POST y deja el estado en UNSENT.
    */
-  const handleSaveQuotation = async (quoteId, allRows, isComplete) => {
+  const handleGenerateQuotation = async (supplier) => {
     try {
-      // Only send non-excluded rows to the backend
-      const activeRows = allRows.filter((r) => !r.excluded);
-    
-      if (activeRows.length === 0) {
-        await updateQuotationStatus(quoteId, STATUS.CANCELLED);
-        
-        setSuppliers((prev) =>
-          prev.map((s) =>
-            s.id === quoteId
-              ? {
-                ...s,
-                statusId: STATUS.CANCELLED,
-                quotationItems: allRows,
-              }
-              : s
-          )
-        );
+      if (!supplier) return;
+
+      // Si ya existe la cotización, solo abrir.
+      if (supplier.id != null && supplier.statusId !== STATUS.CREATED) {
+        setActiveSupplier(supplier);
         return;
       }
 
-      const supplier        = suppliers.find((s) => s.id === quoteId);
-      const currentStatus   = supplier?.statusId;
+      const payload = {
+        purchaseRequestId: Number(id),
+        supplierId: supplier.supplierId,
+        createdAt: todayISO(),
+        details: orderItems
+          .filter((item) =>
+            isSupplierInCategory(item.category, supplier.categories)
+          )
+          .map((item) => ({
+            productId: item.productId,
+          })),
+      };
 
-      let nextStatus = isComplete ? STATUS.READY : STATUS.PENDING;
+      const created = await createPurchaseQuote(id, payload);
 
-      await saveQuotation(quoteId, activeRows, isComplete, currentStatus);
+      const mappedSupplier = mapGeneratedQuoteToSupplier(
+        created,
+        supplier,
+        orderItems
+      );
 
-      // Optimistic update - update UI inmediately
       setSuppliers((prev) =>
-        prev.map((s) =>
-          s.id === quoteId
-            ? {
-                ...s,
-                statusId: nextStatus,
-                // Store ALL rows so excluded state and partial values persist
-                quotationItems: allRows,
-              }
-            : s
+        prev.map((row) =>
+          row.supplierId === supplier.supplierId ? mappedSupplier : row
         )
       );
 
-      // Persist to backend
-      await saveQuotation(quoteId, activeRows, isComplete, currentStatus);
-
+      setActiveSupplier(mappedSupplier);
     } catch (err) {
-      console.error("Error saving quotation:", err);
+        console.error("ERROR generate quotation:", err);
+  console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
     }
   };
-  
 
-  const handleGenerateQuotation = async (supplier) => {
+  /**
+   * Guarda la cotización actual.
+   * - Si faltan datos y el estado era UNSENT => sigue UNSENT.
+   * - Si pasa a completa y estaba UNSENT => PENDING y envía dateSent.
+   * - Si pasa a completa y estaba PENDING => OK y envía dateReceived.
+   * - Si no hay items activos => CANCELLED.
+   */
+  const handleSaveQuotation = async (quoteId, rows, _isComplete) => {
     try {
-      if (supplier.statusId === STATUS.CREATED) {
-        await updateQuotationStatus(supplier.id, STATUS.UNSENT);
+      const currentSupplier = suppliers.find((s) => s.id === quoteId);
+      if (!currentSupplier) return;
 
-        setSuppliers((prev) =>
-          prev.map((s) =>
-            s.id === supplier.id ? { ...s, statusId: STATUS.UNSENT } : s
-          )
-        );
+      if (isFinalStatus(currentSupplier.statusId)) {
+        return;
       }
 
-      setActiveSupplier(supplier);
+      const currentStatus = currentSupplier.statusId;
+      const nextStatus = buildNextStatus(currentStatus, rows);
+
+      const payload = {
+        quoteId,
+        statusId: nextStatus,
+        ...(currentStatus === STATUS.UNSENT &&
+          nextStatus === STATUS.PENDING && {
+            dateSent: currentSupplier.dateSent || todayISO(),
+          }),
+        ...(currentStatus === STATUS.PENDING &&
+          nextStatus === STATUS.OK && {
+            dateReceived: currentSupplier.dateReceived || todayISO(),
+          }),
+        details: rows.map((row) => ({
+          productId: row.productId,
+          confirmedQuantity: Number(row.confirmedQty),
+          unitCost: Number(row.unitPrice),
+          // Backend: el checkbox "desmarcado" se envía como true según tu flujo.
+          enabled: Boolean(row.excluded),
+        })),
+      };
+
+      await patchPurchaseQuote(id, payload);
+
+      const updatedSupplier = {
+        ...currentSupplier,
+        statusId: nextStatus,
+        dateSent: payload.dateSent ?? currentSupplier.dateSent ?? null,
+        dateReceived: payload.dateReceived ?? currentSupplier.dateReceived ?? null,
+        quotationItems: rows,
+      };
+
+      setSuppliers((prev) =>
+        prev.map((row) => (row.id === quoteId ? updatedSupplier : row))
+      );
+
+      setActiveSupplier(updatedSupplier);
     } catch (err) {
-      console.error("Error generating quotation:", err);
+        console.error("ERROR save quotation:", err);
+  console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
     }
   };
 
-  
-  // ── "Imprimir" inside QuotationModal ───────────────────────────────────────────────────────
-  const handlePrintQuotation = async (quoteId) => {
+  /**
+   * Imprime una cotización individual.
+   * Si todavía está UNSENT, la pasa a PENDING y envía dateSent.
+   */
+  const handlePrint = async (quoteId) => {
     try {
       const supplier = suppliers.find((s) => s.id === quoteId);
       if (!supplier) return;
 
+      if (supplier.statusId === STATUS.CREATED) {
+        return;
+      }
 
-      // Only update if currently UNSENT
       if (supplier.statusId === STATUS.UNSENT) {
-        await updateQuotationStatus(quoteId, STATUS.PENDING);
+        const payload = {
+          quoteId,
+          statusId: STATUS.PENDING,
+          dateSent: supplier.dateSent || todayISO(),
+        };
+
+        await patchPurchaseQuote(id, payload);
+
         setSuppliers((prev) =>
-          prev.map((s) =>
-            s.id === quoteId ? { ...s, statusId: STATUS.PENDING } : s
+          prev.map((row) =>
+            row.id === quoteId
+              ? {
+                  ...row,
+                  statusId: STATUS.PENDING,
+                  dateSent: payload.dateSent,
+                }
+              : row
           )
         );
       }
+
       window.print();
     } catch (err) {
-      console.error("Error preparing print:", err);
+        console.error("ERROR save quotation:", err);
+  console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
     }
   };
 
-  // ── "Generar Todos" / "Imprimir Todos" ───────────────────────────────────────
   /**
-   * "Generar Todos": transitions all UNSENT suppliers to PENDING.
-   * "Imprimir Todos": prints all quotations.
-   *
-   * Button is disabled when there are no suppliers (handled in SuppliersTable).
+   * Genera o imprime en bloque según corresponda:
+   * - Si hay proveedores sin quote => genera todos.
+   * - Si todos ya tienen quote => imprime todos los UNSENT/PENDING.
    */
   const handleGenerateOrPrintAll = async () => {
     if (!allGenerated) {
-      try {
-        // Find all providers in CREATED that have not yet been generated
-        const toGenerate = suppliers.filter((s) => s.statusId === STATUS.CREATED);
+      await handleGenerateAll();
+      return;
+    }
 
-        // Transicionar cada uno a UNSENT en el backend
-        await Promise.all(
-          toGenerate.map((s) => updateQuotationStatus(s.id, STATUS.UNSENT))
-        );
+    await handlePrintAll();
+  };
 
-        // Update local status
+  /**
+   * Genera todas las cotizaciones pendientes de crear (CREATED -> UNSENT).
+   */
+  const handleGenerateAll = async () => {
+    try {
+      const toGenerate = suppliers.filter((s) => s.statusId === STATUS.CREATED);
+
+      if (toGenerate.length === 0) return;
+
+      const createdQuotes = await Promise.all(
+        toGenerate.map(async (supplier) => {
+          const payload = {
+            purchaseRequestId: Number(id),
+            supplierId: supplier.supplierId,
+            createdAt: todayISO(),
+            details: orderItems
+              .filter((item) =>
+                isSupplierInCategory(item.category, supplier.categories)
+              )
+              .map((item) => ({
+                productId: item.productId,
+              })),
+          };
+
+          const created = await createPurchaseQuote(id, payload);
+          return { supplier, created };
+        })
+      );
+
+      const mappedUpdates = createdQuotes.map(({ supplier, created }) =>
+        mapGeneratedQuoteToSupplier(created, supplier, orderItems)
+      );
+
+      setSuppliers((prev) =>
+        prev.map((row) => {
+          const updated = mappedUpdates.find(
+            (u) => u.supplierId === row.supplierId
+          );
+          return updated ? updated : row;
+        })
+      );
+    } catch (err) {
+        console.error("ERROR generate all:", err);
+  console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
+    }
+  };
+
+  /**
+   * Imprime todas las cotizaciones que estén UNSENT o PENDING.
+   * No incluye OK ni CANCELLED.
+   * Si una está UNSENT, primero la mueve a PENDING y envía dateSent.
+   */
+  const handlePrintAll = async () => {
+    try {
+      const printableSuppliers = suppliers.filter(
+        (s) => s.statusId === STATUS.UNSENT || s.statusId === STATUS.PENDING
+      );
+
+      if (printableSuppliers.length === 0) return;
+
+      const toPatch = printableSuppliers.filter(
+        (s) => s.statusId === STATUS.UNSENT
+      );
+
+      await Promise.all(
+        toPatch.map((supplier) =>
+          patchPurchaseQuote(id, {
+            quoteId: supplier.id,
+            statusId: STATUS.PENDING,
+            dateSent: supplier.dateSent || todayISO(),
+          })
+        )
+      );
+
+      if (toPatch.length > 0) {
         setSuppliers((prev) =>
-          prev.map((s) =>
-            s.statusId === STATUS.CREATED ? { ...s, statusId: STATUS.UNSENT } : s
+          prev.map((row) =>
+            row.statusId === STATUS.UNSENT
+              ? {
+                  ...row,
+                  statusId: STATUS.PENDING,
+                  dateSent: row.dateSent || todayISO(),
+                }
+              : row
           )
         );
-      } catch (err) {
-        console.error("Error generating all quotations:", err);
       }
-    } else {
-      try {
-          const printableSuppliers = suppliers.filter(
-            (s) =>
-              s.statusId === STATUS.UNSENT ||
-              s.statusId === STATUS.PENDING
-          );
 
-          if (printableSuppliers.length === 0) {
-            console.warn("No hay proveedores para imprimir");
-            return;
-          }
-
-          console.log("Imprimiendo proveedores:", printableSuppliers);
-
-          // si tu impresión es global:
-          window.print();
-
-        } catch (err) {
-          console.error("Error printing all quotations:", err);
-        }
+      window.print();
+    } catch (err) {
+        console.error("ERROR print all:", err);
+  console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
     }
-  }
+  };
 
-  // ── Supplier search modal handlers ───────────────────────────────────────────
-
+  // ── Supplier search modal handlers ─────────────────────────────────────────
   const handleOpenSupplierSearch = () => setIsSupplierSearchOpen(true);
   const handleCloseSupplierSearch = () => setIsSupplierSearchOpen(false);
 
   /**
-   * Adds selected suppliers to the order.
-   * Uses the backend response directly so quote IDs are correct.
-   * Resets allGenerated because new suppliers start as CREATED.
+   * Busca proveedores disponibles filtrando por texto y categorías del pedido.
+   * Excluye los proveedores ya agregados a esta vista.
+   */
+  const searchAvailableSuppliers = async ({
+    contains = "",
+    categories = categoryIds,
+  } = {}) => {
+    try {
+      const result = await getSuppliers({
+        contains,
+        categories,
+      });
+
+      const existingIds = suppliers.map((s) => s.supplierId);
+
+      return (result ?? []).filter((supplier) => !existingIds.includes(supplier.id));
+    } catch (err) {
+      console.error("Error searching suppliers:", err);
+      return [];
+    }
+  };
+
+  /**
+   * Agrega al estado local los proveedores seleccionados desde el modal.
+   * Todavía no crea cotización; eso ocurre al presionar "Generar".
    */
   const handleAddSuppliers = async (selectedSuppliers) => {
     try {
-      const ids =           selectedSuppliers.map((s) => s.id);
-      const newSuppliers =  await addSuppliers(orderId, ids);
-      setSuppliers((prev) => [...prev, ...newSuppliers]);
+      const normalized = (selectedSuppliers ?? [])
+        .map(mapSelectedSupplierToLocalRow)
+        .filter((row) => row.supplierId != null);
+
+      if (normalized.length === 0) return;
+
+      setSuppliers((prev) => {
+        const existingIds = new Set(prev.map((s) => s.supplierId));
+        const newRows = normalized.filter((row) => !existingIds.has(row.supplierId));
+        return [...prev, ...newRows];
+      });
+
       setIsSupplierSearchOpen(false);
     } catch (err) {
       console.error("Error adding suppliers:", err);
     }
   };
 
-  // ── Exposed API ──────────────────────────────────────────────────────────────
+  // ── Exposed API ───────────────────────────────────────────────────────────
   return {
     // Remote data
-    purchaseOrder,
+    purchaseRequest,
     orderItems,
     suppliers,
     categories,
     categoryNames,
+    categoryIds,
     loading,
     error,
 
@@ -422,18 +659,29 @@ export function usePurchaseOrder(orderId) {
     activeSupplier,
     handleOpenQuotation,
     handleCloseQuotation,
-    handleSaveQuotation,
-    handlePrint: handlePrintQuotation,
     handleGenerateQuotation,
+    handleSaveQuotation,
+    handlePrint,
 
     // Supplier search modal
     isSupplierSearchOpen,
     handleOpenSupplierSearch,
     handleCloseSupplierSearch,
+    searchAvailableSuppliers,
     handleAddSuppliers,
 
-    // SuppliersTable header button
-    allGenerated,           
+    // Bulk action button
+    allGenerated,
+    hasPrintableSuppliers,
+    handleGenerateAll,
+    handlePrintAll,
     handleGenerateOrPrintAll,
+
+    // Helpers
+    isFinalStatus,
+    setActiveSupplier,
   };
 }
+
+// Compatibilidad con imports anteriores
+export const usePurchaseOrder = usePurchaseRequests;

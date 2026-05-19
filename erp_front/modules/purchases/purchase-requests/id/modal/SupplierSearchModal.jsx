@@ -8,27 +8,25 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import {
-  btn,
-  input,
-  modal,
-  badge,
-} from "../styles/purchaseRequestsStyles";
-import { getAvailableSuppliers } from "../services/purchaseRequestsService";
+import { useEffect, useMemo, useState } from "react";
+import { btn, input, modal, badge } from "../styles/purchaseRequestsStyles";
 
 export default function SupplierSearchModal({
   isOpen,
   categoryNames = [],
-  orderId,
-  alreadyAdded = [],
   onClose,
+  onSearchSuppliers,
   onConfirm,
 }) {
-  const [availableSuppliers, setAvailableSuppliers] = useState([]);
-  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [availableSuppliers, setAvailableSuppliers] = useState([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+
+  const normalizedCategories = useMemo(
+    () => [...new Set(categoryNames)].filter(Boolean),
+    [categoryNames]
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -39,22 +37,30 @@ export default function SupplierSearchModal({
       setSearchQuery("");
 
       try {
-        const data = await getAvailableSuppliers(categoryNames);
-        setAvailableSuppliers(data.filter((s) => !alreadyAdded.includes(s.id)));
+        const data = await onSearchSuppliers({
+          contains: "",
+          categories: normalizedCategories,
+        });
+
+        setAvailableSuppliers(data ?? []);
       } catch (err) {
         console.error("Error fetching available suppliers:", err);
+        setAvailableSuppliers([]);
       } finally {
         setLoadingSuppliers(false);
       }
     }
 
     fetchSuppliers();
-  }, [isOpen, orderId, categoryNames, alreadyAdded]);
+  }, [isOpen, normalizedCategories, onSearchSuppliers]);
 
   const filteredSuppliers = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return availableSuppliers;
-    return availableSuppliers.filter((s) => s.name.toLowerCase().includes(q));
+
+    return availableSuppliers.filter((s) =>
+      (s.name ?? "").toLowerCase().includes(q)
+    );
   }, [availableSuppliers, searchQuery]);
 
   if (!isOpen) return null;
@@ -100,7 +106,7 @@ export default function SupplierSearchModal({
           </p>
 
           <div className="flex flex-wrap gap-1 mt-2">
-            {categoryNames.map((cat) => (
+            {normalizedCategories.map((cat) => (
               <span key={cat} className={badge.category}>
                 {cat}
               </span>
@@ -151,9 +157,7 @@ export default function SupplierSearchModal({
                   key={supplier.id}
                   onClick={() => toggleSelect(supplier.id)}
                   className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
-                    selectedIds.has(supplier.id)
-                      ? "bg-blue-50"
-                      : "hover:bg-gray-50"
+                    selectedIds.has(supplier.id) ? "bg-blue-50" : "hover:bg-gray-50"
                   }`}
                 >
                   <input
@@ -168,11 +172,16 @@ export default function SupplierSearchModal({
                       {supplier.name}
                     </p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {supplier.categories?.map((cat) => (
-                        <span key={cat} className={badge.category}>
-                          {cat}
-                        </span>
-                      ))}
+                      {supplier.categories?.map((cat) => {
+                        const label = typeof cat === "string" ? cat : cat?.name;
+                        if (!label) return null;
+
+                        return (
+                          <span key={label} className={badge.category}>
+                            {label}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 </li>
@@ -183,9 +192,7 @@ export default function SupplierSearchModal({
 
         <p className="text-xs text-muted mb-4">
           {selectedIds.size > 0
-            ? `${selectedIds.size} proveedor${
-                selectedIds.size > 1 ? "es" : ""
-              } seleccionado${selectedIds.size > 1 ? "s" : ""}`
+            ? `${selectedIds.size} proveedor${selectedIds.size > 1 ? "es" : ""} seleccionado${selectedIds.size > 1 ? "s" : ""}`
             : "Ningún proveedor seleccionado"}
         </p>
 

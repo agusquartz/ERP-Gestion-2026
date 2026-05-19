@@ -1,92 +1,32 @@
-/**
- * @file CategoriesTable.jsx
- * @module modules/purchases/purchase-requests/id/components
- *
- * @description
- * Displays a summary of the unique product categories present in the order,
- * with a product count and an assigned-suppliers count per category.
- *
- * This table is read-only — no interactions.
- * The body is scrollable so this section never grows the page height.
- * Adjust `max-h-*` on the scroll container to control visible row count.
- *
- * @param {Object} props
- * @param {Array}  props.categories - Category summary rows from usePurchaseOrder.
- *   Each: { category: string, productCount: number, assignedSuppliers: number }
- *
- * @returns {JSX.Element} A bordered, scrollable category summary table.
- */
+export default function CategoriesTable({ categories }) {
 
-import { card, table, badge, label, } from "../styles/purchaseRequestsStyles";
-
-export default function CategoriesTable({ categories = [] }) {
   return (
-    <section className="flex flex-col h-full min-h-0">
-      <p className={label.section}>Categorias del Pedido</p>
+    <table className="w-full border-collapse">
 
-      {/* Card wrapper — rounded-[5px] matches the design border radius spec */}
-      <div
-        className={`${card.base} shadow-panel flex flex-col flex-1 min-h-0`}
-        style={{ borderRadius: "5px" }}
-      >
+      <thead>
+        <tr>
+          <th>Categoría</th>
+          <th>Productos</th>
+        </tr>
+      </thead>
 
-        {/* Fixed header — stays visible while body scrolls */}
-        <table className={`${table.base} table-fixed w-full`}>
-          <thead>
-            <tr className={table.head}>
-              <th className={`${table.th} w-8`}>#</th>
-              <th className={table.th}>Categoría</th>
-              <th className={table.thCenter}>Productos</th>
-              <th className={table.thCenter}>Proveedores Asig.</th>
-            </tr>
-          </thead>
-        </table>
 
-        {/*
-         * Scrollable body container.
-         * flex-1 + min-h-0 makes it fully responsive to parent height.
-         * This avoids fixed max-height issues and adapts to screen size.
-         */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <table className={`${table.base} table-fixed w-full`}>
-            <tbody>
-              {categories.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-4 py-8 text-center text-sm text-muted"
-                  >
-                    No hay categorias registradas.
-                  </td>
-                </tr>
-              )}
+      <tbody>
 
-              {categories.map((cat, index) => (
-                <tr key={cat.category} className={table.row}>
-                  <td className={`${table.tdMuted} w-8`}>
-                    {index + 1}
-                  </td>
+        {categories.map((category) => (
+          <tr key={category.id}>
+            <td>
+              {category.name}
+            </td>
 
-                  <td className="px-4 py-3">
-                    <span className={badge.category}>
-                      {cat.category}
-                    </span>
-                  </td>
+            <td>
+              {category.items.length}
+            </td>
+          </tr>
+        ))}
 
-                  <td className={table.tdCenter}>
-                    {cat.productCount}
-                  </td>
+      </tbody>
 
-                  <td className={table.tdCenter}>
-                    {cat.assignedSuppliers}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-      </div>
-    </section>
+    </table>
   );
 }
