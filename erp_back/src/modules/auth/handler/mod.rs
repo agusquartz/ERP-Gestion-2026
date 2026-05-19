@@ -135,24 +135,24 @@ pub async fn login(
     let mut jwt_cookie = Cookie::new("jwt", token);
     jwt_cookie.set_path("/");
     jwt_cookie.set_http_only(true);
-    //jwt_cookie.set_secure(true);
+    jwt_cookie.set_secure(true);
     jwt_cookie.set_same_site(tower_cookies::cookie::SameSite::None);
     // jwt_cookie.set_domain(&CONFIG.cookie_domain);
     // jwt_cookie.set_domain("localhost");
     if let Some(domain) = &CONFIG.cookie_domain {
-        //jwt_cookie.set_domain(domain);
+        jwt_cookie.set_domain(domain);
     }
     cookies.add(jwt_cookie);
 
     // CSRF cookie (accessible by JS)
     let mut csrf_cookie = Cookie::new("csrfToken", csrf_token.clone());
     csrf_cookie.set_path("/");
-    //csrf_cookie.set_secure(true);
+    csrf_cookie.set_secure(true);
     csrf_cookie.set_same_site(tower_cookies::cookie::SameSite::None);
     // csrf_cookie.set_domain(&CONFIG.cookie_domain);
     // csrf_cookie.set_domain("localhost");
     if let Some(domain) = &CONFIG.cookie_domain {
-        //csrf_cookie.set_domain(domain);
+        csrf_cookie.set_domain(domain);
     }
     cookies.add(csrf_cookie);
 
