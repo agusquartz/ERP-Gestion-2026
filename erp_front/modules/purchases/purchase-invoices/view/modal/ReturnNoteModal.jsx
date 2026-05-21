@@ -85,7 +85,7 @@ export function ReturnNoteModal({ invoice, onClose, onSaved }) {
 
                 {/* Modal header: title and supplier name */}
                 <div className="mb-4">
-                    <h2 className="text-[20px] font-bold text-slate-800">Nueva Nota de Devolucion</h2>
+                    <h2 className="text-[28px] font-bold text-slate-800">Nueva Nota de Devolución</h2>
                     <p className="text-[13px] text-slate-500">
                         Proveedor: {invoice?.supplier?.name ?? "—"}
                     </p>
@@ -98,12 +98,12 @@ export function ReturnNoteModal({ invoice, onClose, onSaved }) {
                     <div className="flex-1 overflow-auto rounded-[5px] border border-slate-200">
                         <table className="w-full text-[13px] text-slate-700">
                             <thead>
-                                <tr className="border-b border-slate-200 bg-slate-50">
+                                <tr className="border-b border-slate-200 bg-background">
                                     <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">#</th>
-                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Code</th>
-                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Description</th>
+                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Código</th>
+                                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descripción</th>
                                     <th className="px-3 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cantidad</th>
-                                    <th className="px-3 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Price</th>
+                                    <th className="px-3 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Precio</th>
                                     <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cantidad a Devolver</th>
                                 </tr>
                             </thead>
@@ -140,16 +140,16 @@ export function ReturnNoteModal({ invoice, onClose, onSaved }) {
                     </div>
 
                     {/* RIGHT: Reason textarea */}
-                    <div className="w-[200px] shrink-0 flex flex-col gap-1.5">
-                        <label className="text-[13px] font-bold text-slate-700">
-                            Razon de la Devolucion
+                    <div className="w-[250px] shrink-0 flex flex-col gap-1.5">
+                        <label className="text-[20px] font-bold text-[#6B6B6B]">
+                            Razón de la Devolución
                         </label>
                         <textarea
                             value={motive}
                             onChange={e => setMotive(e.target.value)}
                             placeholder="Productos Vencidos o rotos..."
                             rows={8}
-                            className="w-full rounded-[5px] border border-slate-200 px-3 py-2 text-[13px] text-slate-700 outline-none resize-none focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
+                            className="w-full h-full rounded-[5px] border border-slate-200 px-3 py-2 text-[13px] text-slate-700 outline-none resize-none focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
                         />
                     </div>
                 </div>
@@ -164,7 +164,7 @@ export function ReturnNoteModal({ invoice, onClose, onSaved }) {
                     <button
                         onClick={onClose}
                         disabled={saving}
-                        className="rounded-[5px] border border-slate-300 px-6 py-2 text-[14px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                        className="rounded-[5px] border border-slate-300 px-6 py-2 text-[14px] font-semibold text-slate-700 hover:bg-[#F2F3F7] transition-colors disabled:opacity-50"
                     >
                         Atras
                     </button>
