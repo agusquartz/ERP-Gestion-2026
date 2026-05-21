@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getReturnNotesByQuery } from "@/lib/http/client/return-notes.js";
-// NOTE: createPurchaseInvoiceReturnNote is not imported in the original code.
-// The hook references it inside createReturnNote but it's missing.
-// We'll comment as provided.
+import { createReturnNotes, getReturnNotesByQuery } from "@/lib/http/client/return-notes.js";    
 
 // Fetches and manages return notes for a given invoice.
 // Used by the "Notas de Devolución" tab.
@@ -13,22 +10,6 @@ export function usePurchaseInvoiceReturnNotes(id) {
     const [loading,     setLoading]     = useState(true);
     // Error state: holds any error message
     const [error,       setError]       = useState(null);
-
-    // --- OUTER load function defined but never used (duplicate).
-    // The actual fetch logic is inside useEffect.
-    async function load() {
-        if (!id) return;
-        setLoading(true);
-        setError(null);
-        try {
-            const data = await getReturnNotesByQuery(id);
-            setReturnNotes(data ?? []);
-        } catch (e) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
-    }
 
     // Effect runs when invoice id changes
     useEffect(() => {
@@ -65,7 +46,7 @@ export function usePurchaseInvoiceReturnNotes(id) {
     // Returns { ok: true } or throws so the modal can handle the error.
     // NOTE: createPurchaseInvoiceReturnNote is not defined in this scope.
     const createReturnNote = useCallback(async (payload) => {
-        await createPurchaseInvoiceReturnNote(id, payload); // Missing import/definition
+        await createReturnNotes(payload);
         await load(); // Calls the outer load? Actually calls the one in scope?
         return { ok: true };
     }, [id]);

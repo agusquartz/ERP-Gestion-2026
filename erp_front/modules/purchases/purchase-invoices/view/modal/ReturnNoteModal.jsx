@@ -24,12 +24,12 @@ export function ReturnNoteModal({ invoice, onClose, onSaved }) {
     const [error,    setError]    = useState(null);  // Validation or API error
 
     // Update quantity for a specific product, ensuring non-negative integer.
-    function setQty(productId, value) {
-        const parsed = parseInt(value, 10);
-        setQuantities(prev => ({
-            ...prev,
-            [productId]: isNaN(parsed) || parsed < 0 ? 0 : parsed,
-        }));
+    function setQty(productId, value, maxQty) {
+        let parsed = parseInt(value, 10);
+        if (isNaN(parsed)) parsed = 0;
+        if (parsed < 0) parsed = 0;
+        if (parsed > maxQty) parsed = maxQty;
+        setQuantities(prev => ({ ...prev, [productId]: parsed }));
     }
 
     // Validate and submit the return note.
@@ -47,8 +47,8 @@ export function ReturnNoteModal({ invoice, onClose, onSaved }) {
                 const qty = quantities[d.product.id];
                 return {
                     productId:        d.product.id,
-                    quantityToReturn: qty,
-                    amount:           Number(d.unitCost) * qty, // Calculated subtotal
+                    returnedQuantity: qty,
+                    amount:           parseFloat((Number(d.unitCost) * qty).toFixed(2)), // Calculated subtotal
                 };
             });
 
@@ -58,11 +58,13 @@ export function ReturnNoteModal({ invoice, onClose, onSaved }) {
             return;
         }
 
+        const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+
         // Payload expected by the parent's onSaved (which calls the API)
         const payload = {
                 purchaseInvoiceId: invoice.id,
                 motive:            motive.trim(), 
-                createdAt:         null,        // Server will assign creation date
+                createdAt:         today,
                 details:           items,
         };
 
@@ -129,7 +131,7 @@ export function ReturnNoteModal({ invoice, onClose, onSaved }) {
                                                 min={0}
                                                 max={item.quantity}
                                                 value={quantities[item.product.id]}
-                                                onChange={e => setQty(item.product.id, e.target.value)}
+                                                onChange={e => setQty(item.product.id, e.target.value, item.quantity)}
                                                 className="w-16 rounded-[5px] border border-slate-200 px-2 py-1 text-center text-[13px] outline-none focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10"
                                             />
                                         </td>

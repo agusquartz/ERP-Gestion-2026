@@ -103,9 +103,9 @@ export function ReturnNotesTab({ returnNotes, invoice, loading, error, onCreated
                 <ReturnNoteModal
                     invoice={invoice}
                     onClose={() => setShowModal(false)}
-                    onSaved={() => {
-                        setShowModal(false);   // Close modal after successful save
-                        onCreated();           // Notify parent to refresh the list
+                    onSaved={async (payload) => {
+                        await onCreated(payload);
+                        setShowModal(false);
                     }}
                 />
             )}
