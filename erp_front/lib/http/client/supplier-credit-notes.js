@@ -2,23 +2,22 @@ import { clientRequest } from "./request";
 
 /**
  * Lists all supplier credit notes, optionally filtering by a search term.
- * * @param {Object} query - Optional query filters.
- * @param {string} query.contains - Filter by note number or related data.
  */
-export function listSupplierCreditNotes({ contains } = {}) {
+export function listSupplierCreditNotes({ search, filter, since, to, cursor, limit } = {}) {
   const params = new URLSearchParams();
 
-  if (contains?.trim()) {
-    params.set("contains", contains.trim());
-  }
+  if (search?.trim()) params.set("search", search.trim());
+  if (filter?.trim()) params.set("filter", filter.trim());
+  if (since) params.set("since", since);
+  if (to) params.set("to", to);
+  if (cursor) params.set("cursor", cursor);
+  if (limit) params.set("limit", String(limit));
 
   const queryString = params.toString();
 
   return clientRequest(
     `/purchases/supplier-credit-notes${queryString ? `?${queryString}` : ""}`,
-    {
-      method: "GET",
-    }
+    { method: "GET" }
   );
 }
 
@@ -34,11 +33,3 @@ export function getSupplierCreditNoteById(id) {
   });
 }
 
-export function createSupplierCreditNote(payload) {
-  if (!payload) throw new Error("Credit note body payload is required");
-
-  return clientRequest("/purchases/supplier-credit-notes", {
-    method: "POST",
-    body: payload, // Si clientRequest se encarga de stringificarlo internamente
-  });
-}
