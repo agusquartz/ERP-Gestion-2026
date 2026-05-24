@@ -33,10 +33,13 @@ function mapBackToFrontCreditNoteDetail(item) {
     supplier_name: item.supplier?.name || "—",
     supplier_stamp: cleanStamp,
     
+    // 🌟 GUARDAMOS EL ID PURO DE RUST para la navegación
+    invoice_raw_id: item.invoice_id, 
+    return_note_raw_id: item.return_note_id,
+    
+    // Mantenemos tus strings formateados para la vista visual
     invoice_number: item.invoice_id ? `001-002-${String(item.invoice_id).padStart(7, "0")}` : "—",
     return_note_number: item.return_note_id ? String(item.return_note_id).padStart(2, "0") : "—",
-    
-    reason: "La cantidad de ítems facturados exceden la cantidad que figura en la solicitud.",
     
     details: (item.details || []).map((d, idx) => ({
       pos: idx + 1,
@@ -118,7 +121,7 @@ export default function DetailPage() {
         </div>
       </div>
 
-      {/* Bloque Informativo de Documentos (Estructura de una sola columna fluida fiel a Figma) */}
+      {/* Bloque Informativo de Documentos */}
       <div className="mb-4 rounded-[6px] border border-slate-100 bg-white p-6 shadow-sm space-y-4">
         
         {/* Fila: Timbrado */}
@@ -127,18 +130,19 @@ export default function DetailPage() {
           <span className="text-sm font-normal text-slate-800">{note.supplier_stamp}</span>
         </div>
 
-        {/* Fila: Motivo */}
-        <div className="flex items-start">
-          <span className="w-[180px] text-sm font-bold text-[#4a5568]">Motivo:</span>
-          <p className="flex-1 text-sm font-normal text-slate-600 leading-normal">{note.reason}</p>
-        </div>
-
         {/* Fila: Factura Nº */}
         <div className="flex items-center">
           <span className="w-[180px] text-sm font-bold text-[#4a5568]">Factura Nº:</span>
           <div className="flex items-center gap-3">
              <span className="text-sm text-slate-900">{note.invoice_number}</span>
-             <button className="rounded-[4px] border border-emerald-200 bg-white px-4 py-0.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 active:scale-95 transition-all">Ver</button>
+             <button 
+               type="button"
+               disabled={!note.invoice_raw_id}
+               onClick={() => router.push(`/purchases/purchase-invoices/${note.invoice_raw_id}`)}
+               className="rounded-[4px] border border-emerald-200 bg-white px-4 py-0.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
+             >
+               Ver
+             </button>
           </div>
         </div>
 
@@ -147,13 +151,20 @@ export default function DetailPage() {
           <span className="w-[180px] text-sm font-bold text-[#4a5568]">Nota de Devolución Nº:</span>
           <div className="flex items-center gap-3">
              <span className="text-sm text-slate-900">{note.return_note_number}</span>
-             <button className="rounded-[4px] border border-emerald-200 bg-white px-4 py-0.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 active:scale-95 transition-all">Ver</button>
+             <button 
+               type="button"
+               disabled={!note.return_note_raw_id}
+               onClick={() => router.push(`/purchases/return-notes/${note.return_note_raw_id}`)}
+               className="rounded-[4px] border border-emerald-200 bg-white px-4 py-0.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
+             >
+               Ver
+             </button>
           </div>
         </div>
 
       </div>
 
-      {/* Tabla de Artículos Estilo Figma (Cabecera clara, paddings exactos) */}
+      {/* Tabla de Artículos */}
       <div className="flex-1 overflow-hidden rounded-[4px] border border-slate-100 bg-white">
         <table className="w-full border-collapse text-left">
           <colgroup>
@@ -195,7 +206,7 @@ export default function DetailPage() {
         </table>
       </div>
 
-      {/* Sección Inferior de Totales (Barra gris horizontal corrida) */}
+      {/* Sección Inferior de Totales */}
       <div className="mt-4 rounded-[4px] bg-[#f1f5f9] px-4 py-2 flex justify-between items-center">
         <span className="text-base font-bold text-slate-800">Total</span>
         <span className="text-xl font-bold text-slate-900">
