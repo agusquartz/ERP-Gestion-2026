@@ -1,8 +1,12 @@
 use std::collections::BTreeMap;
 use tokio_postgres::Row;
+use chrono::NaiveDate;
 
 use crate::modules::purchase_order::{
-    dto::update,
+    dto::{
+        PurchaseOrderListQuery,
+        update,
+    },
     model::{
         new_order_model, 
         order_model
@@ -87,23 +91,38 @@ pub async fn query_purchase_order_by_id(id: i32) -> Result<Option<order_model::P
 /// - Otherwise returns all purchase orders
 ///
 /// Notes:
-/// - Filtering is case-insensitive (`ILIKE`)
-/// - `created_at` is compared as text, which may impact performance
 /// - Results are ordered to support correct aggregation
-///
-/// Invariant:
-/// - Only orders with at least one detail are returned
-pub async fn query_orders(contains: Option<&str>) -> Result<Vec<order_model::PurchaseOrderAggregate>, db_config::DbError> {
+pub async fn query_orders(
+    search: Option<String>,
+    filter: Option<String>,
+    since:  Option<NaiveDate>,
+    to:     Option<NaiveDate>,
+    status: Option<String>,
+    cursor: Option<i32>,
+    limit:  i64,
+) -> Result<Vec<order_model::PurchaseOrderAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
-    if let Some(q) = contains {
-        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR s.name ILIKE '%' || $1 || '%' OR st.status ILIKE '%' || $1 || '%') ORDER BY po.id, pod.id", PURCHASE_ORDER_SELECT_BASE); 
+    let sql = format!("
+            {}
+            WHERE po.id IN (
+                SELECT po2.id
+                FROM purchase_orders AS po2
+                INNER JOIN statuses AS st ON po2.status_id = st.id
+                WHERE ($1::INT  IS NULL OR po2.id                      > $1)
+                  AND ($3::TEXT IS NULL OR po2.purchase_request_id::TEXT = $3)
+                  AND ($4::DATE IS NULL OR po2.created_at             >= $4)
+                  AND ($5::DATE IS NULL OR po2.created_at             <= $5)
+                  AND ($6::TEXT IS NULL OR st.status = $6)
+                ORDER BY po2.id ASC
+                LIMIT $7
+            )
+            AND($2::TEXT IS NULL OR s.name ILIKE '%' || $2 || '%')
+            ORDER BY po.id ASC, pod.id ASC
+            ", PURCHASE_ORDER_SELECT_BASE); 
 
-        let rows = client.query(&sql, &[&q]).await?;
-        let aggregates = rows_to_aggregate(rows);
-        return Ok(aggregates)
-    }
-    let sql = PURCHASE_ORDER_SELECT_BASE.to_string();
-    let rows = client.query(&sql, &[]).await?;
+
+    let rows = client.query(&sql, &[&cursor, &search, &filter, &since, &to, &status, &limit]).await?;
+
     Ok(rows_to_aggregate(rows))
 }
 
@@ -292,7 +311,7 @@ pub async fn patch_purchase_order(
     if let Some(status_id) = &patch.status_id {
         tx.execute("UPDATE purchase_orders SET status_id = $1 WHERE id = $2", &[&status_id, &id])
             .await?;
-        
+
     }
 
     let sql = format!("{} WHERE po.id = $1 ORDER BY po.id, pod.id", PURCHASE_ORDER_SELECT_BASE);
@@ -316,7 +335,7 @@ pub async fn increase_received_quantity(
         "UPDATE purchase_order_details
          SET received_quantity = received_quantity + $1
          WHERE purchase_order_id = $2 AND product_id = $3",
-        &[&amount, &order_id, &product_id],
+         &[&amount, &order_id, &product_id],
     ).await?;
 
     Ok(rows == 1)
@@ -333,7 +352,7 @@ pub async fn decrease_received_quantity(
         "UPDATE purchase_order_details
          SET received_quantity = received_quantity - $1
          WHERE purchase_order_id = $2 AND product_id = $3 AND received_quantity >= $1",
-        &[&amount, &order_id, &product_id],
+         &[&amount, &order_id, &product_id],
     ).await?;
 
     Ok(rows == 1)

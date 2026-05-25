@@ -9,6 +9,7 @@ use crate::modules::purchase_order::{
         }
     }, 
     dto::{
+        PurchaseOrderListQuery,
         response::PurchaseOrderResponse,
         create::CreatePurchaseOrderDto,
         update::PatchPurchaseOrderDto
@@ -23,10 +24,23 @@ use crate::modules::purchase_order::{
 /// - Maps domain aggregates into response DTOs
 ///
 /// Notes:
-/// - This function performs no business validation
 /// - Filtering semantics are defined at the repository level
-pub async fn list_purchase_orders(contains: Option<String>) -> Result<Vec<PurchaseOrderResponse>, errors::ServiceError> {
-    let rows= repository::query_orders(contains.as_deref()).await?;
+pub async fn list_purchase_orders(query: PurchaseOrderListQuery) -> Result<Vec<PurchaseOrderResponse>, errors::ServiceError> {
+    //validate the status string
+    //discard invalid status before they reach repository
+    let status = query.status.filter(|status| {
+        matches!(status.as_str(), "pending" | "partial" | "ok")
+    });
+
+    let rows= repository::query_orders(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        status, 
+        query.cursor, 
+        query.limit
+        ).await?;
     Ok(rows.into_iter().map(|inv| PurchaseOrderResponse::from(inv)).collect())
 }
 
@@ -127,18 +141,6 @@ pub async fn patch_purchase_order(
     id: i32,
     patch: PatchPurchaseOrderDto,
 ) -> Result<Option<PurchaseOrderResponse>, errors::ServiceError> {
-    //Validate theyre sending a valid status 
-    if let Some(status_id) = patch.status_id {
-        if status_id == 1 || status_id == 2 {
-            return Err(
-                errors::ServiceError::Validation(
-                    errors::ValidationError{ 
-                        context: String::from("Not a valid status id!")
-                    }
-                )
-            );
-        }
-    }
     let order = repository::patch_purchase_order(id, &patch).await?;
     Ok(order.map(PurchaseOrderResponse::from))
 }

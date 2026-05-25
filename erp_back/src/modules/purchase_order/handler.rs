@@ -33,7 +33,7 @@ use crate::modules::purchase_order::{
 pub async fn list_purchase_orders(
     Query(query): Query<PurchaseOrderListQuery>,
 ) -> Result<Json<Vec<PurchaseOrderResponse>>,StatusCode> {
-    let result = service::list_purchase_orders(query.contains).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let result = service::list_purchase_orders(query).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(result))
 }
 
