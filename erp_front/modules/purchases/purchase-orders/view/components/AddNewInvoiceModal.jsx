@@ -7,7 +7,7 @@ import { ActionButton } from "./ActionButton";
 export function AddInvoiceModal({ open, onClose, order, onConfirm }) {
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [useCreditSale, setUseCreditSale] = useState(false);
-  const [saleConditionId, setSaleConditionId] = useState("1");
+  const [saleConditionId, setSaleConditionId] = useState(1);
   const [items, setItems] = useState([]);
   const [error, setError] = useState("");
 
@@ -170,7 +170,7 @@ export function AddInvoiceModal({ open, onClose, order, onConfirm }) {
 
       total,
     };
-
+    
     // payload
     const payload = invoice;
     onConfirm(payload);
@@ -209,7 +209,7 @@ export function AddInvoiceModal({ open, onClose, order, onConfirm }) {
 					setUseCreditSale(checked);
 
 					setSaleConditionId(
-					  checked ? "2" : "1"
+					  checked ? 2 : 1
 					);
 				  }}
 				  className="cursor-pointer"
