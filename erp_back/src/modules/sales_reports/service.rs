@@ -1,20 +1,17 @@
 use chrono::NaiveDate;
 use crate::modules::sales_reports::dto::DynamicReportResponse;
+use crate::modules::sales_reports::errors::ServiceError; // <--- Importamos tu nuevo Enum
 use crate::modules::sales_reports::repository;
-use crate::shared::db_config;
 
-/// Orquesta la ejecución del reporte interactuando con el repositorio
 pub async fn generate_sales_report(
     report_type: String,
     since: NaiveDate,
     to: NaiveDate,
-) -> Result<DynamicReportResponse, db_config::DbError> {
+) -> Result<DynamicReportResponse, ServiceError> { // <--- Cambiado a ServiceError
     
-    // Aquí es donde en el futuro puedes evaluar dinámicamente el `report_type` 
-    // Para este primer paso, llamamos directamente al repositorio que creamos antes
+    // El operador `?` ejecutará el `From<DbError>` que escribimos arriba de forma automática
     let report_data = repository::execute_sales_report(report_type, since, to).await?;
 
-    // Mapeamos el resultado interno del repositorio al DTO de salida
     Ok(DynamicReportResponse {
         headers: report_data.headers,
         rows: report_data.rows,
