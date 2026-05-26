@@ -22,6 +22,7 @@ mod modules {
     pub mod client;
     pub mod quote;
     pub mod invoice;
+    pub mod sales_reports;
     pub mod credit_notes;
     pub mod purchase_request;
     pub mod purchase_order;
@@ -114,6 +115,7 @@ async fn main() {
         .merge(modules::product::router::product_router())
         .merge(modules::quote::router::quote_router())
         .merge(modules::invoice::router::invoice_router())
+        .merge(modules::sales_reports::router::sales_router())
         .merge(modules::credit_notes::router::credit_note_router())
         .merge(modules::purchase_order::router::purchase_order_router())
         .merge(modules::purchase_request::router::purchase_request_router())
