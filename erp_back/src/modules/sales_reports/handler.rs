@@ -4,8 +4,8 @@ use axum::{
     Json,
 };
 
-use crate::modules::sales::dto::{SalesReportQuery, DynamicReportResponse};
-use crate::modules::sales::service;
+use crate::modules::sales_reports::dto::{SalesReportQuery, DynamicReportResponse};
+use crate::modules::sales_reports::service;
 
 /// GET /sales/reports
 /// GET /sales/reports?report_type=top_selling_products&since=2026-01-01&to=2026-05-26

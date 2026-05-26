@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
-use crate::modules::sales::dto::DynamicReportResponse;
-use crate::modules::sales::repository;
+use crate::modules::sales_reports::dto::DynamicReportResponse;
+use crate::modules::sales_reports::repository;
 use crate::shared::db_config;
 
 /// Orquesta la ejecución del reporte interactuando con el repositorio
