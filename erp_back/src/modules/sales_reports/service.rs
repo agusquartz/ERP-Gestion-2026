@@ -12,7 +12,7 @@ pub async fn generate_sales_report(
     
     // Aquí es donde en el futuro puedes evaluar dinámicamente el `report_type` 
     // Para este primer paso, llamamos directamente al repositorio que creamos antes
-    let report_data = repository::query_top_selling_products(since, to).await?;
+    let report_data = repository::execute_sales_report(report_type, since, to).await?;
 
     // Mapeamos el resultado interno del repositorio al DTO de salida
     Ok(DynamicReportResponse {
