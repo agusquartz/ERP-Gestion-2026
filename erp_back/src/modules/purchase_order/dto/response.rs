@@ -3,6 +3,12 @@ use chrono::NaiveDate;
 use crate::modules::purchase_order::model::order_model;
 use crate::modules::purchase_order::mapper;
 
+#[derive(Debug,Clone,Serialize,Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListOrdersView {
+    pub orders: Vec<PurchaseOrderResponse>,
+    pub has_more: bool,
+}
 /// Response DTO representing a supplier in the context of a purchase order.
 ///
 /// This is a projection of the supplier entity tailored for API responses.

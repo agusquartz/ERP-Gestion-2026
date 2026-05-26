@@ -105,14 +105,16 @@ pub async fn query_orders(
     let sql = format!("
             {}
             WHERE po.id IN (
-                SELECT po2.id
+                SELECT DISTINCT po2.id
                 FROM purchase_orders AS po2
-                INNER JOIN statuses AS st ON po2.status_id = st.id
+                INNER JOIN purchase_order_details AS pod2 ON po2.id = pod2.purchase_order_id
+                INNER JOIN products AS p2 ON pod2.product_id = p2.id
+                INNER JOIN statuses AS st2 ON po2.status_id = st2.id
                 WHERE ($1::INT  IS NULL OR po2.id                      > $1)
-                  AND ($3::TEXT IS NULL OR po2.purchase_request_id::TEXT = $3)
+                  AND ($3::TEXT IS NULL OR p2.description::TEXT ILIKE '%' || $3 || '%')
                   AND ($4::DATE IS NULL OR po2.created_at             >= $4)
                   AND ($5::DATE IS NULL OR po2.created_at             <= $5)
-                  AND ($6::TEXT IS NULL OR st.status = $6)
+                  AND ($6::TEXT IS NULL OR st2.status = $6)
                 ORDER BY po2.id ASC
                 LIMIT $7
             )
