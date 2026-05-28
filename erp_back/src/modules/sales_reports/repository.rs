@@ -78,7 +78,7 @@ pub async fn execute_sales_report(
 
             let rows = client.query(sql, &[&since, &to]).await?;
             let headers = vec![
-                "Documento".to_string(),
+                "Factura N°".to_string(),
                 "Cliente".to_string(),
                 "Cant. Facturas".to_string(),
                 "Total Comprado".to_string(),
@@ -86,7 +86,7 @@ pub async fn execute_sales_report(
 
             let report_rows = rows.iter().map(|row| {
                 json!({
-                    "Documento": row.get::<_, String>("client_doc"),
+                    "Factura N°": row.get::<_, String>("client_doc"),
                     "Cliente": row.get::<_, String>("client_name"),
                     "Cant. Facturas": row.get::<_, i32>("total_invoices"),
                     "Total Comprado": row.get::<_, f64>("total_spent"),
