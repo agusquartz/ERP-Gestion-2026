@@ -393,17 +393,16 @@ pub async fn patch_purchase_quote(
 
     if let Some(details) = dto.details {
         let sql = String::from("UPDATE purchase_quotes_details
-        SET confirmed_quantity = $1, unit_cost = $2
-        WHERE product_id = $3 AND purchase_quote_id = $4 
+        SET confirmed_quantity = $1, unit_cost = $2, enabled = $3
+        WHERE product_id = $4 AND purchase_quote_id = $5
         ");
 
         for d in details {
             tx.execute(
                 &sql,
-                &[&d.confirmed_quantity, &d.unit_cost, &d.product_id, &dto.quote_id]
+                &[&d.confirmed_quantity, &d.unit_cost, &d.enabled, &d.product_id, &dto.quote_id]
             ).await?;
         }
-
     }
 
     tx.commit().await?;
@@ -417,3 +416,4 @@ pub async fn patch_purchase_quote(
     Ok(agg)
 }
 
+    
