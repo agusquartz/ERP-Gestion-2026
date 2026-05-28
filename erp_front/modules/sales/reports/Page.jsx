@@ -42,7 +42,7 @@ export default function SalesReportsPage() {
     } finally {
     setLoading(false);
     }
-
+  }
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto font-sans">
       {/* Encabezado de la Pantalla */}
