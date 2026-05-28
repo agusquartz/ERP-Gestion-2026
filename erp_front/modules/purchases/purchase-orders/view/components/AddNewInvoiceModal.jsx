@@ -6,7 +6,8 @@ import { ActionButton } from "./ActionButton";
 
 export function AddInvoiceModal({ open, onClose, order, onConfirm }) {
   const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [timbrado, setTimbrado] = useState("");
+  const [useCreditSale, setUseCreditSale] = useState(false);
+  const [saleConditionId, setSaleConditionId] = useState(1);
   const [items, setItems] = useState([]);
   const [error, setError] = useState("");
 
@@ -117,11 +118,6 @@ export function AddInvoiceModal({ open, onClose, order, onConfirm }) {
       return;
     }
 
-    if (!timbrado.trim()) {
-      setError("Debe ingresar el timbrado.");
-      return;
-    }
-
     if (filteredItems.length === 0) {
       setError(
         "Debe ingresar al menos un producto con cantidad recibida."
@@ -156,9 +152,9 @@ export function AddInvoiceModal({ open, onClose, order, onConfirm }) {
     // ===== INVOICE PAYLOAD =====
     const invoice = {
       invoiceNumber,
-      timbrado,
       supplierId: order?.supplier?.id,
       orderId: order.id,
+	  saleConditionId,
 
       items: filteredItems.map((item) => ({
 		  product: {
@@ -174,7 +170,7 @@ export function AddInvoiceModal({ open, onClose, order, onConfirm }) {
 
       total,
     };
-
+    
     // payload
     const payload = invoice;
     onConfirm(payload);
@@ -189,22 +185,40 @@ export function AddInvoiceModal({ open, onClose, order, onConfirm }) {
 
         {/* Top Info Grid */}
         <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm">
-          <div className="flex items-center gap-4">
-            <label className="w-24 font-medium">
-              Factura Nº:
-            </label>
+			<div className="flex items-center gap-4">
+			  <label className="w-24 font-medium">
+				Factura Nº:
+			  </label>
 
-            <input
-              type="text"
-              value={invoiceNumber}
-              onChange={(e) =>
-                setInvoiceNumber(e.target.value)
-              }
-              className="flex-1 border border-gray-300 rounded px-3 py-1 outline-none focus:border-blue-500"
-            />
-          </div>
+			  <input
+				type="text"
+				value={invoiceNumber}
+				onChange={(e) =>
+				  setInvoiceNumber(e.target.value)
+				}
+				className="flex-1 border border-gray-300 rounded px-3 py-1 outline-none focus:border-blue-500"
+			  />
 
-          <div className="flex items-center gap-4">
+			  <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+				<input
+				  type="checkbox"
+				  checked={useCreditSale}
+				  onChange={(e) => {
+					const checked = e.target.checked;
+
+					setUseCreditSale(checked);
+
+					setSaleConditionId(
+					  checked ? 2 : 1
+					);
+				  }}
+				  className="cursor-pointer"
+				/>
+
+				Crédito
+			  </label>
+			</div>
+           <div className="flex items-center gap-4">
             <label className="font-medium w-40">
               Orden De Compra Nº:
             </label>
@@ -217,15 +231,8 @@ export function AddInvoiceModal({ open, onClose, order, onConfirm }) {
               Timbrado:
             </label>
 
-            <input
-              type="text"
-              value={timbrado}
-              onChange={(e) =>
-                setTimbrado(e.target.value)
-              }
-              className="flex-1 border border-gray-300 rounded px-3 py-1 outline-none focus:border-blue-500"
-            />
-          </div>
+	  		<span>{order?.supplier.stamp}</span>
+           </div>
 
           <div className="flex items-center gap-4">
             <label className="font-medium w-40">

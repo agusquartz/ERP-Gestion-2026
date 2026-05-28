@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getPurchaseOrderById, cancelPurchaseOrder } from '@/lib/http/client/purchase-orders';
+import { createPurchaseInvoice } from "@/lib/http/client/purchase-invoices";
 
 import ItemsTable from '../components/ItemsTable';
 import InvoicesTable from '../components/InvoicesTable';
@@ -59,17 +60,18 @@ const ViewPurchaseOrderPage = () => {
 	};
 
 	const handleConfirmInvoice = async (modalPayload) => {
-		setIsLoading(true);
+		setLoading(true);
 		try {
 			//TODO: Franco, here you would call the service that POSTs a new PurchaseInvoice in your backend 
 			//probably written in @/lib/http/client/purchase-invoices.js
-			
+
+			await createPurchaseInvoice(modalPayload);
 			setShowInvoiceModal(false);
 			await fetchOrder(); // Refresh UI
 		} catch (error) {
 			alert(error.message);
 		} finally {
-			setIsLoading(false);
+			setLoading(false);
 		}
 	};
 	if (loading) return <div className="p-4 text-gray-500">Cargando...</div>;
