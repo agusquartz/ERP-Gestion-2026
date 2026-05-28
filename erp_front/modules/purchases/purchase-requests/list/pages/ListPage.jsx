@@ -6,6 +6,7 @@ import { OrderSearch } from "@/modules/purchases/purchase-requests/list/componen
 import { OrderTable } from "@/modules/purchases/purchase-requests/list/components/OrderTable";
 
 import { listPurchaseRequests } from "@/lib/http/client/purchase-request";
+import { useRouter } from 'next/navigation';
 
 function formatDate(dateString) {
   if (!dateString) return "-";
@@ -78,51 +79,53 @@ export default function ListPage() {
     loadPurchaseRequests(filters?.contains || "");
   };
 
-  const handleView = (id) => {
-    const order = orders.find((o) => o.id === id);
+	const router = useRouter();
+	const handleView = async (id) => {
+		const order = orders.find((o) => o.id === id);
+		if (!order) return;
 
-    if (!order) return;
+		router.push(`/purchases/purchase-requests/${id}`);
 
-    console.log("Visualizando pedido:", order.request_number);
-  };
+		console.log("Visualizando pedido:", order.request_number);
+	};
 
-  return (
-    <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
-      <div className="mb-5">
-        <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
-          Pedidos de Compra
-        </h1>
+	return (
+		<div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
+		<div className="mb-5">
+		<h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
+		Pedidos de Compra
+		</h1>
 
-        <div className="mt-2 h-px w-full bg-foreground/80" />
-      </div>
+		<div className="mt-2 h-px w-full bg-foreground/80" />
+		</div>
 
-      <OrderSearch onSearch={handleSearch} />
+		<OrderSearch onSearch={handleSearch} />
 
-      {loading && (
-        <div className="py-4 text-sm text-muted-foreground">
-          Cargando pedidos de compra...
-        </div>
-      )}
+		{loading && (
+			<div className="py-4 text-sm text-muted-foreground">
+			Cargando pedidos de compra...
+			</div>
+		)}
 
-      {error && (
-        <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+		{error && (
+			<div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+			{error}
+			</div>
+		)}
 
-      {!loading && !error && (
-        <OrderTable
-          orders={orders}
-          onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
-          onView={handleView}
-        />
-      )}
+		{!loading && !error && (
+			<OrderTable
+			orders={orders}
+			onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
+			onView={handleView}
+			/>
+		)}
 
-      <div className="mt-4 flex justify-between items-center px-2">
-        <span className="text-sm text-muted-foreground">
-          Total: {orders.length} pedidos
-        </span>
-      </div>
-    </div>
-  );
+		<div className="mt-4 flex justify-between items-center px-2">
+		<span className="text-sm text-muted-foreground">
+		Total: {orders.length} pedidos
+		</span>
+		</div>
+		</div>
+	);
 }

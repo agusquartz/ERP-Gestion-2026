@@ -1,7 +1,7 @@
 "use client";
 
 export function OrderTable({ orders = [], onSelect, onView }) {
-  const headers = ["Pedido Nro.", "Orden N.", "Fecha", "Estado", "Acción"];
+  const headers = ["Pedido Nro.", "Fecha", "Acción"];
 
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
@@ -11,8 +11,6 @@ export function OrderTable({ orders = [], onSelect, onView }) {
             <col className="w-[180px]" /> 
             <col />                       
             <col className="w-[120px]" /> 
-            <col className="w-[130px]" /> 
-            <col className="w-20" />      
           </colgroup>
 
           <thead>
@@ -42,25 +40,9 @@ export function OrderTable({ orders = [], onSelect, onView }) {
                   {order.request_number}
                 </td>
 
-                {/* Orden N. - Alineado a la derecha */}
-                <td className="px-4 py-3.5 text-sm font-bold text-foreground text-right">
-                  {order.order_number || "—"}
-                </td>
-
                 {/* Fecha - Alineado a la derecha */}
                 <td className="px-4 py-3.5 text-sm text-foreground text-right">
                   {order.date}
-                </td>
-
-                {/* Estado - Alineado a la derecha */}
-                <td className="px-4 py-3.5 text-right">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                    order.status === 'Recibido' 
-                      ? 'bg-emerald-100 text-emerald-700' 
-                      : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    {order.status || 'Pendiente'}
-                  </span>
                 </td>
 
                 {/* Acción - Alineado a la derecha */}
