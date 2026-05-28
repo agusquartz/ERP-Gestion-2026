@@ -1,5 +1,6 @@
 import { clientRequest } from "./request";
 
+
 export function getPurchaseOrdersByQuery({ search, filter, since, to, status, cursor, limit } = {}) {
 	const query = new URLSearchParams();
 	if (search) query.set("search", search);
@@ -16,6 +17,13 @@ export function getPurchaseOrdersByQuery({ search, filter, since, to, status, cu
 		{
 			method: "GET",
 		});
+}
+
+export function createPurchaseOrder(payload) {
+  return clientRequest("/purchases/purchase-orders", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function getPurchaseOrderById(id) {
