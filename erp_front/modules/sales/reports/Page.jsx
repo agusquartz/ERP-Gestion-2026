@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getSalesReport } from "@/lib/http/client/sales_reports"
 import { DynamicReportTable } from "./DinamicReportTable";
 
 export default function SalesReportsPage() {
@@ -27,33 +28,20 @@ export default function SalesReportsPage() {
     setError(null);
 
     try {
-      // Ajusta el puerto o la URL base según cómo manejen la API en su entorno local (ej: http://localhost:3000 o 3001)
-      const url = `/api/sales/reports?report_type=${reportType}&since=${sinceDate}&to=${toDate}`;
-      
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+    const data = await getSalesReport({
+        reportType,
+        since: sinceDate,
+        to: toDate
+    });
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error("El reporte solicitado no existe en el sistema.");
-        }
-        throw new Error("Hubo un error interno al generar el reporte.");
-      }
-
-      const data = await response.json();
-      setReportData(data);
+    setReportData(data);
     } catch (err) {
-      console.error("Error fetching report:", err);
-      setError(err.message);
-      setReportData(null);
+    console.error("Error fetching report:", err);
+    setError(err.message || "Hubo un error interno al generar el reporte.");
+    setReportData(null);
     } finally {
-      setLoading(false);
+    setLoading(false);
     }
-  };
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto font-sans">
