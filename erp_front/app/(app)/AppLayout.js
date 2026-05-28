@@ -136,6 +136,11 @@ export default function AppLayout({
             href: "/sales/documents",
             permissionPrefix: "sales",
           },
+          {
+            label: "Reportes",
+            href: "/sales/reports",
+            permissionPrefix: "sales",
+          },
         ],
       },
       {

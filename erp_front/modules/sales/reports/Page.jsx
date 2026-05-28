@@ -44,7 +44,7 @@ export default function SalesReportsPage() {
     }
   }
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto font-sans">
+    <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
       {/* Encabezado de la Pantalla */}
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Reportes de Ventas</h1>
@@ -102,7 +102,7 @@ export default function SalesReportsPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-10 bg-slate-800 hover:bg-slate-900 text-white font-medium text-sm rounded-[4px] transition-colors flex items-center justify-center disabled:bg-slate-400"
+              className="cursor-pointer min-w-[260px] rounded-[5px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:bg-primary-hover active:translate-y-px"
             >
               {loading ? "Procesando..." : "Generar Reporte"}
             </button>
