@@ -26,12 +26,6 @@ export function createPurchaseOrder(payload) {
   });
 }
 
-export function getPurchaseOrdersByQuery(q) {
-	return clientRequest(`/purchases/purchase-orders?q=${encodeURIComponent(q)}`, {
-		method: "GET",
-	});
-}
-
 export function getPurchaseOrderById(id) {
 	return clientRequest(`/purchases/purchase-orders/${id}`, {
 		method: "GET",
