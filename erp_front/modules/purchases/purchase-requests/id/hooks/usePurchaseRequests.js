@@ -24,9 +24,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { printQuotes } from "../utils/printQuotes";
 
 import {
-  getPurchaseRequest,
+  getPurchaseRequestById,
   createPurchaseQuote,
   patchPurchaseQuote,
 } from "@/lib/http/client/purchase-request";
@@ -126,16 +127,21 @@ function shouldBeOk(rows = []) {
 function buildNextStatus(currentStatus, rows = []) {
   const activeRows = rows.filter((row) => !row.excluded);
 
+  // Todos descartados → CANCELLED
   if (activeRows.length === 0) {
     return STATUS.CANCELLED;
   }
 
+  const complete = shouldBeOk(rows);
+
   if (currentStatus === STATUS.UNSENT) {
-    return shouldBeOk(rows) ? STATUS.PENDING : STATUS.UNSENT;
+    // UNSENT → OK si todos completos, UNSENT → PENDING si incompletos
+    // (UNSENT → UNSENT no es transición válida en el backend)
+    return complete ? STATUS.OK : STATUS.PENDING;
   }
 
   if (currentStatus === STATUS.PENDING) {
-    return shouldBeOk(rows) ? STATUS.OK : STATUS.PENDING;
+    return complete ? STATUS.OK : STATUS.PENDING;
   }
 
   return currentStatus;
@@ -153,30 +159,61 @@ function mapLoadedQuoteToSupplier(quote, orderItems = []) {
     dateSent: quote.dateSent,
     dateReceived: quote.dateReceived,
     categories: buildCategoriesFromQuoteDetails(quote.details ?? [], orderItems),
-    quotationItems: (quote.details ?? []).map((detail) => ({
-      productId: detail.productId,
-      confirmedQty: detail.confirmedQuantity,
-      unitPrice: detail.unitCost,
-      // OJO:
-      // backend: enabled=true cuando el item fue marcado/descartado según tu flujo
-      excluded: Boolean(detail.enabled),
-    })),
+    quotationItems: (quote.details ?? []).map((detail) => {
+      const orderItem = orderItems.find((i) => i.productId === detail.productId);
+      return {
+        orderItemId: detail.productId,
+        productId: detail.productId,
+        code: orderItem?.code ?? "",
+        product: orderItem?.product ?? String(detail.productId),
+        category: orderItem?.category ?? "",
+        requestedQty: orderItem?.quantity ?? 0,
+        confirmedQty: detail.confirmedQuantity ?? 0,
+        unitPrice: Number(detail.unitCost) ?? 0,
+        excluded: !detail.enabled,
+      };
+    }),
   };
 }
 
-function mapGeneratedQuoteToSupplier(quote, supplier, orderItems = []) {
+function mapGeneratedQuoteToSupplier(response, supplier, orderItems = []) {
+  // El backend devuelve el purchase request completo con un array `quotes`.
+  // Buscamos la quote que corresponde a este proveedor por supplierId.
+  const quote = Array.isArray(response.quotes)
+    ? response.quotes.find((q) => q.supplier?.id === supplier.supplierId)
+    : response; // fallback: si algún día el backend devuelve la quote directamente
+
+  if (!quote) {
+    console.error("[mapGeneratedQuoteToSupplier] no se encontró quote para supplierId:", supplier.supplierId);
+    return null;
+  }
+
   return {
-    id: quote.id, // quote id
+    id: quote.id,
     supplierId: supplier.supplierId,
     name: supplier.name,
-    stamp: supplier.stamp ?? "",
-    statusId: quote.status.id,
-    statusName: quote.status.name,
+    stamp: supplier.stamp ?? quote.supplier?.stamp ?? "",
+    statusId: quote.status?.id ?? STATUS.UNSENT,
+    statusName: quote.status?.name ?? "",
     createdAt: quote.createdAt,
     dateSent: quote.dateSent ?? null,
     dateReceived: quote.dateReceived ?? null,
     categories: normalizeCategoryNames(supplier.categories),
-    quotationItems: buildRowsForSupplier(orderItems, supplier),
+    // Cruzamos details de la quote con orderItems para tener nombre y cantidad solicitada
+    quotationItems: (quote.details ?? []).map((detail) => {
+      const orderItem = orderItems.find((i) => i.productId === detail.productId);
+      return {
+        orderItemId: detail.productId,
+        productId: detail.productId,
+        code: orderItem?.code ?? "",
+        product: orderItem?.product ?? String(detail.productId),
+        category: orderItem?.category ?? "",
+        requestedQty: orderItem?.quantity ?? 0,
+        confirmedQty: detail.confirmedQuantity ?? 0,
+        unitPrice: Number(detail.unitCost) ?? 0,
+        excluded: !detail.enabled,
+      };
+    }),
   };
 }
 
@@ -221,9 +258,7 @@ export default function usePurchaseRequests(id) {
         setLoading(true);
         setError(null);
 
-        const data = await getPurchaseRequest(id);
-        console.log("PURCHASE REQUEST RESPONSE");
-        console.log(data);
+        const data = await getPurchaseRequestById(id);
 
         setPurchaseRequest({
           id: data.id,
@@ -231,8 +266,8 @@ export default function usePurchaseRequests(id) {
           requester: `${data.employee?.name ?? ""} ${data.employee?.surname ?? ""}`.trim(),
         });
 
-        const mappedItems = (data.details ?? []).map((detail, index) => ({
-          id: detail.id ?? index + 1,
+        const mappedItems = (data.details ?? []).map((detail) => ({
+          id: detail.product.id,          // usar productId como clave estable
           productId: detail.product.id,
           code: detail.product.code,
           product: detail.product.description,
@@ -249,9 +284,9 @@ export default function usePurchaseRequests(id) {
 
         setSuppliers(mappedSuppliers);
       } catch (err) {
-  console.error("ERROR fetchAll:", err);
-  console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
-  setError(err?.response?.data ?? err?.message ?? String(err));
+          console.error("ERROR fetchAll:", err);
+          console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
+          setError(err?.response?.data ?? err?.message ?? String(err));
       } finally {
         setLoading(false);
       }
@@ -278,9 +313,12 @@ export default function usePurchaseRequests(id) {
     });
 
     return Object.values(map).map((cat) => ({
-      category: cat.name,
+      id: cat.id,
+      name: cat.name,                // CategoriesTable usa category.name
+      category: cat.name,            // compatibilidad con variantes antiguas
       categoryId: cat.id,
       productCount: cat.productCount,
+      items: Array(cat.productCount).fill(null), // CategoriesTable usa category.items.length
       assignedSuppliers: suppliers.filter((supplier) => {
         // Si aún no fue generado, no cuenta.
         if (supplier.statusId === STATUS.CREATED) return false;
@@ -314,7 +352,10 @@ export default function usePurchaseRequests(id) {
 
   const hasPrintableSuppliers = useMemo(() => {
     return suppliers.some(
-      (s) => s.statusId === STATUS.UNSENT || s.statusId === STATUS.PENDING
+      (s) =>
+        s.statusId === STATUS.CREATED ||
+        s.statusId === STATUS.UNSENT ||
+        s.statusId === STATUS.PENDING
     );
   }, [suppliers]);
 
@@ -368,6 +409,8 @@ export default function usePurchaseRequests(id) {
         orderItems
       );
 
+      if (!mappedSupplier) return; // quote no encontrada en la respuesta
+
       setSuppliers((prev) =>
         prev.map((row) =>
           row.supplierId === supplier.supplierId ? mappedSupplier : row
@@ -400,25 +443,36 @@ export default function usePurchaseRequests(id) {
       const currentStatus = currentSupplier.statusId;
       const nextStatus = buildNextStatus(currentStatus, rows);
 
+      // dateSent: siempre que haya al menos un item activo, mandamos fecha de hoy (o la que ya tenía)
+      // dateReceived: solo cuando todos los items activos están completos (nextStatus === OK)
+      const activeRows = rows.filter((r) => !r.excluded);
+      const allComplete =
+        activeRows.length > 0 &&
+        activeRows.every((r) => Number(r.confirmedQty) > 0 && Number(r.unitPrice) > 0);
+
+      const dateSent = activeRows.length > 0
+        ? currentSupplier.dateSent || todayISO()
+        : null;
+
+      const dateReceived = allComplete
+        ? currentSupplier.dateReceived || todayISO()
+        : currentSupplier.dateReceived ?? null;
+
       const payload = {
-        quoteId,
-        statusId: nextStatus,
-        ...(currentStatus === STATUS.UNSENT &&
-          nextStatus === STATUS.PENDING && {
-            dateSent: currentSupplier.dateSent || todayISO(),
-          }),
-        ...(currentStatus === STATUS.PENDING &&
-          nextStatus === STATUS.OK && {
-            dateReceived: currentSupplier.dateReceived || todayISO(),
-          }),
+        quoteId: Number(quoteId),
+        statusId: Number(nextStatus),
+        dateSent,
+        dateReceived,
         details: rows.map((row) => ({
-          productId: row.productId,
-          confirmedQuantity: Number(row.confirmedQty),
-          unitCost: Number(row.unitPrice),
-          // Backend: el checkbox "desmarcado" se envía como true según tu flujo.
-          enabled: Boolean(row.excluded),
+          productId: Number(row.productId),
+          confirmedQuantity: Math.round(Number(row.confirmedQty)),
+          unitCost: Number(Number(row.unitPrice).toFixed(2)),
+          // Forzamos boolean explícito — row.excluded puede ser truthy no-boolean
+          enabled: row.excluded === true ? false : true,
         })),
       };
+
+      console.log("[PATCH payload details]", JSON.stringify(payload.details, null, 2));
 
       await patchPurchaseQuote(id, payload);
 
@@ -456,9 +510,11 @@ export default function usePurchaseRequests(id) {
 
       if (supplier.statusId === STATUS.UNSENT) {
         const payload = {
-          quoteId,
+          quoteId: Number(quoteId),
           statusId: STATUS.PENDING,
           dateSent: supplier.dateSent || todayISO(),
+          dateReceived: supplier.dateReceived ?? null,
+          details: null,
         };
 
         await patchPurchaseQuote(id, payload);
@@ -476,7 +532,11 @@ export default function usePurchaseRequests(id) {
         );
       }
 
-      window.print();
+      printQuotes({
+        purchaseRequest,
+        suppliers: [supplier],
+        orderItems,
+      });
     } catch (err) {
         console.error("ERROR save quotation:", err);
   console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
@@ -526,9 +586,11 @@ export default function usePurchaseRequests(id) {
         })
       );
 
-      const mappedUpdates = createdQuotes.map(({ supplier, created }) =>
-        mapGeneratedQuoteToSupplier(created, supplier, orderItems)
-      );
+      const mappedUpdates = createdQuotes
+        .map(({ supplier, created }) =>
+          mapGeneratedQuoteToSupplier(created, supplier, orderItems)
+        )
+        .filter(Boolean); // descartar nulls si alguna quote no se encontró
 
       setSuppliers((prev) =>
         prev.map((row) => {
@@ -564,9 +626,11 @@ export default function usePurchaseRequests(id) {
       await Promise.all(
         toPatch.map((supplier) =>
           patchPurchaseQuote(id, {
-            quoteId: supplier.id,
+            quoteId: Number(supplier.id),
             statusId: STATUS.PENDING,
             dateSent: supplier.dateSent || todayISO(),
+            dateReceived: supplier.dateReceived ?? null,
+            details: null,
           })
         )
       );
@@ -585,7 +649,19 @@ export default function usePurchaseRequests(id) {
         );
       }
 
-      window.print();
+      // Imprimir: CREATED, UNSENT y PENDING — excluir OK y CANCELLED
+      const toPrint = suppliers.filter(
+        (s) =>
+          s.statusId === STATUS.CREATED ||
+          s.statusId === STATUS.UNSENT ||
+          s.statusId === STATUS.PENDING
+      );
+
+      printQuotes({
+        purchaseRequest,
+        suppliers: toPrint,
+        orderItems,
+      });
     } catch (err) {
         console.error("ERROR print all:", err);
   console.error("DETAIL:", err?.response?.data ?? err?.message ?? err);
@@ -605,14 +681,28 @@ export default function usePurchaseRequests(id) {
     categories = categoryIds,
   } = {}) => {
     try {
-      const result = await getSuppliers({
-        contains,
-        categories,
-      });
+      // El backend usa AND para categories — necesitamos OR.
+      // Hacemos una búsqueda por cada categoría y deduplicamos por supplier.id.
+      const searches = categories.length > 0
+        ? await Promise.all(
+            categories.map((catId) =>
+              getSuppliers({ contains, categories: [catId] })
+            )
+          )
+        : [await getSuppliers({ contains, categories: [] })];
 
-      const existingIds = suppliers.map((s) => s.supplierId);
+      // Aplanar y deduplicar por id
+      const seen = new Set();
+      const result = searches
+        .flat()
+        .filter((supplier) => {
+          if (seen.has(supplier.id)) return false;
+          seen.add(supplier.id);
+          return true;
+        });
 
-      return (result ?? []).filter((supplier) => !existingIds.includes(supplier.id));
+      const existingIds = new Set(suppliers.map((s) => s.supplierId));
+      return result.filter((supplier) => !existingIds.has(supplier.id));
     } catch (err) {
       console.error("Error searching suppliers:", err);
       return [];
