@@ -25,7 +25,7 @@ export default function ItemsTable({ items = [] }) {
             <td className="px-5 py-3.5 font-mono text-slate-500 text-[13px]">{item.code}</td>
             <td className="px-5 py-3.5 font-medium">{item.product}</td>
             <td className="px-5 py-3.5">
-              <span className="inline-flex items-center rounded-[5px] border border-slate-200 bg-slate-50 px-3 py-1 text-[12px] font-semibold text-slate-600">
+              <span className="px-2 py-0.5 rounded-full bg-border/60 text-muted text-xs font-medium uppercase tracking-wide">
                 {item.category}
               </span>
             </td>

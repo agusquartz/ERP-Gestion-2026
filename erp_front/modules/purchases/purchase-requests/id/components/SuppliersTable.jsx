@@ -73,7 +73,7 @@ export default function SuppliersTable({
                         onClick={() => onOpenQuotation(supplier)}
                         className={
                           isGenerated
-                            ? "inline-flex items-center justify-center rounded-[5px] border border-slate-200 bg-white px-3 py-1 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                            ? "inline-flex items-center justify-center rounded-[5px] border border-slate-200 bg-white px-3 py-1 text-[12px] font-semibold text-slate-600 hover:bg-[#F2F3F7] transition-colors"
                             : "inline-flex items-center justify-center rounded-[5px] border border-primary bg-primary px-3 py-1 text-[12px] font-semibold text-white hover:bg-primary/90 transition-colors"
                         }
                       >
@@ -81,7 +81,7 @@ export default function SuppliersTable({
                       </button>
                     </td>
                     <td className="px-5 py-3.5 text-center">
-                      <span className={`border ${status.border} inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1 text-[12px] font-semibold ${status.bg} ${status.color}`}>
+                      <span className={`border ${status.border} inline-flex items-center justify-center gap-1.5 rounded-[5px] px-3 py-1 text-[12px] font-semibold ${status.bg} ${status.color} min-w-[100px] text-center`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
                         {status.label}
                       </span>

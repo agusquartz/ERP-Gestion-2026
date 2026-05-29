@@ -22,7 +22,7 @@ export default function CategoriesTable({ categories = [] }) {
           <tr key={cat.id ?? cat.category} className="hover:bg-[#F2F3F7] transition-colors">
             <td className="px-5 py-3.5 text-slate-400 text-[13px]">{index + 1}</td>
             <td className="px-5 py-3.5">
-              <span className="inline-flex items-center rounded-[5px] border border-slate-200 bg-slate-50 px-3 py-1 text-[12px] font-semibold text-slate-600">
+              <span className="px-2 py-0.5 rounded-full bg-border/60 text-muted text-xs font-medium uppercase tracking-wide">
                 {cat.name ?? cat.category}
               </span>
             </td>
