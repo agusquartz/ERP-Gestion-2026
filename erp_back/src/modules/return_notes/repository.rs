@@ -132,12 +132,12 @@ pub async fn query_return_note_by_id(
     id: i32,
 ) -> Result<Option<model::ReturnNoteAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
-
+    println!("Antes de la query");
     let sql = format!(
         "{} WHERE rn.id = $1 ORDER BY rn.id, rnd.id",
         RETURN_NOTE_SELECT_BASE
     );
-
+    println!("Despues de la query");
     let rows = client.query(&sql, &[&id]).await?;
 
     let mut notes = rows_to_aggregates(rows);
@@ -153,11 +153,13 @@ pub async fn get_status_id_by_name(
 
     let row = client
         .query_one(
-            "SELECT id FROM statuses WHERE status = $1",
+            "SELECT id FROM statuses WHERE  status ILIKE $1",
             &[&status_name],
         )
         .await?;
+    
 
+    
     Ok(row.get("id"))
 }
 

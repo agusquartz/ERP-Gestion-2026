@@ -48,9 +48,9 @@ pub async fn create_return_note(
     let created_at = payload
         .created_at
         .unwrap_or_else(|| Utc::now().date_naive());
-    
-    let status_id = repository::get_status_id_by_name("created").await?;
-
+    println!("antes de status query");
+    let status_id = repository::get_status_id_by_name("CREATED").await?;
+    println!("Found status_id: {}", status_id);
     let new_note = model::NewReturnNote {
         purchase_invoice_id: payload.purchase_invoice_id,
         motive: payload.motive,
