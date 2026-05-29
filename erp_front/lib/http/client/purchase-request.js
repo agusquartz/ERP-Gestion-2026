@@ -4,7 +4,7 @@ import { clientRequest } from "@/lib/http/client/request";
  * GET /purchases/purchase-requests/{id}
  * Returns the full purchase request aggregate.
  */
-export function getPurchaseRequest(id) {
+export function getPurchaseRequestById(id) {
   if (!id) throw new Error("Purchase request ID is required");
   return clientRequest(`/purchases/purchase-requests/${id}`, { method: "GET" });
 }
@@ -53,14 +53,6 @@ export function listPurchaseRequests({ contains } = {}) {
   });
 }
 
-export function getPurchaseRequestById(id) {
-  if (id == null) throw new Error("Purchase Request ID is required");
-
-  return clientRequest(`/purchases/purchase-requests/${id}`, {
-    method: "GET",
-  });
-}
-
 export function searchProductsForPurchaseRequest({ contains } = {}) {
   const params = new URLSearchParams();
 
@@ -71,7 +63,7 @@ export function searchProductsForPurchaseRequest({ contains } = {}) {
   const queryString = params.toString();
 
   return clientRequest(
-    `/purchase-request-products${queryString ? `?${queryString}` : ""}`,
+    `/purchases/purchase-request-products${queryString ? `?${queryString}` : ""}`,
     {
       method: "GET",
     }
