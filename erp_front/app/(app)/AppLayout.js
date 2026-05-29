@@ -166,12 +166,12 @@ export default function AppLayout({
           },
           {
             label: "Nuevo Pago",
-            href: "/purchases/new-payment",
+            href: "/purchases/purchase-payment-orders/new",
             permissionPrefix: "purchases",
           },
           {
             label: "Ordenes de Pago",
-            href: "/purchases/payment-orders",
+            href: "/purchases/purchase-payment-orders",
             permissionPrefix: ["purchases", "treasury"],
           },
           {
