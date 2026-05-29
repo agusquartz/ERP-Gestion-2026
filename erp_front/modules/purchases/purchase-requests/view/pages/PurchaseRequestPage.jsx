@@ -9,10 +9,72 @@ import SuppliersTable from "../components/SuppliersTable";
 import SupplierSearchModal from "../modal/SupplierSearchModal";
 import SupplierQuotationModal from "../modal/SupplierQuotationModal";
 
+/**
+ * -----------------------------------------------------------------------------
+ * PurchaseRequestPage
+ * -----------------------------------------------------------------------------
+ *
+ * Main page component for the Purchase Request detail view.
+ *
+ * This component acts as the presentation layer for the entire purchase request
+ * workflow. It does not contain the business logic directly; instead, it relies
+ * on the `usePurchaseRequests` hook to provide:
+ * - loaded request data
+ * - derived summary data
+ * - quotation handlers
+ * - supplier search handlers
+ * - modal state
+ * - bulk actions
+ *
+ * Main responsibilities:
+ * -----------------------------------------------------------------------------
+ * - Read the purchase request ID from the route.
+ * - Load request data through the custom hook.
+ * - Render the header with request metadata.
+ * - Render items, categories, and supplier tables.
+ * - Open and close quotation/search modals.
+ * - Handle navigation actions.
+ * - Delegate save/print/generate logic to the hook.
+ *
+ * Return:
+ * -----------------------------------------------------------------------------
+ * - A full page layout composed of:
+ *   - header
+ *   - items table
+ *   - categories table
+ *   - suppliers table
+ *   - footer actions
+ *   - quotation modal
+ *   - supplier search modal
+ * -----------------------------------------------------------------------------
+ */
 export default function PurchaseRequestPage() {
+  /**
+   * Route params.
+   *
+   * Expected route structure:
+   * /purchases/purchase-requests/[id]
+   */
   const params = useParams();
+
+  /**
+   * Next.js router instance.
+   * Used for navigation actions such as:
+   * - going back
+   * - moving to the analysis page
+   */
   const router = useRouter();
 
+  /**
+   * Custom hook that provides all purchase request state and actions.
+   *
+   * The hook returns:
+   * - loaded data: purchaseRequest, orderItems, suppliers, categories, etc.
+   * - modal state: activeSupplier, isSupplierSearchOpen
+   * - handlers: open/close/save/print/generate/search/add
+   * - derived flags: allGenerated, hasPrintableSuppliers
+   * - helper methods: isFinalStatus
+   */
   const {
     purchaseRequest,
     orderItems,
@@ -42,7 +104,11 @@ export default function PurchaseRequestPage() {
     isFinalStatus,
   } = usePurchaseRequests(params.id);
 
-  // ── Loading / error states ─────────────────────────────────────────────────
+  // ── Loading / error states ────────────────────────────────────────────────
+
+  /**
+   * While the request is still loading, render a simple loading state.
+   */
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center text-slate-400 text-[14px]">
@@ -51,6 +117,9 @@ export default function PurchaseRequestPage() {
     );
   }
 
+  /**
+   * If the hook returns an error, render it instead of the page layout.
+   */
   if (error) {
     return (
       <div className="flex h-full items-center justify-center text-red-400 text-[14px]">
@@ -59,6 +128,11 @@ export default function PurchaseRequestPage() {
     );
   }
 
+  /**
+   * Formats the creation date of the purchase request for display.
+   *
+   * If no date exists, the value remains null.
+   */
   const formattedDate = purchaseRequest?.createdAt
     ? new Date(purchaseRequest.createdAt).toLocaleDateString("es-PY", {
         day: "2-digit",
@@ -69,22 +143,31 @@ export default function PurchaseRequestPage() {
 
   return (
     /**
-     * Root: ocupa exactamente el alto del layout padre (que debe ser h-screen o h-full).
-     * overflow-hidden evita cualquier scroll de página.
-     * flex-col distribuye: header (shrink-0) → contenido (flex-1 min-h-0) → footer (shrink-0)
+     * Main page container.
+     *
+     * Design goals:
+     * - fill the visible screen area
+     * - prevent outer page scrolling
+     * - keep header/footer fixed in place
+     * - allow inner sections to scroll independently
      */
-    <div className="flex flex-col overflow-hidden bg-surface p-4 md:p-6 rounded-[5px] gap-4" style={{ height: "calc(100vh - 3rem)" }}>
-
-      {/* ── HEADER — altura fija, nunca crece ─────────────────────────────── */}
+    <div
+      className="flex flex-col overflow-hidden bg-surface p-4 md:p-6 rounded-[5px] gap-4"
+      style={{ height: "calc(100vh - 3rem)" }}
+    >
+      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+      {/* Shows the purchase request identifier and basic metadata. */}
       <div className="shrink-0">
         <h1 className="text-[26px] font-extrabold leading-none tracking-tight text-foreground">
           Pedido de compra #{purchaseRequest?.id}
         </h1>
+
         <div className="flex items-center gap-5 mt-2 text-sm text-slate-600">
           <span>
             <span className="font-semibold text-slate-800">Solicitante: </span>
             {purchaseRequest?.requester}
           </span>
+
           {formattedDate && (
             <span>
               <span className="font-semibold text-slate-800">Creado: </span>
@@ -94,33 +177,40 @@ export default function PurchaseRequestPage() {
         </div>
       </div>
 
+      {/* Simple divider between header and body sections. */}
       <div className="shrink-0 border-b border-slate-200" />
 
-      {/* ── ITEMS — altura fija proporcional, scroll interno ──────────────── */}
+      {/* ── ITEMS SECTION ───────────────────────────────────────────────────── */}
+      {/* Displays the order items belonging to the purchase request. */}
       <section className="shrink-0 flex flex-col" style={{ maxHeight: "30%" }}>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">
           Items del pedido
         </p>
-        {/* El contenedor de la tabla hace el scroll, no la página */}
+
+        {/* The table itself is wrapped in a scroll container so the page does not scroll. */}
         <div className="flex-1 min-h-0 overflow-y-auto rounded-[5px] border border-slate-200">
           <ItemsTable items={orderItems} />
         </div>
       </section>
 
-      {/* ── GRID INFERIOR — ocupa todo el espacio restante ────────────────── */}
+      {/* ── LOWER GRID ─────────────────────────────────────────────────────── */}
+      {/* Two-column layout:
+          - left: categories summary
+          - right: suppliers and quotation workflow
+      */}
       <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        {/* Categorías */}
+        {/* Categories summary */}
         <section className="flex flex-col min-h-0">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">
             Categorías del pedido
           </p>
+
           <div className="flex-1 min-h-0 overflow-y-auto rounded-[5px] border border-slate-200">
             <CategoriesTable categories={categories} />
           </div>
         </section>
 
-        {/* Proveedores */}
+        {/* Suppliers section */}
         <SuppliersTable
           suppliers={suppliers}
           allGenerated={allGenerated}
@@ -131,7 +221,8 @@ export default function PurchaseRequestPage() {
         />
       </div>
 
-      {/* ── FOOTER — altura fija, pegado al fondo ─────────────────────────── */}
+      {/* ── FOOTER ACTIONS ─────────────────────────────────────────────────── */}
+      {/* Navigation buttons for leaving the page or moving to the analysis view. */}
       <div className="shrink-0 flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
         <button
           onClick={() => router.back()}
@@ -139,6 +230,7 @@ export default function PurchaseRequestPage() {
         >
           Atrás
         </button>
+
         <button
           onClick={() =>
             router.push(`/purchases/purchase-requests/${params.id}/analysis`)
@@ -149,7 +241,11 @@ export default function PurchaseRequestPage() {
         </button>
       </div>
 
-      {/* ── MODALS ────────────────────────────────────────────────────────── */}
+      {/* ── MODALS ─────────────────────────────────────────────────────────── */}
+      {/* Quotation modal:
+          - opens when a supplier is selected
+          - supports read-only mode for final statuses
+      */}
       <SupplierQuotationModal
         supplier={activeSupplier}
         isOpen={!!activeSupplier}
@@ -159,6 +255,9 @@ export default function PurchaseRequestPage() {
         onPrint={handlePrint}
       />
 
+      {/* Supplier search modal:
+          - used to add new suppliers to the request
+      */}
       <SupplierSearchModal
         isOpen={isSupplierSearchOpen}
         categoryNames={categoryNames}
