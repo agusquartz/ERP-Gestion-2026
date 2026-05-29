@@ -14,6 +14,14 @@ export function getProductById(id) {
   });
 }
 
+export function getProductByCode(code) {
+  if (!code) throw new Error("Product CODE is required");
+
+  return clientRequest(`/products/code/${code}`, {
+    method: "GET",
+  });
+}
+
 export function createSale(payload) {
   return clientRequest("/sales", {
     method: "POST",
