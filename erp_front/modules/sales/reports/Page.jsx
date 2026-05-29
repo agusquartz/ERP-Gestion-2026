@@ -102,7 +102,7 @@ export default function SalesReportsPage() {
             <button
               type="submit"
               disabled={loading}
-              className="cursor-pointer min-w-[260px] rounded-[5px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:bg-primary-hover active:translate-y-px"
+              className="w-full h-10 px-4 bg-primary hover:bg-primary-hover disabled:opacity-50 text-sm font-medium text-primary-foreground rounded-[4px] shadow-sm transition-colors duration-200 cursor-pointer flex items-center justify-center"
             >
               {loading ? "Procesando..." : "Generar Reporte"}
             </button>
