@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getSalesReport } from "@/lib/http/client/sales_reports";
 import { DinamicReportTable } from "./DinamicReportTable";
+import { PrintIcon } from "@/shared/components/Icons";
 
 export default function SalesReportsPage() {
   // Estados para los filtros del formulario
@@ -15,7 +16,7 @@ export default function SalesReportsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 🕒 Estado seguro para la fecha impresiva (Evita errores de Hydration)
+  // Estado seguro para la fecha impresiva (Evita errores de Hydration)
   const [printDate, setPrintDate] = useState("");
 
   useEffect(() => {
@@ -69,7 +70,7 @@ export default function SalesReportsPage() {
   return (
     <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px] space-y-4 print:bg-white print:p-0 print:m-0">
       
-      {/* 🛠️ INYECCIÓN CSS PARA CONTROLAR LA HOJA DE IMPRESIÓN EXCLUSIVA */}
+      {/* INYECCIÓN CSS PARA CONTROLAR LA HOJA DE IMPRESIÓN EXCLUSIVA */}
       <style jsx global>{`
         @media print {
           /* Oculta de raíz el sidebar y cualquier contenedor padre ajeno al reporte */
@@ -88,7 +89,7 @@ export default function SalesReportsPage() {
         }
       `}</style>
 
-      {/* 🖨️ ENCABEZADO DE IMPRESIÓN PROFESIONAL (Solo papel) */}
+      {/* ENCABEZADO DE IMPRESIÓN PROFESIONAL (Solo papel) */}
       <div className="hidden print:block border-b-2 border-slate-800 pb-4 mb-6 w-100">
         <div className="flex justify-between items-center">
           <div>
@@ -175,14 +176,14 @@ export default function SalesReportsPage() {
         </div>
       )}
 
-      {/* 🖨️ Botón de Impresión Directa */}
+      {/*Botón de Impresión Directa */}
       {reportData && !loading && (
         <div className="flex justify-end print:hidden">
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-[4px] hover:bg-slate-900 transition-colors shadow-sm"
-          >
-            🖨️ Imprimir Reporte
+            className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold rounded-[4px] transition-colors shadow-sm cursor-pointer">
+            <PrintIcon />
+            Imprimir Reporte
           </button>
         </div>
       )}
