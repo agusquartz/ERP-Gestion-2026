@@ -110,7 +110,8 @@ useEffect(() => {
       setIsLoadingQuotes(true);
       setQuotesError(null);
 
-      const quotes = await listQuotes({ contains: quoteSearch });
+      const data = await listQuotes({ contains: quoteSearch });
+	  const quotes = data.quotes;
 
       if (ignore) return;
 
@@ -173,7 +174,8 @@ useEffect(() => {
 
       if (activeTab === DOCUMENT_TYPES.QUOTE) {
         data = await listQuotes({ contains: search });
-        mapped = data.map(quoteToDocument);
+		  console.log(data);
+        mapped = data.quotes.map(quoteToDocument);
       }
 
       if (activeTab === DOCUMENT_TYPES.CREDIT_NOTE) {

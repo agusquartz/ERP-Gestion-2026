@@ -19,11 +19,13 @@
 //! for the duration of the operation.
 
 use tokio_postgres::Row;
+use chrono::NaiveDate;
+use rust_decimal::Decimal;
+
 use crate::modules::quote::dto::create::CreateQuoteDto;
 use crate::db_config;
 use crate::modules::quote::model::*;
 use crate::modules::quote::mapper::rows_to_simple_quotes;
-use rust_decimal::Decimal;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BASE QUERY
@@ -232,37 +234,38 @@ pub async fn create_quote(
 
 
 pub async fn get_quotes(
-    contains: Option<String>,
+    search: Option<String>,
+    filter: Option<String>,
+    since:  Option<NaiveDate>,
+    to:     Option<NaiveDate>,
+    status: Option<String>,
+    cursor: Option<i32>,
+    limit:  i64,
 ) -> Result<Vec<QuoteWithDetails>, crate::db_config::DbError> {
     let client = db_config::get_client().await?;
+    let sql = format!("
+            {}
+	WHERE q.id IN (
+			SELECT DISTINCT q2.id
+			FROM quotes AS q2
+			LEFT JOIN quote_details AS qd2 ON q2.id = qd2.quote_id
+			LEFT JOIN products AS p2 ON qd2.product_id = p2.id
+			INNER JOIN statuses AS st ON q2.status_id = st.id
+			WHERE ($1::INT  IS NULL OR q2.id                      > $1)
+			AND ($3::TEXT IS NULL OR p2.description::TEXT ILIKE '%' || $3 || '%')
+			AND ($4::DATE IS NULL OR q2.created_at             >= $4)
+			AND ($5::DATE IS NULL OR q2.created_at             <= $5)
+			AND ($6::TEXT IS NULL OR st.status ILIKE $6)
+			ORDER BY q2.id ASC
+			LIMIT $7
+			)
+	AND($2::TEXT IS NULL OR c.name ILIKE '%' || $2 || '%' OR c.surname ILIKE '%' || $2 || '%')
+	ORDER BY q.id ASC, qd.id ASC
+            ", BASE_QUERY); 
 
-    let mut sql = BASE_QUERY.to_string();
-    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
-    
-    // `pattern` must be declared outside the `if` block so it lives long enough
-    // for `params` to hold a reference to it during `client.query(...)`.
 
-    let mut pattern = String::new();
+    let rows = client.query(&sql, &[&cursor, &search, &filter, &since, &to, &status, &limit]).await?;
 
-    if let Some(q) = contains {
-        pattern = format!("%{}%", q);
-
-        sql.push_str(
-            r#"
-            WHERE (
-                c.name ILIKE $1
-                OR c.surname ILIKE $1
-                OR c.document ILIKE $1
-                OR q.id::text ILIKE $1
-            )
-            ORDER BY q.id
-            "#,
-        );
-
-        params.push(&pattern);
-    }
-
-    let rows = client.query(&sql, &params).await?;
     Ok(rows_to_aggregate(rows))
 }
 
