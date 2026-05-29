@@ -2,6 +2,8 @@ create table roles (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	name TEXT UNIQUE NOT NULL,
 	description TEXT NOT NULL
+
+	CONSTRAINT unique_role_permission UNIQUE (role_id, permission_id);
 );
 
 create table users (
