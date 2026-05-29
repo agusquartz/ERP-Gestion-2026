@@ -9,7 +9,11 @@ use crate::modules::purchase_order::{
         }
     }, 
     dto::{
-        response::PurchaseOrderResponse,
+        PurchaseOrderListQuery,
+        response::{
+            ListOrdersView,
+            PurchaseOrderResponse,
+        },
         create::CreatePurchaseOrderDto,
         update::PatchPurchaseOrderDto
     },
@@ -23,11 +27,40 @@ use crate::modules::purchase_order::{
 /// - Maps domain aggregates into response DTOs
 ///
 /// Notes:
-/// - This function performs no business validation
 /// - Filtering semantics are defined at the repository level
-pub async fn list_purchase_orders(contains: Option<String>) -> Result<Vec<PurchaseOrderResponse>, errors::ServiceError> {
-    let rows= repository::query_orders(contains.as_deref()).await?;
-    Ok(rows.into_iter().map(|inv| PurchaseOrderResponse::from(inv)).collect())
+pub async fn list_purchase_orders(query: PurchaseOrderListQuery) -> Result<ListOrdersView, errors::ServiceError> {
+    //validate the status string
+    //discard invalid status before they reach repository
+    let status = query.status
+        .map(|s| s.to_uppercase())
+        .filter(|status| { matches!(status.as_str(), "PENDING" | "PARTIAL" | "OK")
+    });
+
+    dbg!(&status);
+
+    let rows= repository::query_orders(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        status, 
+        query.cursor, 
+        query.limit + 1,
+        ).await?;
+    let mut orders: Vec<PurchaseOrderResponse> = rows.into_iter().map(PurchaseOrderResponse::from).collect();
+    
+    let limit = query.limit as usize;
+    //check if there's more orders than what the limit allows us to return
+    let has_more = orders.len() > limit; 
+    //drop the extra order from the vector
+    orders.truncate(limit);
+    //create the list view
+    let view = ListOrdersView {
+        orders: orders,
+        has_more: has_more,
+    };
+
+    Ok(view)
 }
 
 /// Retrieves a single purchase order by ID.

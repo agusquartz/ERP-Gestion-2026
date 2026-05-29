@@ -7,7 +7,10 @@ use axum::{
 use crate::modules::purchase_order::{
     dto::{
         PurchaseOrderListQuery, 
-        response::PurchaseOrderResponse,
+        response::{
+            PurchaseOrderResponse,
+            ListOrdersView,
+        },
         create::CreatePurchaseOrderDto,
         update::PatchPurchaseOrderDto
     },
@@ -32,8 +35,8 @@ use crate::modules::purchase_order::{
 /// - Maps all service errors to `500 Internal Server Error`
 pub async fn list_purchase_orders(
     Query(query): Query<PurchaseOrderListQuery>,
-) -> Result<Json<Vec<PurchaseOrderResponse>>,StatusCode> {
-    let result = service::list_purchase_orders(query.contains).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+) -> Result<Json<ListOrdersView>,StatusCode> {
+    let result = service::list_purchase_orders(query).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(result))
 }
 

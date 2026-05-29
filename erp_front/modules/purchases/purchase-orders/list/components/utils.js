@@ -23,7 +23,7 @@ export const formatCurrency = (value) => {
 // Helper to translate status names
 export const translateOrderStatusName = (name) => {
 	const s = name.toLowerCase();
-	if (s === 'pending') return 'pendiente';
+	if (s === 'pending' || s === 'unsent') return 'pendiente';
 	if (s === 'cancelled') return 'cancelado';
 	if (s === 'partial') return 'parcial';
 	if (s === 'ok' || s === 'completed') return 'completado';

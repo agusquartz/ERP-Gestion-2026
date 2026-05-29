@@ -39,6 +39,7 @@ pub fn map_purchase_order(value: order_model::PurchaseOrderAggregate) -> respons
         supplier: response::SupplierResponse {
             id: value.supplier.id,
             name: value.supplier.name,
+            stamp: value.supplier.stamp,
         },
         /// Status projection
         status: response::StatusResponse {

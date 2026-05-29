@@ -1,102 +1,155 @@
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { useDebounce } from '../hooks/useDebounce.js'; 
-import { getPurchaseOrdersByQuery } from '../../../../../lib/http/client/purchase-orders.js';
-import PurchaseFilters from '../components/PurchaseFilters.jsx';
-import PurchaseTable from '../components/PurchaseTable.jsx';
 
-import {formatDate, formatCurrency} from '../components/utils.js';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+import { useDebounce } from "../hooks/useDebounce.js";
+//import { getPurchaseOrdersByQuery } from "../../../../../lib/http/client/purchase-orders.js";
+import { getPurchaseOrdersByQuery } from "@/lib/http/client/purchase-orders.js";
+
+import PurchaseFilters from "../components/PurchaseFilters.jsx";
+import PurchaseTable from "../components/PurchaseTable.jsx";
+
+const PAGE_SIZE = 10;
+
+const INITIAL_FILTERS = {
+  search: "",
+  filter: "",
+  status: "",
+  since: "",
+  to: "",
+};
 
 const SearchPurchaseOrdersPage = () => {
-  const [selectedDate, setSelectedDate] = useState('');
+  const router = useRouter();
+
   const [orders, setOrders] = useState([]);
-  const [serverSearch, setServerSearch] = useState(''); // Raw input for Input 1
-  const [clientFilter, setClientFilter] = useState(''); // Raw input for Input 2
-  const [status, setStatus] = useState('all');
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+
+  const [cursor, setCursor] = useState(null);
+  const [cursorStack, setCursorStack] = useState([]);
+
+  const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [isDetailLoading, setIsDetailLoading] = useState(false);
 
-  // Use the hook for the server-side search
-  const debouncedServerSearch = useDebounce(serverSearch, 600);
+  // Debounce only the search field
+  const debouncedSearch = useDebounce(filters.search, 600);
+  const debouncedFilter = useDebounce(filters.filter, 600);
 
-  // EFFECT 1: Fetch from backend only when the DEBOUNCED value changes
+  useEffect(() => {
+	setCursor(null);
+	setCursorStack([]);
+  }, [
+    debouncedSearch,
+	debouncedFilter,
+    filters.status,
+    filters.since,
+    filters.to,
+  ]);
+
+	  
+
   useEffect(() => {
     const loadData = async () => {
-	  setIsLoading(true);
-	  try {
-		const data = await getPurchaseOrdersByQuery(debouncedServerSearch);
-		setOrders(data);
+      setIsLoading(true);
 
-	  } catch (err) {
-		console.error("Failed to load orders: ", err);
-	  } finally {
-		  setIsLoading(false);
-	  }
-      
+      try {
+        const response = await getPurchaseOrdersByQuery({
+          search: debouncedSearch,
+		  filter: debouncedFilter,
+          status: filters.status,
+          since: filters.since,
+          to: filters.to,
+		  
+	      cursor,
+		  limit: PAGE_SIZE,
+        });
+
+        setOrders(response.orders);
+		setHasMore(response.hasMore);
+      } catch (err) {
+        console.error("Failed to load orders:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadData();
-  }, [debouncedServerSearch]); 
+  }, [
+	cursor,
+    debouncedSearch,
+	debouncedFilter,
+    filters.status,
+    filters.since,
+    filters.to,
+  ]);
 
-  // LOGIC: Client-side filtering on the results we already have
-  const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      const searchTerm = clientFilter.toLowerCase();
-      const matchesClient = 
-        String(order.id).includes(searchTerm) ||
-        order.supplier.name.toLowerCase().includes(searchTerm) ||
-        order.request_number.toLowerCase().includes(searchTerm);
-      
-      const matchesStatus = status === 'all' || order.status === status;
-	  const matchesDate = !selectedDate || order.date === selectedDate;	
-      
-      return matchesClient && matchesStatus && matchesDate;
-    });
-  }, [orders, clientFilter, status, selectedDate]);
+  const handleNextPage = () => {
+	  if(!orders.length) return;
 
-  const handleClear = () => {
-    setServerSearch('');
-    setClientFilter('');
-    setStatus('all');
-	setSelectedDate('');
+	  const lastOrder = orders[orders.length - 1];
+
+	  setCursorStack((prev) => [...prev,cursor]);
+
+	  setCursor(lastOrder.id);
   };
 
-  const router = useRouter();
-  const handleViewDetail = async (orderId) => {
-	  router.push(`/purchases/purchase-orders/${orderId}`);
+  const handlePreviousPage = () => {
+	  if(!orders.length) return;
+
+	  const previousCursor = cursorStack[cursorStack.length - 1];
+
+	  setCursorStack((prev) => prev.slice(0, -1));
+
+	  setCursor(previousCursor);
+  };
+
+  const handleViewDetail = (orderId) => {
+    router.push(`/purchases/purchase-orders/${orderId}`);
   };
 
   return (
     <div className="flex-1 flex min-h-[calc(100vh-32px)] mx-auto">
-
-        <div className="flex-1 bg-white rounded-[5px] shadow-sm border border-gray-200 overflow-hidden">
-
-          <h1 className="text-3xl font-bold text-[#1E293B] mt-8 mb-6 ml-5 tracking-tight">Órdenes de Compra</h1>
+      <div className="flex-1 bg-white rounded-[5px] shadow-sm border border-gray-200 overflow-hidden">
         
-		  <div className="mx-8">
-			  <PurchaseFilters 
-				serverSearch={serverSearch}
-				setServerSearch={setServerSearch}
-				clientFilter={clientFilter}
-				setClientFilter={setClientFilter}
-				status={status}
-				setStatus={setStatus}
-	  			selectedDate={selectedDate}
-	  			setSelectedDate={setSelectedDate}
-				resultsCount={filteredOrders.length}
-				totalCount={orders.length}
-				onClear={handleClear}
-			  />
-			  
-			  <PurchaseTable data={filteredOrders} totalResults={orders.length} onView={handleViewDetail}/>
-		  </div>
+        <h1 className="text-3xl font-bold text-[#1E293B] mt-8 mb-6 ml-5 tracking-tight">
+          Órdenes de Compra
+        </h1>
 
+        <div className="mx-8">
+          <PurchaseFilters onSearch={setFilters} />
+
+          <PurchaseTable
+            data={orders}
+            totalResults={orders.length}
+            isLoading={isLoading}
+            onView={handleViewDetail}
+          />
+
+		  <div className="flex gap-4 my-6">
+
+            <button
+              onClick={handlePreviousPage}
+              disabled={!cursorStack.length}
+              className="px-4 py-2 border rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            <button
+              onClick={handleNextPage}
+              disabled={!hasMore}
+              className="px-4 py-2 border rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+
+          </div>
+        </div>
       </div>
-
     </div>
   );
 };
 
 export default SearchPurchaseOrdersPage;
+
