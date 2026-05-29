@@ -1,19 +1,11 @@
-/**
- * @file SupplierSearchModal.jsx
- * @module modules/purchases/purchase-requests/id/modal
- *
- * @description
- * Modal for searching and selecting suppliers to add to a purchase order.
- */
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { btn, input, modal, badge } from "../styles/purchaseRequestsStyles";
 
 export default function SupplierSearchModal({
   isOpen,
-  categoryNames = [],
+  categoryNames = [],   
+  categoryIds = [],     
   onClose,
   onSearchSuppliers,
   onConfirm,
@@ -23,9 +15,16 @@ export default function SupplierSearchModal({
   const [availableSuppliers, setAvailableSuppliers] = useState([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
-  const normalizedCategories = useMemo(
+  // Deduplicar nombres para los badges
+  const normalizedNames = useMemo(
     () => [...new Set(categoryNames)].filter(Boolean),
     [categoryNames]
+  );
+
+  // Deduplicar IDs para el fetch
+  const normalizedIds = useMemo(
+    () => [...new Set(categoryIds)].filter((id) => id !== null && id !== undefined),
+    [categoryIds]
   );
 
   useEffect(() => {
@@ -37,9 +36,10 @@ export default function SupplierSearchModal({
       setSearchQuery("");
 
       try {
+        // Usa IDs numéricos — lo que getSuppliers() espera
         const data = await onSearchSuppliers({
           contains: "",
-          categories: normalizedCategories,
+          categories: normalizedIds,
         });
 
         setAvailableSuppliers(data ?? []);
@@ -52,12 +52,11 @@ export default function SupplierSearchModal({
     }
 
     fetchSuppliers();
-  }, [isOpen, normalizedCategories, onSearchSuppliers]);
+  }, [isOpen, normalizedIds, onSearchSuppliers]);
 
   const filteredSuppliers = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return availableSuppliers;
-
     return availableSuppliers.filter((s) =>
       (s.name ?? "").toLowerCase().includes(q)
     );
@@ -89,8 +88,8 @@ export default function SupplierSearchModal({
     filteredSuppliers.every((s) => selectedIds.has(s.id));
 
   return (
-    <div className={modal.overlay}>
-      <div className={`${modal.card} max-w-lg shadow-panel`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+      <div className="relative bg-surface rounded-xl w-full mx-4 p-8 max-w-lg shadow-panel">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none"
@@ -100,15 +99,16 @@ export default function SupplierSearchModal({
         </button>
 
         <div className="mb-6">
-          <h2 className={modal.title}>Agregar Proveedor</h2>
+          <h2 className="text-2xl font-bold text-foreground">Agregar Proveedor</h2>
           <p className="text-sm text-muted mt-1">
             Proveedores disponibles para las categorías de este pedido.
           </p>
 
+          {/* Badges visuales — usan nombres, no IDs */}
           <div className="flex flex-wrap gap-1 mt-2">
-            {normalizedCategories.map((cat) => (
-              <span key={cat} className={badge.category}>
-                {cat}
+            {normalizedNames.map((name) => (
+              <span key={name} className="px-2 py-0.5 rounded-full bg-border/60 text-muted text-xs font-medium uppercase tracking-wide">
+                {name}
               </span>
             ))}
           </div>
@@ -120,7 +120,7 @@ export default function SupplierSearchModal({
             placeholder="Buscar proveedor..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={input.search}
+            className="w-full border border-border rounded-lg px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
           />
         </div>
 
@@ -175,9 +175,8 @@ export default function SupplierSearchModal({
                       {supplier.categories?.map((cat) => {
                         const label = typeof cat === "string" ? cat : cat?.name;
                         if (!label) return null;
-
                         return (
-                          <span key={label} className={badge.category}>
+                          <span key={label} className="px-2 py-0.5 rounded-full bg-border/60 text-muted text-xs font-medium uppercase tracking-wide">
                             {label}
                           </span>
                         );
@@ -197,13 +196,13 @@ export default function SupplierSearchModal({
         </p>
 
         <div className="flex justify-end gap-3">
-          <button onClick={onClose} className={`${btn.secondary} shadow-panel`}>
+          <button onClick={onClose} className="px-5 py-2 rounded-lg border border-border text-secondary text-sm font-medium hover:bg-gray-50 transition-colors shadow-panel">
             Cancelar
           </button>
           <button
             onClick={handleConfirm}
             disabled={selectedIds.size === 0}
-            className={`${btn.primary} shadow-panel disabled:opacity-50 disabled:cursor-not-allowed`}
+            className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary-hover transition-colors shadow-panel disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Agregar Seleccionados ({selectedIds.size})
           </button>
