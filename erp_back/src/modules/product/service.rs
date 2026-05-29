@@ -76,6 +76,20 @@ pub async fn patch_product(
     Ok(product.map(ProductResponse::from))
 }
 
+
+/// Retrieves a single product by its code.
+///
+/// Returns:
+/// - `Ok(Some(product))` if found
+/// - `Ok(None)` if the product does not exist
+pub async fn get_product_by_code(
+    code: String,
+) -> Result<Option<ProductResponse>, ServiceError> {
+    let product = repository::get_product_by_code(&code).await?;
+    Ok(product.map(ProductResponse::from))
+}
+
+
 pub async fn decrease_stock(
     tx: &tokio_postgres::Transaction<'_>,
     product_id: i32,

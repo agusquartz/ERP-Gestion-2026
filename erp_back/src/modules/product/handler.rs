@@ -52,3 +52,17 @@ pub async fn patch_product(
         None => Err(StatusCode::NOT_FOUND),
     }
 }
+
+// GET /products/code/{code}
+pub async fn get_product_by_code(
+    Path(code): Path<String>,
+) -> Result<Json<ProductResponse>, StatusCode> {
+    let result = service::get_product_by_code(code)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    match result {
+        Some(product) => Ok(Json(product)),
+        None => Err(StatusCode::NOT_FOUND),
+    }
+}
