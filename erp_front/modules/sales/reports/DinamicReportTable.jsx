@@ -1,6 +1,6 @@
 "use client";
 
-export function DynamicReportTable({ reportData }) {
+export function DinamicReportTable({ reportData }) {
   // Estado de carga o si todavía no hay una consulta hecha
   if (!reportData || reportData.rows.length === 0) {
     return (
