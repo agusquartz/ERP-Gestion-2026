@@ -283,6 +283,45 @@ pub async fn patch_product(
     Ok(products.pop())
 }
 
+/// Retrieves a single product by its exact code.
+///
+/// # Arguments
+///
+/// - `code`: Exact product code used to identify the product
+///
+/// # Behavior
+///
+/// - Performs an exact match against `p.code`
+/// - Returns the product with all related data:
+///   - Category
+///   - Brand
+///   - Taxes
+///
+/// # Returns
+///
+/// - `Ok(Some(ProductAggregate))` if a matching product is found
+/// - `Ok(None)` if no product exists with the given code
+///
+/// # Notes
+///
+/// - Intended for barcode/POS/product scanner workflows
+/// - Uses `query_opt` because product codes are expected to be unique
+/// - Reuses `rows_to_aggregates` to build the aggregate structures
+pub async fn get_product_by_code(
+    code: &str,
+) -> Result<Option<model::ProductAggregate>, db_config::DbError> {
+    let client = db_config::get_client().await?;
+
+
+    let row = client
+        .query_opt(
+            &format!("{} WHERE p.code = $1", PRODUCT_SELECT_BASE),
+            &[&code],
+        )
+        .await?;
+    
+    Ok(row.map(|r| rows_to_aggregates(vec![r]).remove(0)))
+}
 
 pub async fn set_stock(
     tx: &tokio_postgres::Transaction<'_>,

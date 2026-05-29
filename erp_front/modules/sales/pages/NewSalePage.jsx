@@ -272,6 +272,7 @@ export default function NewSalePage({ quoteId }) {
             onOpenSearch={productModal.open}
             selectedProduct={pendingProduct}
             onClearProduct={() => setPendingProduct(null)}
+            onProductFound={setPendingProduct}
           />
 
           <SaleSummaryPanel subtotal={subtotal} total={total} />
