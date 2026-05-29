@@ -1,4 +1,4 @@
-import PurchaseRequestPage from "@/modules/purchases/purchase-requests/id/pages/PurchaseRequestPage";
+import PurchaseRequestPage from "@/modules/purchases/purchase-requests/view/pages/PurchaseRequestPage";
 import { use } from "react";
 
 export default function Page({ params }) {
