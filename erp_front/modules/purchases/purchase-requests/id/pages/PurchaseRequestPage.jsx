@@ -135,7 +135,7 @@ export default function PurchaseRequestPage() {
       <div className="shrink-0 flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
         <button
           onClick={() => router.back()}
-          className="px-5 py-2 text-sm font-medium rounded-[5px] border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+          className="px-5 py-2 rounded-[5px] border border-border text-secondary text-sm font-medium hover:bg-[#F2F3F7] transition-colors shadow-panel"
         >
           Atrás
         </button>
