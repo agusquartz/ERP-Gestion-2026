@@ -1,5 +1,43 @@
-import { clientRequest } from "./request";
+import { clientRequest } from "@/lib/http/client/request";
 
+/**
+ * GET /purchases/purchase-requests/{id}
+ * Returns the full purchase request aggregate.
+ */
+export function getPurchaseRequestById(id) {
+  if (!id) throw new Error("Purchase request ID is required");
+  return clientRequest(`/purchases/purchase-requests/${id}`, { method: "GET" });
+}
+
+/**
+ * POST /purchases/purchase-requests/{id}
+ * Creates a new quote linked to the purchase request.
+ *
+ * @param {number} id - Purchase request ID
+ * @param {{ purchaseRequestId, supplierId, createdAt, details }} body
+ */
+export function createPurchaseQuote(id, body) {
+  if (!id) throw new Error("Purchase request ID is required");
+  return clientRequest(`/purchases/purchase-requests/${id}`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * PATCH /purchases/purchase-requests/{id}
+ * Updates status, dates and/or line details of an existing quote.
+ *
+ * @param {number} id - Purchase request ID
+ * @param {{ quoteId, statusId, dateSent?, dateReceived?, details? }} body
+ */
+export function patchPurchaseQuote(id, body) {
+  if (!id) throw new Error("Purchase request ID is required");
+  return clientRequest(`/purchases/purchase-requests/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
 
 export function listPurchaseRequests({ contains } = {}) {
   const params = new URLSearchParams();
@@ -15,14 +53,6 @@ export function listPurchaseRequests({ contains } = {}) {
   });
 }
 
-export function getPurchaseRequestById(id) {
-  if (id == null) throw new Error("Purchase Request ID is required");
-
-  return clientRequest(`/purchases/purchase-requests/${id}`, {
-    method: "GET",
-  });
-}
-
 export function searchProductsForPurchaseRequest({ contains } = {}) {
   const params = new URLSearchParams();
 
@@ -33,7 +63,7 @@ export function searchProductsForPurchaseRequest({ contains } = {}) {
   const queryString = params.toString();
 
   return clientRequest(
-    `/purchase-request-products${queryString ? `?${queryString}` : ""}`,
+    `/purchases/purchase-request-products${queryString ? `?${queryString}` : ""}`,
     {
       method: "GET",
     }

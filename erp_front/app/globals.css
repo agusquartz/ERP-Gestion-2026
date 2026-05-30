@@ -48,3 +48,15 @@
     transform: rotate(360deg);
   }
 }
+
+@layer utilities {
+  .shadow-panel {
+    box-shadow: 2px 2px 5px 0 rgba(85, 85, 85, 0.25);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
