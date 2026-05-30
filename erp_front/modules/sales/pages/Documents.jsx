@@ -174,13 +174,12 @@ useEffect(() => {
 
       if (activeTab === DOCUMENT_TYPES.QUOTE) {
         data = await listQuotes({ contains: search });
-		  console.log(data);
         mapped = data.quotes.map(quoteToDocument);
       }
 
       if (activeTab === DOCUMENT_TYPES.CREDIT_NOTE) {
         data = await listCreditNotes({ contains: search });
-        mapped = data.map(creditNoteToDocument);
+        mapped = data.creditNotes.map(creditNoteToDocument);
       }
 
       if (!ignore) {
