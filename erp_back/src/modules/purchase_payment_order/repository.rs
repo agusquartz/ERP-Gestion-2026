@@ -16,6 +16,7 @@
 
 use tokio_postgres::Row;
 use rust_decimal::Decimal;
+use chrono::NaiveDate;
 
 use crate::db_config;
 use crate::modules::purchase_payment_order::dto::create::CreatePurchasePaymentOrderDto;
@@ -199,46 +200,40 @@ pub async fn create_purchase_payment_order(
 /// `pi.invoice_nr ILIKE $1`, PostgreSQL would only return the matching detail row
 /// and the aggregate would lose the other invoices from the same payment order.
 pub async fn get_purchase_payment_orders(
-    contains: Option<String>,
+    search: Option<String>,
+    filter: Option<String>,
+    since:  Option<NaiveDate>,
+    to:     Option<NaiveDate>,
+    status: Option<String>,
+    cursor: Option<i32>,
+    limit:  i64,
 ) -> Result<Vec<PurchasePaymentOrderWithDetails>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
-    let mut sql = BASE_QUERY.to_string();
-    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
+    let sql = format!("
+            {}
+	WHERE ppo.id IN (
+			SELECT DISTINCT ppo2.id
+			FROM purchase_payment_orders AS ppo2
+			INNER JOIN statuses AS st2 ON ppo2.status_id = st2.id
+			INNER JOIN suppliers AS sup2 ON ppo2.supplier_id = sup2.id
+			LEFT JOIN purchase_payment_order_details AS ppod2 ON ppod2.purchase_payment_order_id = ppo2.id
+			LEFT JOIN purchase_invoices AS pi2 ON ppod2.purchase_invoice_id = pi2.id
+			WHERE ($1::INT  IS NULL OR ppo2.id                      > $1)
+			AND ($3::TEXT IS NULL OR pi2.invoice_nr::TEXT ILIKE '%' || $3 || '%' OR sup2.name::TEXT ILIKE '%' || $3 || '%')
+			AND ($4::DATE IS NULL OR ppo2.created_at             >= $4)
+			AND ($5::DATE IS NULL OR ppo2.created_at             <= $5)
+			AND ($6::TEXT IS NULL OR st2.status ILIKE $6)
+			ORDER BY ppo2.id ASC
+			LIMIT $7
+			)
+	AND($2::TEXT IS NULL OR ppo.observations ILIKE '%' || $2 || '%')
+	ORDER BY ppo.id ASC, ppod.id ASC
+            ", BASE_QUERY); 
 
-    let mut pattern = String::new();
 
-    if let Some(q) = contains {
-        pattern = format!("%{}%", q);
+    let rows = client.query(&sql, &[&cursor, &search, &filter, &since, &to, &status, &limit]).await?;
 
-        sql.push_str(
-            r#"
-            WHERE (
-                ppo.id::text ILIKE $1
-                OR sup.name ILIKE $1
-                OR st.status ILIKE $1
-                OR requested_emp.name ILIKE $1
-                OR requested_emp.surname ILIKE $1
-                OR approved_emp.name ILIKE $1
-                OR approved_emp.surname ILIKE $1
-                OR EXISTS (
-                    SELECT 1
-                    FROM purchase_payment_order_details ppod_filter
-                    JOIN purchase_invoices pi_filter
-                        ON pi_filter.id = ppod_filter.purchase_invoice_id
-                    WHERE ppod_filter.purchase_payment_order_id = ppo.id
-                    AND pi_filter.invoice_nr ILIKE $1
-                )
-            )
-            "#,
-        );
-
-        params.push(&pattern);
-    }
-
-    sql.push_str(" ORDER BY ppo.id, ppod.id");
-
-    let rows = client.query(&sql, &params).await?;
     Ok(rows_to_aggregate(rows))
 }
 
