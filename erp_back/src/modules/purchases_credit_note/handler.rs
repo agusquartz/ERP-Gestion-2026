@@ -7,27 +7,25 @@ use serde::Deserialize;
 
 use crate::modules::purchases_credit_note::{
     dto::{
-        response::CreditNoteResponse,
+        PurchaseCreditNoteListQuery,
+        response::{
+            ListPurchaseCreditNoteView,
+            CreditNoteResponse,
+        },
         create::CreateCreditNoteDto,
     },
     service,
     errors,
 };
 
-/// Query parameters structure for filtering the Credit Notes list.
-#[derive(Debug, Deserialize)]
-pub struct CreditNoteListQuery {
-    pub contains: Option<String>,
-}
-
 /// HTTP handler for listing credit notes with optional text filtering.
 ///
 /// Endpoint:
 /// - GET /purchases/supplier-credit-notes
 pub async fn list_credit_note(
-    Query(query): Query<CreditNoteListQuery>,
-) -> Result<Json<Vec<CreditNoteResponse>>, StatusCode> {
-    let result = service::list_credit_notes(query.contains)
+    Query(query): Query<PurchaseCreditNoteListQuery>,
+) -> Result<Json<ListPurchaseCreditNoteView>, StatusCode> {
+    let result = service::list_credit_notes(query)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         

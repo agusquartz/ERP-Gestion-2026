@@ -57,7 +57,7 @@ export function useSupplierCreditNotes(filters) {
                 if (!cancelled) {
                     // Rust suele retornar la data envuelta en response.data o directo en la raíz.
                     // Si tu endpoint devuelve el arreglo directo, cámbialo a: response || []
-                    const fetchedData = response.data ?? response ?? [];
+                    const fetchedData = response.creditNotes ?? []; 
                     const fetchedHasMore = response.hasMore ?? false;
 
                     setCreditNotes(fetchedData);
