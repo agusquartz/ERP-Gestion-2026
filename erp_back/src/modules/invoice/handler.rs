@@ -18,7 +18,15 @@ use axum::{
     Json,
 };
 
-use crate::modules::invoice::dto::{InvoiceListQuery, response::InvoiceResponse, create::CreateInvoiceDto};
+use crate::modules::invoice::dto::{
+    InvoiceListQuery,
+    response::{
+        InvoiceResponse,
+        ListInvoicesView,
+    },
+    create::CreateInvoiceDto
+};
+
 use crate::modules::invoice::service;
 
 /// Retrieves a list of invoices.
@@ -31,8 +39,8 @@ use crate::modules::invoice::service;
 /// - `contains`: optional filter string
 pub async fn list_invoices(
     Query(query): Query<InvoiceListQuery>,
-) -> Result<Json<Vec<InvoiceResponse>>,StatusCode> {
-    let result = service::list_invoices(query.contains).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+) -> Result<Json<ListInvoicesView>,StatusCode> {
+    let result = service::list_invoices(query).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(result))
 }
 

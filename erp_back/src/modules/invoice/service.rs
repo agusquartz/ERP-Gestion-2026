@@ -18,18 +18,39 @@
 //! - No HTTP concerns
 //! - Central place for business rules
 
-use crate::modules::product;
-use crate::modules::product::dto::ProductResponse;
-use crate::modules::invoice::repository;
-use crate::modules::invoice::model::{NewInvoice, LineProduct, LineItem};
-use crate::modules::invoice::dto::response::InvoiceResponse;
-use crate::modules::invoice::dto::create::{CreateInvoiceDto, CreateInvoiceLineItemDto};
-use crate::modules::invoice::errors;
-use crate::shared::db_config;
-
 use std::collections::HashMap;
-use rust_decimal::{ Decimal,
-                    prelude::FromPrimitive};
+use rust_decimal::{ 
+    Decimal,
+    prelude::FromPrimitive
+};
+use crate::shared::db_config;
+use crate::modules::{
+    product::{
+        self,
+        dto::ProductResponse,
+    },
+    invoice::{
+        repository,
+        errors,
+        model::{
+            NewInvoice, 
+            LineProduct,
+            LineItem
+        },
+        dto::{
+            InvoiceListQuery,
+            response::{
+                InvoiceResponse,
+                ListInvoicesView,
+            },
+            create::{
+                CreateInvoiceDto, 
+                CreateInvoiceLineItemDto
+            },
+        },
+    },
+};
+
 
 
 /// Retrieves a list of invoices with optional filtering.
@@ -39,9 +60,31 @@ use rust_decimal::{ Decimal,
 ///
 /// # Returns
 /// - Vector of `InvoiceResponse`
-pub async fn list_invoices(contains: Option<String>) -> Result<Vec<InvoiceResponse>, errors::ServiceError> {
-    let rows= repository::query_invoices(contains.as_deref()).await?;
-    Ok(rows.into_iter().map(|inv| InvoiceResponse::from(inv)).collect())
+pub async fn list_invoices(query: InvoiceListQuery) -> Result<ListInvoicesView, errors::ServiceError> {
+    let rows= repository::query_invoices(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        query.status, 
+        query.cursor, 
+        query.limit + 1,
+    ).await?;
+
+    let mut invoices: Vec<InvoiceResponse> = rows.into_iter().map(InvoiceResponse::from).collect();
+
+    let limit = query.limit as usize;
+    //check if there's more invoices than what the limit allows us to return
+    let has_more = invoices.len() > limit; 
+    //drop the extra entity from the vector
+    invoices.truncate(limit);
+    //create the list view
+    let view = ListInvoicesView {
+        invoices: invoices,
+        has_more: has_more,
+    };
+
+    Ok(view)
 }
 
 /// Retrieves a single invoice by ID.
@@ -76,18 +119,18 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, er
         if line.quantity <= 0 {
             return Err(errors::ServiceError::Validation(errors::ValidationError {
                 context: format!(
-                    "quantity must be greater than zero for product {}",
-                    line.product_id
-                ),
+                             "quantity must be greater than zero for product {}",
+                             line.product_id
+                         ),
             }));
         }
 
         if line.unit_cost <= Decimal::from(0) {
             return Err(errors::ServiceError::Validation(errors::ValidationError {
                 context: format!(
-                    "unit cost must be greater than zero for product {}",
-                    line.product_id
-                ),
+                             "unit cost must be greater than zero for product {}",
+                             line.product_id
+                         ),
             }));
         }
     }
@@ -95,7 +138,7 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, er
 
     let mut client = db_config::get_client().await?;
     let tx = client.transaction().await.map_err(db_config::DbError::from)?;
-    
+
     //make a map with products
     let mut products: HashMap<i32,ProductResponse> = HashMap::new();
 
@@ -104,7 +147,7 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, er
         let p: ProductResponse = product::service::get_product(line.product_id)
             .await?
             .ok_or(errors::ServiceError::Validation( errors::ValidationError{
-                    context: format!("missing product {}", line.product_id)
+                context: format!("missing product {}", line.product_id)
             }))?;
         //insert to map
         products.insert(p.id, p);
@@ -163,19 +206,19 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, er
             detail.product.id,
             detail.quantity,
         )
-        .await
-        .map_err(|err| match err {
-            db_config::DbError::Other(msg) if msg == "insufficient stock" => {
-                errors::ServiceError::Conflict(errors::ConflictError {
-                    context: format!(
-                        "insufficient stock for product {}",
-                        detail.product.id
-                    ),
-                })
-            }
+            .await
+            .map_err(|err| match err {
+                db_config::DbError::Other(msg) if msg == "insufficient stock" => {
+                    errors::ServiceError::Conflict(errors::ConflictError {
+                        context: format!(
+                                     "insufficient stock for product {}",
+                                     detail.product.id
+                                 ),
+                    })
+                }
 
-            other => errors::ServiceError::Database(other),
-        })?;
+                other => errors::ServiceError::Database(other),
+            })?;
     }
 
     let invoice_id = repository::store_new_invoice(&tx, invoice).await?;
@@ -185,9 +228,9 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, er
     let aggregate = repository::query_invoice_by_id(invoice_id)
         .await?
         .ok_or(errors::ServiceError::Database(
-            db_config::DbError::InvariantViolation(
-                "Inserted invoice not found after commit".into(),
-            ),
+                db_config::DbError::InvariantViolation(
+                    "Inserted invoice not found after commit".into(),
+                ),
         ))?;
 
     let response = InvoiceResponse::from(aggregate);

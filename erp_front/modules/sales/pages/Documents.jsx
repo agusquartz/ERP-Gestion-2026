@@ -169,7 +169,7 @@ useEffect(() => {
 
       if (activeTab === DOCUMENT_TYPES.INVOICE) {
         data = await listInvoices({ contains: search });
-        mapped = data.map(invoiceToDocument);
+        mapped = data.invoices.map(invoiceToDocument);
       }
 
       if (activeTab === DOCUMENT_TYPES.QUOTE) {
