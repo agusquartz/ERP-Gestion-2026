@@ -32,7 +32,11 @@ use crate::shared::db_config;
 const INVOICE_SELECT_BASE: &str = r#"
 SELECT 
 inv.id AS invoice_id,
-inv.invoice_nr AS invoice_number,
+(
+    lpad(inv.establishment::text, 3, '0') || '-' ||
+    lpad(inv.emission_point::text, 3, '0') || '-' ||
+    lpad(inv.invoice_sequential::text, 7, '0')
+) AS invoice_number,
 inv.created_at AS created_at,
 inv.date AS date,
 inv.expiration_date AS expiration_date,
@@ -85,8 +89,21 @@ pub async fn query_invoice_by_id(id: i32) -> Result<Option<model::InvoiceAggrega
 pub async fn query_invoices(contains: Option<&str>) -> Result<Vec<model::InvoiceAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
     if let Some(q) = contains {
-        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR invoice_nr ILIKE '%' || $1 || '%' OR c.name ILIKE '%' || $1 || '%' OR c.surname ILIKE '%' || $1 || '%') ORDER BY invoice_id, detail_id", INVOICE_SELECT_BASE); 
-    
+        let sql = format!(
+            "{} WHERE (
+                COALESCE($1, '') = ''
+                OR (
+                    lpad(inv.establishment::text, 3, '0') || '-' ||
+                    lpad(inv.emission_point::text, 3, '0') || '-' ||
+                    lpad(inv.invoice_sequential::text, 7, '0')
+                ) ILIKE '%' || $1 || '%'
+                OR c.name ILIKE '%' || $1 || '%'
+                OR c.surname ILIKE '%' || $1 || '%'
+            )
+            ORDER BY invoice_id, detail_id",
+            INVOICE_SELECT_BASE
+        );
+
         let rows = client.query(&sql, &[&q]).await?;
         let aggregates = rows_to_aggregate(rows);
         return Ok(aggregates)
@@ -165,17 +182,23 @@ pub async fn store_new_invoice(
     invoice: NewInvoice,
 ) -> Result<i32, db_config::DbError> {
     let row = tx.query_one(
-        "INSERT INTO sales_invoices 
-        (invoice_nr, date, expiration_date, total, quote_id, client_id, sale_condition_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+    "INSERT INTO sales_invoices 
+        (
+            client_id,
+            date,
+            expiration_date,
+            total,
+            quote_id,
+            sale_condition_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id",
         &[
-            &invoice.invoice_number,
+            &invoice.client_id,
             &invoice.date,
             &invoice.expiration_date,
             &invoice.total,
             &invoice.quote_id,
-            &invoice.client_id,
             &invoice.sale_condition_id,
         ],
     ).await?;
