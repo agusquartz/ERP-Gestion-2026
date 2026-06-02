@@ -25,6 +25,12 @@ create table suppliers (
 	curr_credit DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
+create table category_suppliers (
+	supplier_id INT NOT NULL REFERENCES suppliers(id),
+	category_id INT NOT NULL REFERENCES categories(id),
+	CONSTRAINT pk_category_suppliers PRIMARY KEY (supplier_id, category_id)
+);
+
 CREATE TABLE IF NOT EXISTS emission_points (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
@@ -48,16 +54,11 @@ CREATE TABLE IF NOT EXISTS emission_points (
     UNIQUE(establishment, emission_point)
 );
 
-create table category_suppliers (
-	supplier_id INT NOT NULL REFERENCES suppliers(id),
-	category_id INT NOT NULL REFERENCES categories(id),
-	CONSTRAINT pk_category_suppliers PRIMARY KEY (supplier_id, category_id)
-);
-
 create table sale_conditions (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	name VARCHAR(25) NOT NULL
 );
+
 -- an/a item/product like "Oil 2L"
 create table products (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
