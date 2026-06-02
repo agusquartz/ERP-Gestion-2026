@@ -246,10 +246,13 @@ const selectedInvoice = documents.find(doc => doc.id === selectedId);
     
      <div className="flex h-[calc(100dvh-16px)] sm:h-[calc(100dvh-24px)] md:h-[calc(100dvh-48px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:p-4 md:p-6">
       <div className="mb-5">
-        <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
+        <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px] ">
           Buscar Documentos
         </h1>
-        <div className="mt-2 h-px w-full bg-foreground/80" />
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consultá facturas, presupuestos y notas de crédito.
+       </p>
+        <div className="mt-2 h-px w-full bg-border" />
       </div>
       <DocumentsHeader 
         activeTab={activeTab} 
