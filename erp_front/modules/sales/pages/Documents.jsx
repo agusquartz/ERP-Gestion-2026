@@ -244,7 +244,7 @@ const selectedInvoice = documents.find(doc => doc.id === selectedId);
     
   return (
     
-     <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
+     <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
       <div className="mb-5">
         <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
           Buscar Documentos
