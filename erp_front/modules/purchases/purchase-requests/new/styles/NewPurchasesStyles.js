@@ -6,9 +6,9 @@
 export const s = {
   // ── Page Wrapper & Layout ──────────────────────────────────────────────────
   // Main viewport container with overflow prevention and flex alignment
-  container: "h-screen w-full overflow-hidden bg-[#f1f5f9] flex flex-col p-4",
+  container: "flex h-[calc(100dvh-16px)] sm:h-[calc(100dvh-24px)] md:h-[calc(100dvh-48px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:p-4 md:p-6",
   titleSection: "mb-4",
-  pageTitle: "text-2xl font-bold text-[#1e293b]", // Size adjusted to match Figma specs (2xl)
+  pageTitle: "text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]", // Size adjusted to match Figma specs (2xl)
   contentLayout: "grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 flex-1 min-h-0",
   
   // ── Items Table (Inventory/Tires) ──────────────────────────────────────────
