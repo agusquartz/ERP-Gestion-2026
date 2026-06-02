@@ -37,6 +37,27 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
   }, [open]);
 
   useEffect(() => {
+  if (!open) return;
+
+  function handleEscape(event) {
+    if (event.key === "Escape") {
+      if (showCatDrop) {
+        setShowCatDrop(false);
+        return;
+      }
+
+      onClose();
+    }
+  }
+
+  window.addEventListener("keydown", handleEscape);
+
+  return () => {
+    window.removeEventListener("keydown", handleEscape);
+  };
+}, [open, onClose, showCatDrop]);
+
+  useEffect(() => {
     if (query.length < 3) {
       setFiltered([]);
       return;
