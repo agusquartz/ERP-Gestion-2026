@@ -190,7 +190,7 @@ pub async fn store_new_invoice(
     tx: &tokio_postgres::Transaction<'_>,
     invoice: NewInvoice,
 ) -> Result<i32, db_config::DbError> {
-    let row = tx.query_one(
+    let row = match tx.query_one(
     "INSERT INTO sales_invoices 
         (
             client_id,
@@ -210,7 +210,14 @@ pub async fn store_new_invoice(
             &invoice.quote_id,
             &invoice.sale_condition_id,
         ],
-    ).await?;
+    ).await {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("{:?}", e);
+            return Err(db_config::DbError::Other("lol".to_string()))
+        }
+    };
+    println!("Insertó el header");
 
     let invoice_id: i32 = row.get(0);
 

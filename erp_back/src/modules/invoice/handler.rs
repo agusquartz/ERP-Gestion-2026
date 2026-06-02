@@ -74,10 +74,10 @@ pub async fn get_invoice(
 /// - 200 with created invoice
 pub async fn create_invoice(
     Json(payload): Json<CreateInvoiceDto>,
-) -> Result<Json<InvoiceResponse>, StatusCode> {
+) -> Result<Json<InvoiceResponse>, (StatusCode, String)> {
     let invoice = service::create_invoice(payload)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Json(invoice))
 }
