@@ -1,0 +1,1 @@
+CREATE INDEX idx_permissions_code ON permissions(code);

@@ -31,10 +31,34 @@ create table category_suppliers (
 	CONSTRAINT pk_category_suppliers PRIMARY KEY (supplier_id, category_id)
 );
 
+CREATE TABLE IF NOT EXISTS emission_points (
+    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    establishment INT NOT NULL,
+    emission_point INT NOT NULL,
+
+    current_sequential INT NOT NULL DEFAULT 0,
+    max_sequential INT NOT NULL DEFAULT 9999999,
+
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CHECK (establishment > 0),
+    CHECK (emission_point > 0),
+    CHECK (current_sequential >= 0),
+    CHECK (max_sequential > 0),
+    CHECK (current_sequential <= max_sequential),
+
+    UNIQUE(establishment, emission_point)
+);
+
 create table sale_conditions (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	name VARCHAR(25) NOT NULL
 );
+
 -- an/a item/product like "Oil 2L"
 create table products (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -45,7 +69,7 @@ create table products (
 	category_id INT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
 	brand_id INT REFERENCES brands(id) ON DELETE RESTRICT,	
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
-	description TEXT NOT NULL
+	description TEXT NOT NULL,
 	last_acquisition_cost DECIMAL(17,2) NOT NULL DEFAULT 0
 );
 
@@ -85,14 +109,34 @@ create table quotes (
 create table sales_invoices (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	client_id INT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
-	invoice_nr VARCHAR(20) NOT NULL,
+
+	emission_point_id INT NOT NULL REFERENCES emission_points(id) ON DELETE RESTRICT,
+
+	establishment INT NOT NULL DEFAULT 1,
+	emission_point INT NOT NULL DEFAULT 1,
+	invoice_sequential INT,
+
 	created_at DATE NOT NULL DEFAULT CURRENT_DATE,
 	date DATE NOT NULL,
 	expiration_date DATE NOT NULL,
+
 	total decimal(17,2) NOT NULL,
 	total_paid decimal(17,2) DEFAULT 0 NOT NULL,
+
 	sale_condition_id INT NOT NULL REFERENCES sale_conditions(id),
-	quote_id INT REFERENCES quotes(id)
+	quote_id INT REFERENCES quotes(id),
+
+	CONSTRAINT uq_sales_invoice_number
+		UNIQUE (establishment, emission_point, invoice_sequential),
+
+	CONSTRAINT chk_sales_invoice_establishment
+		CHECK (establishment > 0),
+
+	CONSTRAINT chk_sales_invoice_emission_point
+		CHECK (emission_point > 0),
+
+	CONSTRAINT chk_sales_invoice_sequential
+		CHECK (invoice_sequential > 0)
 );
 
 create table sale_invoice_details (
@@ -168,4 +212,30 @@ create table employees_phones (
 );
 
 
-	
+CREATE OR REPLACE FUNCTION set_sales_invoice_number()
+RETURNS TRIGGER AS $$ DECLARE v_emission_point_id INT;
+v_establishment INT;
+v_emission_point INT;
+v_invoice_sequential INT;
+BEGIN UPDATE emission_points ep
+SET
+current_sequential = ep.current_sequential + 1,
+updated_at = NOW()
+WHERE ep.id = COALESCE( NEW.emission_point_id, ( SELECT id FROM emission_points WHERE is_active = TRUE ORDER BY id LIMIT 1 ) )
+AND ep.is_active = TRUE AND ep.current_sequential < ep.max_sequential
+RETURNING ep.id, ep.establishment, ep.emission_point, ep.current_sequential
+INTO v_emission_point_id, v_establishment, v_emission_point, v_invoice_sequential;
+IF NOT FOUND THEN RAISE EXCEPTION 'No active emission point found or max sequential reached';
+END IF;
+NEW.emission_point_id = v_emission_point_id;
+NEW.establishment = v_establishment;
+NEW.emission_point = v_emission_point;
+NEW.invoice_sequential = v_invoice_sequential;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_set_sales_invoice_number
+BEFORE INSERT ON sales_invoices
+FOR EACH ROW
+EXECUTE FUNCTION set_sales_invoice_number();
