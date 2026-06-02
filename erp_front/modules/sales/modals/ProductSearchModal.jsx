@@ -36,6 +36,8 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
     }
   }, [open]);
 
+
+  // Handles the Escape key to close the category dropdown first, or close the modal if the dropdown is not open.
   useEffect(() => {
   if (!open) return;
 
@@ -89,6 +91,8 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
     return () => clearTimeout(timer);
   }, [query, descFilter, catFilter]);
 
+
+  // Handles keyboard actions inside the search input: Escape closes the modal, Enter selects a product, and arrow keys move between rows.
   const handleKeyDown = (e) => {
   if (e.key === "Escape") {
     e.preventDefault();
