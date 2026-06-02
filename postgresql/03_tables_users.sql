@@ -1,12 +1,10 @@
-create table roles (
+CREATE TABLE roles (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	name TEXT UNIQUE NOT NULL,
 	description TEXT NOT NULL
-
-	CONSTRAINT unique_role_permission UNIQUE (role_id, permission_id);
 );
 
-create table users (
+CREATE TABLE users (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	employee_id INT REFERENCES employees(id),
 	username TEXT UNIQUE NOT NULL,
@@ -19,13 +17,13 @@ create table users (
 	role_id INT REFERENCES roles(id)
 );
 
-create table permissions (
+CREATE TABLE permissions (
 	id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	code TEXT NOT NULL,
 	description TEXT
 );
 
-create table roles_permissions (
+CREATE TABLE roles_permissions (
 	role_id INT REFERENCES roles(id),
 	permission_id INT REFERENCES permissions(id),
 	CONSTRAINT pk_roles_permissions_id PRIMARY KEY (role_id, permission_id)
