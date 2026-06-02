@@ -1,5 +1,5 @@
-
 "use client";
+
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { listQuotes, getQuoteById } from "@/lib/http/client/quotes";
@@ -15,21 +15,21 @@ import { listInvoices, getInvoiceById } from "@/lib/http/client/invoices";
 import { listCreditNotes } from "@/lib/http/client/credit-notes";
 
 const DOCUMENT_TYPES = {
-    INVOICE: "Facturas",
-    QUOTE: "Presupuesto",
-    CREDIT_NOTE: "Notas de Credito"
-}
+  INVOICE: "Facturas",
+  QUOTE: "Presupuesto",
+  CREDIT_NOTE: "Notas de Credito",
+};
 
 function quoteToDocument(quote) {
   return {
     id: quote.id,
-    type: "Presupuesto",
+    type: DOCUMENT_TYPES.QUOTE,
     date: quote.createdAt,
     invoice_number: `P-${String(quote.id).padStart(3, "0")}`,
     client: `${quote.client.name} ${quote.client.surname}`,
-    status: quote.status.name,
+    status: quote.status?.name ?? "",
     total: Number(quote.total),
-    details: quote.details,
+    details: quote.details ?? [],
   };
 }
 
@@ -42,7 +42,6 @@ function invoiceToDocument(invoice) {
     client: `${invoice.client.name} ${invoice.client.surname}`,
     total: Number(invoice.total),
 
-    // Datos extra útiles para modales
     createdAt: invoice.createdAt,
     expirationDate: invoice.expirationDate,
     totalPaid: Number(invoice.totalPaid),
@@ -50,8 +49,7 @@ function invoiceToDocument(invoice) {
     quoteId: invoice.quoteId,
     raw: invoice,
 
-    // Adaptado para tu NewCreditNoteModal actual
-    items: invoice.details.map((detail) => ({
+    items: (invoice.details ?? []).map((detail) => ({
       productId: detail.product.id,
       code: detail.product.code,
       description: detail.product.description,
@@ -71,231 +69,219 @@ function creditNoteToDocument(creditNote) {
     invoice_number: creditNote.invoice.invoiceNumber,
     invoiceId: creditNote.invoice.id,
     total: Number(creditNote.total),
-
-    // Tu CreditNoteResponse no trae cliente.
-    // Por eso no podemos mostrar el nombre real del cliente todavía.
     client: "No disponible",
-
     raw: creditNote,
-    details: creditNote.details,
+    details: creditNote.details ?? [],
   };
 }
 
+function matchesDateFilter(docDate, filter) {
+  if (!filter.type || !docDate) return true;
+
+  const date = new Date(docDate + "T00:00:00");
+  const now = new Date();
+
+  if (filter.type === "Hoy") {
+    return date.toDateString() === now.toDateString();
+  }
+  if (filter.type === "Esta Semana") {
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    return date >= startOfWeek;
+  }
+  if (filter.type === "Este Mes") {
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  }
+  if (filter.type === "custom" && filter.date) {
+    return docDate === filter.date;
+  }
+  return true;
+}
+
 export default function DocumentsPage() {
-const router = useRouter();
-const [activeTab, setActiveTab] = useState(DOCUMENT_TYPES.INVOICE);
-const [selectedId, setSelectedId] = useState(null);
-const [isCreatingCreditNote, setIsCreatingCreditNote] = useState(false);
-const [viewingInvoice, setViewingInvoice] = useState(null); // Estado para el modal de detalles
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState(DOCUMENT_TYPES.INVOICE);
+  const [selectedId, setSelectedId] = useState(null);
+  const [isCreatingCreditNote, setIsCreatingCreditNote] = useState(false);
+  const [viewingInvoice, setViewingInvoice] = useState(null);
 
-const [quoteSearch, setQuoteSearch] = useState("");
-const [isLoadingQuotes, setIsLoadingQuotes] = useState(false);
-const [quotesError, setQuotesError] = useState(null);
+  const [viewingQuote, setViewingQuote] = useState(null);
 
-const [viewingQuote, setViewingQuote] = useState(null);
-const [isLoadingQuoteDetails, setIsLoadingQuoteDetails] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [search, setSearch] = useState("");
+  const [filterTotal, setFilterTotal] = useState("");
+  const [dateFilter, setDateFilter] = useState({ type: "", date: "" });
+  const [statusFilter, setStatusFilter] = useState("");
 
-const [documents, setDocuments] = useState([]);
-const [search, setSearch] = useState("");
-const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
-const [documentsError, setDocumentsError] = useState(null);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [documentsError, setDocumentsError] = useState(null);
 
-useEffect(() => {
-  if (activeTab !== DOCUMENT_TYPES.QUOTE) return;
+  useEffect(() => {
+    let ignore = false;
 
-  let ignore = false;
+    async function loadDocuments() {
+      try {
+        setIsLoadingDocuments(true);
+        setDocumentsError(null);
 
-  async function loadQuotes() {
-    try {
-      setIsLoadingQuotes(true);
-      setQuotesError(null);
+        let data = [];
+        let mapped = [];
 
-      const quotes = await listQuotes({ contains: quoteSearch });
+        if (activeTab === DOCUMENT_TYPES.INVOICE) {
+          data = await listInvoices({ contains: search });
+          mapped = data.map(invoiceToDocument);
+        } else if (activeTab === DOCUMENT_TYPES.QUOTE) {
+          data = await listQuotes({ contains: search });
+          mapped = data.map(quoteToDocument);
+        } else if (activeTab === DOCUMENT_TYPES.CREDIT_NOTE) {
+          data = await listCreditNotes({ contains: search });
+          mapped = data.map(creditNoteToDocument);
+        }
 
-      if (ignore) return;
-
-      const quoteDocuments = quotes.map(quoteToDocument);
-
-      setDocuments((prev) => {
-        const documentsWithoutQuotes = prev.filter(
-          (doc) => doc.type !== DOCUMENT_TYPES.QUOTE
-        );
-
-        return [...documentsWithoutQuotes, ...quoteDocuments];
-      });
-    } catch (error) {
-      if (!ignore) {
-        setQuotesError(error.message);
-      }
-    } finally {
-      if (!ignore) {
-        setIsLoadingQuotes(false);
+        if (!ignore) {
+          setDocuments(mapped);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setDocumentsError(error.message);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingDocuments(false);
+        }
       }
     }
-  }
 
-  const timeoutId = setTimeout(loadQuotes, 300);
+    const timeoutId = setTimeout(loadDocuments, 300);
 
-  return () => {
-    ignore = true;
-    clearTimeout(timeoutId);
-  };
-}, [activeTab, quoteSearch]);
+    return () => {
+      ignore = true;
+      clearTimeout(timeoutId);
+    };
+  }, [activeTab, search]);
 
-
-const handleAction = () => {
-    if (!selectedId) return; // If nothing is selected, we do nothing.
+  const handleAction = () => {
+    if (!selectedId) return;
 
     if (activeTab === DOCUMENT_TYPES.INVOICE) {
       setIsCreatingCreditNote(true);
-    } 
-    //Logic for Budget Redirection
-    else if (activeTab === DOCUMENT_TYPES.QUOTE) {
+    } else if (activeTab === DOCUMENT_TYPES.QUOTE) {
       router.push(`/sales/new?quote_id=${selectedId}`);
     }
-};
+  };
 
-useEffect(() => {
-  let ignore = false;
-
-  async function loadDocuments() {
+  const handleView = async (id) => {
     try {
-      setIsLoadingDocuments(true);
-      setDocumentsError(null);
-
-      let data = [];
-      let mapped = [];
-
       if (activeTab === DOCUMENT_TYPES.INVOICE) {
-        data = await listInvoices({ contains: search });
-        mapped = data.map(invoiceToDocument);
+        const invoice = await getInvoiceById(id);
+        setViewingInvoice(invoiceToDocument(invoice));
+        return;
       }
 
       if (activeTab === DOCUMENT_TYPES.QUOTE) {
-        data = await listQuotes({ contains: search });
-        mapped = data.map(quoteToDocument);
+        const quote = await getQuoteById(id);
+        setViewingQuote(quoteToDocument(quote));
+        return;
       }
 
       if (activeTab === DOCUMENT_TYPES.CREDIT_NOTE) {
-        data = await listCreditNotes({ contains: search });
-        mapped = data.map(creditNoteToDocument);
-      }
-
-      if (!ignore) {
-        setDocuments(mapped);
+        console.log("Credit note selected:", id);
+        return;
       }
     } catch (error) {
-      if (!ignore) {
-        setDocumentsError(error.message);
-      }
-    } finally {
-      if (!ignore) {
-        setIsLoadingDocuments(false);
-      }
+      alert(`Error al cargar el documento: ${error.message}`);
     }
-  }
-
-  const timeoutId = setTimeout(loadDocuments, 300);
-
-  return () => {
-    ignore = true;
-    clearTimeout(timeoutId);
   };
-}, [activeTab, search]);
 
-
-// Function to open the viewfinder
-const handleView = async (id) => {
-  try {
-    if (activeTab === DOCUMENT_TYPES.INVOICE) {
-      const invoice = await getInvoiceById(id);
-      setViewingInvoice(invoiceToDocument(invoice));
-      return;
+  const filteredDocuments = documents.filter((doc) => {
+    if (filterTotal.trim()) {
+      const q = filterTotal.trim().toLowerCase();
+      const matchesTotal = String(doc.total ?? "").includes(q);
+      const matchesInvoiceNr = (doc.invoice_number ?? "").toLowerCase().includes(q);
+      if (!matchesTotal && !matchesInvoiceNr) return false;
     }
 
-    if (activeTab === DOCUMENT_TYPES.QUOTE) {
-      const quote = await getQuoteById(id);
-      setViewingQuote(quoteToDocument(quote));
-      return;
+    if (activeTab === DOCUMENT_TYPES.QUOTE && statusFilter.trim()) {
+      if ((doc.status ?? "").toLowerCase() !== statusFilter.trim().toLowerCase()) {
+        return false;
+      }
     }
 
-    if (activeTab === DOCUMENT_TYPES.CREDIT_NOTE) {
-      // Por ahora, si no tenés modal de nota de crédito,
-      // podés solo leerla y mostrarla en consola.
-      // Más adelante hacemos CreditNoteDetailsModal.
-      console.log("Credit note selected:", id);
-      return;
-    }
-  } catch (error) {
-    alert(`Error al cargar el documento: ${error.message}`);
-  }
-};
+    if (!matchesDateFilter(doc.date, dateFilter)) return false;
 
-const handleCreateInvoiceFromQuote = () => {
-  if (!viewingQuote?.id) return;
+    return true;
+  });
 
-  router.push(`/sales/new?quote_id=${viewingQuote.id}`);
-};
+  const selectedInvoice = documents.find((doc) => doc.id === selectedId);
 
-const filteredDocuments = documents;
+  const quoteStatusOptions = Array.from(
+    new Set(
+      documents
+        .filter((doc) => doc.type === DOCUMENT_TYPES.QUOTE)
+        .map((doc) => doc.status)
+        .filter(Boolean)
+        .map((s) => String(s))
+    )
+  );
 
-//Search for the complete invoice item in the list using the selected ID
-const selectedInvoice = documents.find(doc => doc.id === selectedId);
-    
   return (
-    
-     <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
+    <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
       <div className="mb-5">
         <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
           Buscar Documentos
         </h1>
         <div className="mt-2 h-px w-full bg-foreground/80" />
       </div>
-      <DocumentsHeader 
-        activeTab={activeTab} 
+
+      <DocumentsHeader
+        activeTab={activeTab}
         setActiveTab={(tab) => {
           setActiveTab(tab);
           setSelectedId(null);
+          setFilterTotal("");
+          setDateFilter({ type: "", date: "" });
+          setStatusFilter("");
+          setSearch("");
         }}
-/>
+      />
 
-      <DocumentsSearch 
+      <DocumentsSearch
         activeTab={activeTab}
         onSearch={setSearch}
+        onFilterTotal={setFilterTotal}
+        onDateFilter={setDateFilter}
+        onStatusFilter={setStatusFilter}
+        statusOptions={quoteStatusOptions}
       />
-      {isLoadingQuoteDetails && activeTab === DOCUMENT_TYPES.QUOTE && (
-        <p className="mb-2 text-sm text-slate-500">
-          Cargando detalle del presupuesto...
-        </p>
-      )}
 
-      {isLoadingQuotes && activeTab === DOCUMENT_TYPES.QUOTE && (
-        <p className="text-sm text-slate-500">Cargando presupuestos...</p>
-      )}
-
-      {quotesError && activeTab === DOCUMENT_TYPES.QUOTE && (
+      {documentsError && (
         <p className="text-sm text-red-500">
-          Error al cargar presupuestos: {quotesError}
+          Error al cargar documentos: {documentsError}
         </p>
       )}
+
+      {isLoadingDocuments && (
+        <p className="text-sm text-slate-500">Cargando documentos...</p>
+      )}
+
       <DocumentsTable
         type={activeTab}
-        documents={documents}
+        documents={filteredDocuments}
         onView={handleView}
         onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
       />
-      <div className= "flex justify-end items-center h-20">
-          {activeTab!== DOCUMENT_TYPES.CREDIT_NOTE && (
-              <ActionButton 
-                //if something is selected: blue, if nothing is selected: gray
-                variant={selectedId  !== null ? "primary" : "tertiary"} 
-                type= {activeTab}
-                onClick={handleAction}
-              />
 
-          )}
+      <div className="flex justify-end items-center h-20">
+        {activeTab !== DOCUMENT_TYPES.CREDIT_NOTE && (
+          <ActionButton
+            variant={selectedId !== null ? "primary" : "tertiary"}
+            type={activeTab}
+            onClick={handleAction}
+          />
+        )}
       </div>
-       {/* modal: new credit note, rendering when isCreatingNote is true*/}
+
       {isCreatingCreditNote && (
         <NewCreditNoteModal
           isOpen={isCreatingCreditNote}
@@ -308,23 +294,22 @@ const selectedInvoice = documents.find(doc => doc.id === selectedId);
           }}
         />
       )}
-      <InvoiceDetailsModal 
-        isOpen={!!viewingInvoice} 
-        onClose={() => setViewingInvoice(null)} 
+
+      <InvoiceDetailsModal
+        isOpen={!!viewingInvoice}
+        onClose={() => setViewingInvoice(null)}
         invoice={viewingInvoice}
-        onCreateCreditNote={ () => setIsCreatingCreditNote(true)}
+        onCreateCreditNote={() => setIsCreatingCreditNote(true)}
       />
 
       <QuoteDetailsModal
         isOpen={!!viewingQuote}
         onClose={() => setViewingQuote(null)}
         quote={viewingQuote}
-        onCreateInvoice={handleCreateInvoiceFromQuote}
+        onCreateInvoice={() => {
+          if (viewingQuote?.id) router.push(`/sales/new?quote_id=${viewingQuote.id}`);
+        }}
       />
-
-
-
     </div>
-   
   );
 }
