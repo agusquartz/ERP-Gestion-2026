@@ -172,6 +172,7 @@ CREATE TABLE relatives (
     relation_type TEXT NOT NULL, -- child, spouse, other
     birth_date DATE,
     disability BOOLEAN DEFAULT FALSE,
+    employee_id INT REFERENCES employees(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
