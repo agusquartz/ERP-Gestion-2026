@@ -62,7 +62,7 @@ function buildReturnNotesQuery(filters = {}) {
  *   cursor: 10,
  * });
  */
-export function getReturnNotes(filters = {}) {
+export function getReturnNotesByQuery(filters = {}) {
   const query = buildReturnNotesQuery(filters);
 
   return clientRequest(`/return-notes${query}`, {
@@ -98,7 +98,7 @@ export function getReturnNoteById(id) {
  *   ]
  * }
  */
-export function createReturnNote(payload) {
+export function createReturnNotes(payload) {
   return clientRequest("/return-notes", {
     method: "POST",
     body: JSON.stringify(payload),
