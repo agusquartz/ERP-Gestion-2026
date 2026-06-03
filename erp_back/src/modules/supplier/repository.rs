@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use chrono::NaiveDate;
 
 use tokio_postgres::Row;
 
@@ -107,43 +108,80 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<model::SupplierAggregate> {
 ///
 /// If `category_ids` is empty, no category filter is applied.
 pub async fn query_suppliers(
-    contains: Option<&str>,
+    search: &Option<String>,
+    filter: &Option<String>,
+    since:  &Option<NaiveDate>,
+    to:     &Option<NaiveDate>,
+    status: &Option<String>,
+    cursor: &Option<i32>,
+    limit:  &i64,
     category_ids: &[i32],
 ) -> Result<Vec<model::SupplierAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
-    let sql = format!(
-        r#"
-        {}
-        WHERE
-            (
-                $1::text IS NULL
-                OR s.name ILIKE '%' || $1 || '%'
-                OR s.email ILIKE '%' || $1 || '%'
-                OR COALESCE(s.address, '') ILIKE '%' || $1 || '%'
+    let sql = format!( r#"
+WITH filtered_suppliers AS (
+    SELECT s.id
+    FROM suppliers s
+    WHERE
+        ($2::text IS NULL OR s.name ILIKE '%' || $2 || '%')
+        AND (
+            $3::text IS NULL
+            OR s.email ILIKE '%' || $3 || '%'
+            OR COALESCE(s.address, '') ILIKE '%' || $3 || '%'
+        )
+        AND (
+            cardinality($5::int[]) = 0
+            OR s.id IN (
+                SELECT cs.supplier_id
+                FROM category_suppliers cs
+                WHERE cs.category_id = ANY($5::int[])
+                GROUP BY cs.supplier_id
+                HAVING COUNT(DISTINCT cs.category_id) = cardinality($5::int[])
             )
-        AND
-            (
-                cardinality($2::int[]) = 0
-                OR s.id IN (
-                    SELECT cs_filter.supplier_id
-                    FROM category_suppliers cs_filter
-                    WHERE cs_filter.category_id = ANY($2::int[])
-                    GROUP BY cs_filter.supplier_id
-                    HAVING COUNT(DISTINCT cs_filter.category_id) = cardinality($2::int[])
-                )
-            )
-        ORDER BY supplier_id, category_id
+        )
+    ORDER BY s.id
+    LIMIT $4
+)
+SELECT
+    s.id AS supplier_id,
+    s.name AS supplier_name,
+    s.address AS supplier_address,
+    s.email AS supplier_email,
+    s.is_active AS supplier_is_active,
+    s.credit_limit::float8 AS supplier_credit_limit,
+    s.curr_credit::float8 AS supplier_curr_credit,
+
+    c.id AS category_id,
+    c.name AS category_name
+FROM filtered_suppliers fs
+JOIN suppliers s ON s.id = fs.id
+LEFT JOIN category_suppliers cs
+    ON cs.supplier_id = s.id
+LEFT JOIN categories c
+    ON c.id = cs.category_id
+    WHERE s.id >= $1
+ORDER BY s.id, c.id
         "#,
-        SUPPLIER_SELECT_BASE
     );
 
-    let contains_param: Option<&str> = contains;
     let category_ids_param: Vec<i32> = category_ids.to_vec();
+    let c = match cursor {
+        Some(cr) => cr,
+        None => &0
+    };
+    println!("{:?}, {:?}, {:?}, {:?}", c, &search, &filter, &limit);
+    
+    let rows = match client
+        .query(&sql, &[&c, &search, &filter, &limit, &category_ids_param])
+        .await {
 
-    let rows = client
-        .query(&sql, &[&contains_param, &category_ids_param])
-        .await?;
+            Ok(rows) => rows,
+            Err(e) => {
+                dbg!(&e);
+                return Err(db_config::DbError::Other("Couldn't execute get query".to_string()))
+            }
+        };
 
     Ok(rows_to_aggregates(rows))
 }
@@ -224,7 +262,7 @@ pub async fn query_supplier_categories(
             id: row.get("category_id"),
             name: row.get("category_name"),
         })
-        .collect();
+    .collect();
 
     Ok(Some(categories))
 }
@@ -260,7 +298,7 @@ pub async fn query_categories() -> Result<Vec<model::Category>, db_config::DbErr
             id: row.get("category_id"),
             name: row.get("category_name"),
         })
-        .collect();
+    .collect();
 
     Ok(categories)
 }
