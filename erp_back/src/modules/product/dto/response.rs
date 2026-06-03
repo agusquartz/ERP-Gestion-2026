@@ -2,6 +2,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::modules::product::model;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListProductView {
+    pub products: Vec<ProductResponse>,
+    pub has_more: bool,
+}
+
 /// Category data returned inside ProductResponse
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
