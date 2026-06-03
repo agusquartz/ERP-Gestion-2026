@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -6,8 +5,6 @@ import { useRouter } from "next/navigation";
 
 import { getSuppliers } from "@/lib/http/client/supplier";
 import { fetchPurchaseInvoices } from "@/lib/http/client/purchase-invoices";
-
-
 
 // Helper: format currency
 function formatMoney(value) {
@@ -341,74 +338,75 @@ export default function NewPaymentOrderPage() {
   };
 
   const removeInvoice = (invoiceId) => {
-  setSelectedInvoiceIds((prev) => prev.filter((id) => id !== invoiceId));
-};
+    setSelectedInvoiceIds((prev) => prev.filter((id) => id !== invoiceId));
+  };
 
-const handleCancel = () => {
-  setSelectedSupplier(null);
-  setSelectedInvoiceIds([]);
+  const handleCancel = () => {
+    setSelectedSupplier(null);
+    setSelectedInvoiceIds([]);
 
-  setInvoiceSearch("");
-  setDateFrom("");
-  setDateTo("");
+    setInvoiceSearch("");
+    setDateFrom("");
+    setDateTo("");
 
-  setSupplierSearch("");
-  setSupplierError("");
-  setSuppliers([]);
+    setSupplierSearch("");
+    setSupplierError("");
+    setSuppliers([]);
 
-  setPurchaseInvoices([]);
-  setInvoiceError("");
+    setPurchaseInvoices([]);
+    setInvoiceError("");
 
-  setError("");
-
-  setIsSupplierModalOpen(false);
-  setIsInvoiceModalOpen(false);
-};
-
-const handleConfirmPaymentOrder = async () => {
-  if (!selectedSupplier) {
-    setError("Debe seleccionar un proveedor.");
-    return;
-  }
-
-  if (selectedInvoices.length === 0) {
-    setError("Debe agregar al menos una factura.");
-    return;
-  }
-
-  try {
-    setIsSubmitting(true);
     setError("");
 
-    const payload = {
-      supplierId: selectedSupplier.id,
-      details: selectedInvoices.map((invoice) => ({
-        purchaseInvoiceId: invoice.id,
-        amountToPay: String(getInvoicePendingAmount(invoice)),
-        observations: `Pago de factura ${invoice.invoiceNr}`,
-      })),
-    };
+    setIsSupplierModalOpen(false);
+    setIsInvoiceModalOpen(false);
+  };
 
-    console.log("Payment order payload:", payload);
+  const handleConfirmPaymentOrder = async () => {
+    if (!selectedSupplier) {
+      setError("Debe seleccionar un proveedor.");
+      return;
+    }
 
-    // Later, when you create the API:
-    // await createPurchasePaymentOrder(payload);
+    if (selectedInvoices.length === 0) {
+      setError("Debe agregar al menos una factura.");
+      return;
+    }
 
-    alert(
-      `Orden de pago confirmada para ${selectedSupplier.name} por ${formatMoney(
-        totalSelectedAmount
-      )}`
-    );
+    try {
+      setIsSubmitting(true);
+      setError("");
 
-    router.push("/purchase-payment-orders");
-  } catch (err) {
-    setError(err.message || "No se pudo confirmar la orden de pago.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      const payload = {
+        supplierId: selectedSupplier.id,
+        details: selectedInvoices.map((invoice) => ({
+          purchaseInvoiceId: invoice.id,
+          amountToPay: String(getInvoicePendingAmount(invoice)),
+          observations: `Pago de factura ${invoice.invoiceNr}`,
+        })),
+      };
+
+      console.log("Payment order payload:", payload);
+
+      // Later, when you create the API:
+      // await createPurchasePaymentOrder(payload);
+
+      alert(
+        `Orden de pago confirmada para ${selectedSupplier.name} por ${formatMoney(
+          totalSelectedAmount
+        )}`
+      );
+
+      router.push("/purchase-payment-orders");
+    } catch (err) {
+      setError(err.message || "No se pudo confirmar la orden de pago.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const totalAmount = totalSelectedAmount;
+
   return (
     <div className="flex h-full min-h-0 flex-col rounded-[5px] bg-surface p-4 md:p-6">
       {/* Title */}
@@ -439,7 +437,9 @@ const handleConfirmPaymentOrder = async () => {
             {selectedSupplier ? (
               <span>{selectedSupplier.name}</span>
             ) : (
-              <span className="text-muted-foreground">Buscar y seleccionar proveedor...</span>
+              <span className="text-muted-foreground">
+                Buscar y seleccionar proveedor...
+              </span>
             )}
           </button>
 
@@ -486,17 +486,44 @@ const handleConfirmPaymentOrder = async () => {
             </button>
           </div>
 
+          {/* CAMBIO: tabla principal con estilo tipo DocumentsTable */}
           <div className="flex h-[440px] flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
             <div className="min-h-0 flex-1 overflow-auto">
-              <table className="w-full table-fixed border-collapse">
+              <table className="w-full min-w-[850px] table-fixed border-collapse">
+                <colgroup>
+                  <col className="w-[70px]" />
+                  <col />
+                  <col className="w-[150px]" />
+                  <col className="w-[180px]" />
+                  <col className="w-[150px]" />
+                  <col className="w-[130px]" />
+                </colgroup>
+
                 <thead>
-                  <tr className="h-[28px] bg-[#ededf1] text-[12px] font-extrabold text-black shadow-[0_2px_5px_rgba(0,0,0,0.25)]">
-                    <th className="w-[52px] px-3 text-center">#</th>
-                    <th className="px-3 text-left">Nro Factura</th>
-                    <th className="px-3 text-left">Fecha</th>
-                    <th className="px-3 text-left">Monto Total</th>
-                    <th className="px-3 text-center">Estado</th>
-                    <th className="w-[150px] px-3 text-center">Acciones</th>
+                  <tr className="bg-background">
+                    <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      #
+                    </th>
+
+                    <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Nro Factura
+                    </th>
+
+                    <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Fecha
+                    </th>
+
+                    <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Monto Total
+                    </th>
+
+                    <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Estado
+                    </th>
+
+                    <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
 
@@ -504,30 +531,36 @@ const handleConfirmPaymentOrder = async () => {
                   {selectedInvoices.map((invoice, index) => (
                     <tr
                       key={invoice.id}
-                      className={`h-[33px] text-[12px] text-black ${
-                        index % 2 === 1 ? "bg-[#f0f0f4]" : "bg-white"
-                      }`}
+                      className="group border-b border-gray-100 transition-colors hover:bg-[#f0f7ff]"
                     >
-                      <td className="px-3 text-center">{index + 1}</td>
+                      <td className="px-4 py-3.5 text-center text-sm text-foreground">
+                        {index + 1}
+                      </td>
 
-                      <td className="px-3 font-medium">{invoice.invoiceNr}</td>
+                      <td className="px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
+                        {invoice.invoiceNr}
+                      </td>
 
-                      <td className="px-3">{formatDate(invoice.createdAt)}</td>
+                      <td className="px-4 py-3.5 text-sm text-foreground">
+                        {formatDate(invoice.createdAt)}
+                      </td>
 
-                      <td className="px-3">{formatMoney(getInvoicePendingAmount(invoice))}</td>
+                      <td className="px-4 py-3.5 text-right text-sm font-bold text-foreground">
+                        {formatMoney(getInvoicePendingAmount(invoice))}
+                      </td>
 
-                      <td className="px-3 text-center">
-                        <span className="inline-flex items-center gap-2 rounded-[5px] border border-red-500 bg-red-50 px-3 py-0.5 text-[12px] font-bold text-red-900">
-                          <span className="h-1.5 w-1.5 rounded-full bg-red-900" />
+                      <td className="px-4 py-3.5 text-center">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-red-300 bg-red-50 px-3 py-0.5 text-[10px] font-bold text-red-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
                           Pendiente
                         </span>
                       </td>
 
-                      <td className="px-3 text-center">
+                      <td className="px-4 py-3.5 text-right">
                         <button
                           type="button"
                           onClick={() => removeInvoice(invoice.id)}
-                          className="inline-flex rounded-md p-1.5 text-black transition hover:bg-red-50 hover:text-red-600"
+                          className="inline-flex rounded-[5px] p-1 text-muted-foreground transition-all duration-200 hover:bg-red-50 hover:text-red-600"
                           aria-label="Quitar factura"
                         >
                           <TrashIcon className="h-5 w-5" />
@@ -549,11 +582,12 @@ const handleConfirmPaymentOrder = async () => {
                 </tbody>
               </table>
             </div>
-          </div>
 
-          <p className="mt-1 pl-2 text-[13px] font-bold text-muted-foreground">
-            total facturas: {selectedInvoices.length}
-          </p>
+            {/* CAMBIO: contador dentro del marco de la tabla */}
+            <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+              <span>Total Facturas: {selectedInvoices.length}</span>
+            </div>
+          </div>
 
           {error && (
             <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">
@@ -717,24 +751,23 @@ const handleConfirmPaymentOrder = async () => {
       )}
 
       <div className="mt-10 flex justify-end gap-6">
-      <button
-        type="button"
-        onClick={handleCancel}
-        className="cursor-pointer min-w-[200px] rounded-[5px] border border-border px-5 py-2.5 text-sm font-semibold text-secondary transition hover:bg-background duration-200 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="cursor-pointer min-w-[200px] rounded-[5px] border border-border px-5 py-2.5 text-sm font-semibold text-secondary transition hover:bg-background duration-200 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
         >
-        Cancelar
-      </button>
-      
+          Cancelar
+        </button>
 
-      <button
-        type="button"
-        onClick={handleConfirmPaymentOrder}
-        disabled={isSubmitting || !selectedSupplier || selectedInvoices.length === 0}
-        className="h-[42px] w-[300px] rounded-[6px] bg-primary text-[18px] font-extrabold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
-      >
-        {isSubmitting ? "Confirmando..." : "Confirmar Orden de Pago"}
-      </button>
-    </div>
+        <button
+          type="button"
+          onClick={handleConfirmPaymentOrder}
+          disabled={isSubmitting || !selectedSupplier || selectedInvoices.length === 0}
+          className="h-[42px] w-[300px] rounded-[6px] bg-primary text-[18px] font-extrabold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
+        >
+          {isSubmitting ? "Confirmando..." : "Confirmar Orden de Pago"}
+        </button>
+      </div>
 
       {/* Modal: Seleccionar Facturas */}
       {isInvoiceModalOpen && (
@@ -829,70 +862,75 @@ const handleConfirmPaymentOrder = async () => {
 
                 <tbody>
                   {isLoadingInvoices && (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="py-8 text-center text-muted-foreground"
-                    >
-                      Cargando facturas...
-                    </td>
-                  </tr>
-                )}
-
-                {invoiceError && !isLoadingInvoices && (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="py-8 text-center text-red-600"
-                    >
-                      {invoiceError}
-                    </td>
-                  </tr>
-                )}
-                  {!isLoadingInvoices &&
-                    !invoiceError &&
-                    filteredInvoices.map((invoice, index) => (
-                    <tr
-                      key={invoice.id}
-                      className="border-b border-border text-sm text-foreground"
-                    >
-                      <td className="px-2 py-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedInvoiceIds.includes(invoice.id)}
-                          onChange={() => toggleInvoiceSelection(invoice.id)}
-                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                        />
-                      </td>
-
-                      <td className="px-2 py-2">{index + 1}</td>
-
-                      <td className="px-2 py-2 font-medium">
-                        {invoice.invoiceNr}
-                      </td>
-
-                      <td className="px-2 py-2">{formatDate(invoice.createdAt)}</td>
-
-                      <td className="px-2 py-2 text-right">
-                        {formatMoney(getInvoicePendingAmount(invoice))}
-                      </td>
-
-                      <td className="px-2 py-2">
-                        {selectedSupplier?.name || "-"}
-                      </td>
-                    </tr>
-                  ))}
-
-                  {!isLoadingInvoices && !invoiceError && filteredInvoices.length === 0 && (
                     <tr>
                       <td
                         colSpan={6}
                         className="py-8 text-center text-muted-foreground"
                       >
-                        No hay facturas que coincidan con los filtros.
+                        Cargando facturas...
                       </td>
                     </tr>
                   )}
+
+                  {invoiceError && !isLoadingInvoices && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="py-8 text-center text-red-600"
+                      >
+                        {invoiceError}
+                      </td>
+                    </tr>
+                  )}
+
+                  {!isLoadingInvoices &&
+                    !invoiceError &&
+                    filteredInvoices.map((invoice, index) => (
+                      <tr
+                        key={invoice.id}
+                        className="border-b border-border text-sm text-foreground"
+                      >
+                        <td className="px-2 py-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedInvoiceIds.includes(invoice.id)}
+                            onChange={() => toggleInvoiceSelection(invoice.id)}
+                            className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                          />
+                        </td>
+
+                        <td className="px-2 py-2">{index + 1}</td>
+
+                        <td className="px-2 py-2 font-medium">
+                          {invoice.invoiceNr}
+                        </td>
+
+                        <td className="px-2 py-2">
+                          {formatDate(invoice.createdAt)}
+                        </td>
+
+                        <td className="px-2 py-2 text-right">
+                          {formatMoney(getInvoicePendingAmount(invoice))}
+                        </td>
+
+                        <td className="px-2 py-2">
+                          {selectedSupplier?.name || "-"}
+                        </td>
+                      </tr>
+                    ))}
+
+                  {!isLoadingInvoices &&
+                    !invoiceError &&
+                    filteredInvoices.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="py-8 text-center text-muted-foreground"
+                        >
+                          No hay facturas que coincidan con los filtros.
+                        </td>
+                      </tr>
+                    )}
                 </tbody>
               </table>
             </div>

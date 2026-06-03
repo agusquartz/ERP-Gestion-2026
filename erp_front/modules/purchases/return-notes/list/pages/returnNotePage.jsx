@@ -108,9 +108,9 @@ function ReturnNoteStatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex min-w-[96px] items-center gap-2 rounded-[5px] border px-2.5 py-0.5 text-xs font-semibold ${border} ${bg} ${text}`}
+      className={`inline-flex min-w-[96px] items-center justify-center gap-2 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${border} ${bg} ${text}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
       {normalizeStatus(status)}
     </span>
   );
@@ -146,12 +146,13 @@ function returnNoteToRow(note) {
   };
 }
 
+// CAMBIO: inputs alineados al estilo de DocumentsSearch
 const inputBaseClass =
-  "w-full rounded-[5px] border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition-all duration-200 " +
-  "placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15";
+  "w-full rounded-[8px] border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-700 outline-none transition focus:border-[#2b6df5] focus:ring-2 focus:ring-[#2b6df5]/10";
 
+// CAMBIO: botones dropdown alineados al estilo de DocumentsSearch
 const dropdownButtonClass =
-  "flex h-10 w-full items-center justify-between rounded-[5px] border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-background";
+  "flex min-w-[150px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 transition-colors hover:bg-slate-100";
 
 export default function ReturnNotesPage() {
   const router = useRouter();
@@ -260,52 +261,58 @@ export default function ReturnNotesPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
+    // CAMBIO: mismo contenedor responsive que DocumentsPage
+    <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
       {/* Title */}
-      <div className="mb-5">
+      <div className="mb-5 shrink-0">
         <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
-          Nota de Devolucion
+          Notas de Devolución
         </h1>
+
         <p className="mt-1 text-sm text-muted-foreground">
-         Devoluciones de productos registradas a partir de facturas de compra
+          Consultá devoluciones de productos registradas a partir de facturas de compra.
         </p>
+
         <div className="mt-2 h-px w-full bg-border" />
       </div>
 
-      {/* Filters */}
-      <div className="mb-6 rounded-[5px] border border-border bg-surface p-4 shadow-panel">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1fr_auto_auto_auto] lg:items-end">
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-secondary">
-              Busqueda
+      {/* CAMBIO: filtros con estilo tipo DocumentsSearch */}
+      <div className="w-full shrink-0 space-y-4 py-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1.5fr_auto_auto_auto] lg:items-end">
+          <div className="flex flex-col gap-1.5">
+            <label className="ml-1 text-[13px] font-bold text-slate-800">
+              Búsqueda
             </label>
+
             <input
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value);
                 setCursor(INITIAL_CURSOR);
               }}
-              placeholder="buscar por nota de devolucion, factura, proveedor..."
+              placeholder="Buscar por nota de devolución, factura, proveedor..."
               className={inputBaseClass}
             />
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-secondary">
+          <div className="flex flex-col gap-1.5">
+            <label className="ml-1 text-[13px] font-bold text-slate-800">
               Filtrar resultados
             </label>
+
             <input
               value={secondaryFilter}
               onChange={(event) => setSecondaryFilter(event.target.value)}
-              placeholder="Filtrar por nota,invoice..."
+              placeholder="Filtrar por nota, factura..."
               className={inputBaseClass}
             />
           </div>
 
-          <div className="relative">
-            <label className="mb-1 block text-xs font-semibold text-secondary invisible">
-              -
+          <div className="relative flex flex-col gap-1.5">
+            <label className="ml-1 text-[13px] font-bold text-slate-800">
+              Fecha
             </label>
+
             <button
               type="button"
               onClick={() => {
@@ -314,15 +321,22 @@ export default function ReturnNotesPage() {
               }}
               className={dropdownButtonClass}
             >
-              {fromDateFilter || toDateFilter ? "Date range" : "Date"}
-              <ChevronDownIcon className="h-4 w-4" />
+              <span>
+                {fromDateFilter || toDateFilter ? "Rango de fecha" : "Fecha"}
+              </span>
+              <ChevronDownIcon
+                className={`h-4 w-4 transition-transform ${
+                  showDateDrop ? "rotate-180" : ""
+                }`}
+              />
             </button>
 
             {showDateDrop && (
-              <div className="absolute z-20 mt-2 w-[240px] rounded-[5px] border border-border bg-surface p-2 shadow-panel">
-                <label className="mb-1 block text-xs font-semibold text-secondary">
+              <div className="absolute z-20 mt-[74px] w-[240px] rounded-[10px] border border-slate-200 bg-white p-2 shadow-xl ring-1 ring-black/5">
+                <label className="mb-1 block text-[11px] font-bold uppercase text-slate-400">
                   Desde
                 </label>
+
                 <input
                   type="date"
                   value={fromDateFilter}
@@ -330,12 +344,13 @@ export default function ReturnNotesPage() {
                     setFromDateFilter(event.target.value);
                     setCursor(INITIAL_CURSOR);
                   }}
-                  className="w-full rounded-[5px] border border-border px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  className="w-full rounded-md border border-slate-200 px-2 py-1 text-[13px] text-slate-700 outline-none focus:border-[#2b6df5]"
                 />
 
-                <label className="mb-1 mt-3 block text-xs font-semibold text-secondary">
+                <label className="mb-1 mt-3 block text-[11px] font-bold uppercase text-slate-400">
                   Hasta
                 </label>
+
                 <input
                   type="date"
                   value={toDateFilter}
@@ -343,7 +358,7 @@ export default function ReturnNotesPage() {
                     setToDateFilter(event.target.value);
                     setCursor(INITIAL_CURSOR);
                   }}
-                  className="w-full rounded-[5px] border border-border px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  className="w-full rounded-md border border-slate-200 px-2 py-1 text-[13px] text-slate-700 outline-none focus:border-[#2b6df5]"
                 />
 
                 <button
@@ -354,7 +369,7 @@ export default function ReturnNotesPage() {
                     setCursor(INITIAL_CURSOR);
                     setShowDateDrop(false);
                   }}
-                  className="mt-2 w-full rounded-[5px] px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-background"
+                  className="mt-2 w-full rounded-md px-3 py-2 text-left text-[14px] font-medium text-slate-700 transition-colors hover:bg-[#f0f7ff] hover:text-[#2b6df5]"
                 >
                   Todo
                 </button>
@@ -362,10 +377,11 @@ export default function ReturnNotesPage() {
             )}
           </div>
 
-          <div className="relative">
-            <label className="mb-1 block text-xs font-semibold text-secondary invisible">
-              -
+          <div className="relative flex flex-col gap-1.5">
+            <label className="ml-1 text-[13px] font-bold text-slate-800">
+              Estado
             </label>
+
             <button
               type="button"
               onClick={() => {
@@ -374,12 +390,16 @@ export default function ReturnNotesPage() {
               }}
               className={dropdownButtonClass}
             >
-              {selectedStatus.label}
-              <ChevronDownIcon className="h-4 w-4" />
+              <span>{selectedStatus.label}</span>
+              <ChevronDownIcon
+                className={`h-4 w-4 transition-transform ${
+                  showStatusDrop ? "rotate-180" : ""
+                }`}
+              />
             </button>
 
             {showStatusDrop && (
-              <div className="absolute z-20 mt-2 w-[180px] rounded-[5px] border border-border bg-surface p-2 shadow-panel">
+              <div className="absolute z-20 mt-[74px] w-[180px] rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/5">
                 {RETURN_NOTE_STATUS_OPTIONS.map((option) => {
                   const isActive = option.value === statusFilter;
 
@@ -393,10 +413,10 @@ export default function ReturnNotesPage() {
                         setShowStatusDrop(false);
                         setSelectedId(null);
                       }}
-                      className={`w-full rounded-[5px] px-3 py-2 text-left text-sm font-medium transition ${
+                      className={`w-full rounded-md px-3 py-2 text-left text-[14px] font-medium transition-colors ${
                         isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-background"
+                          ? "bg-[#f0f7ff] text-[#2b6df5]"
+                          : "text-slate-700 hover:bg-[#f0f7ff] hover:text-[#2b6df5]"
                       }`}
                     >
                       {option.label}
@@ -407,63 +427,86 @@ export default function ReturnNotesPage() {
             )}
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-secondary invisible">
-              -
-            </label>
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="h-10 w-full rounded-[5px] border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-secondary transition hover:bg-background"
-            >
-              Limpiar filtros
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="rounded-[8px] border border-slate-300 px-6 py-2.5 text-[14px] font-bold text-slate-700 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-95"
+          >
+            Limpiar todo
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[12px] text-slate-400">
+            Mostrando resultados de búsqueda...
+          </span>
+
+          <span className="text-[11px] italic text-slate-400">
+            Usá los filtros para consultar notas de devolución.
+          </span>
         </div>
       </div>
 
       {/* Loading / Error */}
       {isLoading && (
-        <div className="mb-4 rounded-[5px] border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
-          Loading return notes...
+        <div className="mb-4 shrink-0 rounded-[5px] border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
+          Cargando notas de devolución...
         </div>
       )}
 
       {errorMessage && (
-        <div className="mb-4 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-4 shrink-0 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage}
         </div>
       )}
 
-      {/* Table */}
+      {/* CAMBIO: tabla con estilo tipo DocumentsTable */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
         <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full table-fixed border-collapse">
+          <table className="w-full min-w-[1050px] table-fixed border-collapse">
+            <colgroup>
+              <col className="w-[70px]" />
+              <col className="w-[150px]" />
+              <col className="w-[190px]" />
+              <col className="w-[150px]" />
+              <col />
+              <col className="w-[150px]" />
+              <col className="w-[150px]" />
+              <col className="w-[140px]" />
+            </colgroup>
+
             <thead>
-              <tr className="sticky top-0 z-10 bg-background text-xs font-semibold text-muted-foreground">
-                <th className="w-[60px] border-b border-border px-3 py-2.5 text-center">
+              <tr className="bg-background">
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   #
                 </th>
-                <th className="border-b border-border px-3 py-2.5 text-left">
-                  Factura 
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Factura
                 </th>
-                <th className="border-b border-border px-3 py-2.5 text-left">
-                  Nota Devolucion Nro
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Nota Devolución Nro
                 </th>
-                <th className="border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Fecha
                 </th>
-                <th className="border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Proveedor
                 </th>
-                <th className="border-b border-border px-3 py-2.5 text-left">
-                  Total$
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Total
                 </th>
-                <th className="border-b border-border px-3 py-2.5 text-center">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Estado
                 </th>
-                <th className="w-[150px] border-b border-border px-3 py-2.5 text-center">
-                  Accion
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Acción
                 </th>
               </tr>
             </thead>
@@ -476,49 +519,58 @@ export default function ReturnNotesPage() {
                   <tr
                     key={note.id}
                     onClick={() => handleSelect(note.id)}
-                    className={`cursor-pointer border-b border-border text-sm text-foreground transition-colors duration-150 ${
-                      isSelected ? "bg-primary/10" : "bg-surface hover:bg-background"
+                    className={`group cursor-pointer border-b border-gray-100 transition-colors ${
+                      isSelected ? "bg-[#f0f7ff]" : "hover:bg-[#f0f7ff]"
                     }`}
                   >
-                    <td className="px-3 py-2.5 text-center">{index + 1}</td>
+                    <td className="px-4 py-3.5 text-center text-sm text-foreground">
+                      {index + 1}
+                    </td>
 
-                    <td className="px-3 py-2.5 font-medium">
+                    <td className="px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
                       {note.returnNoteNumber}
                     </td>
 
-                    <td className="px-3 py-2.5">
+                    <td className="px-4 py-3.5 text-sm text-foreground">
                       {note.purchaseInvoiceId}
                     </td>
 
-                    <td className="px-3 py-2.5">
+                    <td className="px-4 py-3.5 text-sm text-foreground">
                       {formatDate(note.date)}
                     </td>
 
-                    <td className="truncate px-3 py-2.5" title={note.supplier}>
+                    <td
+                      className="truncate px-4 py-3.5 text-sm font-medium text-foreground"
+                      title={note.supplier}
+                    >
                       {note.supplier}
                     </td>
 
-                    <td className="px-3 py-2.5">
+                    <td className="px-4 py-3.5 text-right text-sm font-bold text-foreground">
                       {formatMoney(note.total)}
                     </td>
 
-                    <td className="px-3 py-2.5 text-center">
-                      <ReturnNoteStatusBadge status={note.status} />
+                    <td className="px-4 py-3.5 text-center">
+                      <div className="flex justify-center">
+                        <ReturnNoteStatusBadge status={note.status} />
+                      </div>
                     </td>
 
-                    <td className="px-3 py-2.5 text-center">
-                      {isSelected && (
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleOpen(note.id);
-                          }}
-                          className="rounded-[5px] bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover active:translate-y-px"
-                        >
-                          Seleccionar
-                        </button>
-                      )}
+                    <td className="px-4 py-3.5 text-right">
+                      <div className="flex justify-end">
+                        {isSelected && (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleOpen(note.id);
+                            }}
+                            className="rounded-[5px] bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover active:translate-y-px"
+                          >
+                            Seleccionar
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -528,20 +580,23 @@ export default function ReturnNotesPage() {
                 <tr>
                   <td
                     colSpan={8}
-                    className="py-12 text-center text-sm text-muted-foreground"
+                    className="py-9 text-center text-sm text-muted-foreground"
                   >
-                    No return notes available.
+                    No hay notas de devolución disponibles.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
 
-      <p className="mt-3 pl-2 text-xs text-muted-foreground">
-        Mostrando {filteredReturnNotes.length} of {returnNotes.length} resultados
-      </p>
+        {/* CAMBIO: contador integrado como footer de tabla */}
+        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+          <span>
+            Mostrando {filteredReturnNotes.length} de {returnNotes.length} resultados
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

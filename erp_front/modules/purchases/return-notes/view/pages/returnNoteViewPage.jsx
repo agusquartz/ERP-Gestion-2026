@@ -154,9 +154,9 @@ function ReturnNoteStatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex min-w-[140px] items-center justify-center gap-2 rounded-[5px] border px-3 py-1 text-sm font-semibold ${border} ${bg} ${text}`}
+      className={`inline-flex min-w-[120px] items-center justify-center gap-1.5 rounded-full border px-3 py-0.5 text-[10px] font-bold ${border} ${bg} ${text}`}
     >
-      <span className={`h-2 w-2 rounded-full ${dot}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
       {normalizeStatus(status)}
     </span>
   );
@@ -375,7 +375,7 @@ function ModalShell({ title, maxWidthClass = "max-w-[760px]", children, onClose 
         className={`w-full ${maxWidthClass} rounded-[5px] border border-border bg-surface p-6 shadow-panel md:p-10`}
       >
         <div className="mb-8 flex items-start justify-between gap-4">
-          <h2 className="text-[28px] font-extrabold leading-none tracking-tight text-foreground md:text-[36px]">
+          <h2 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
             {title}
           </h2>
 
@@ -653,87 +653,124 @@ function DetailedCreditNoteModal({
           Items de la factura
         </h3>
 
-        <div className="min-h-[320px] overflow-auto rounded-[5px] border border-border bg-surface shadow-panel">
-          <table className="w-full min-w-[1100px] table-fixed border-collapse">
-            <thead>
-              <tr className="bg-muted text-sm font-bold text-secondary">
-                <th className="w-[60px] border-b border-border px-3 py-2.5 text-center">
-                  #
-                </th>
-                <th className="w-[180px] border-b border-border px-3 py-2.5 text-left">
-                  Código
-                </th>
-                <th className="border-b border-border px-3 py-2.5 text-left">
-                  Producto
-                </th>
-                <th className="w-[160px] border-b border-border px-3 py-2.5 text-left">
-                  Precio Unitario
-                </th>
-                <th className="w-[160px] border-b border-border px-3 py-2.5 text-left">
-                  Cant. Devuelta
-                </th>
-                <th className="w-[170px] border-b border-border px-3 py-2.5 text-left">
-                  Monto Devuelto
-                </th>
-                <th className="w-[180px] border-b border-border px-3 py-2.5 text-left">
-                  Cant. A Acreditar
-                </th>
-                <th className="w-[190px] border-b border-border px-3 py-2.5 text-left">
-                  Monto A Acreditar
-                </th>
-              </tr>
-            </thead>
+        {/* CAMBIO: tabla del modal detallado con estilo tipo DocumentsTable */}
+        <div className="flex min-h-[320px] flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+          <div className="min-h-0 flex-1 overflow-auto">
+            <table className="w-full min-w-[1100px] table-fixed border-collapse">
+              <thead>
+                <tr className="bg-background">
+                  <th className="sticky top-0 w-[60px] border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    #
+                  </th>
 
-            <tbody>
-              {lines.map((line, index) => (
-                <tr key={line.detailId} className="text-sm text-foreground">
-                  <td className="px-3 py-3 text-center">{index + 1}</td>
-                  <td className="px-3 py-3 font-extrabold">{line.code}</td>
-                  <td className="truncate px-3 py-3" title={line.description}>
-                    {line.description}
-                  </td>
-                  <td className="px-3 py-3">{formatMoney(line.unitCost)}</td>
-                  <td className="px-3 py-3">{line.returnedQuantity}</td>
-                  <td className="px-3 py-3">{formatMoney(line.amountReturned)}</td>
-                  <td className="px-3 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      max={line.returnedQuantity}
-                      value={line.quantity}
-                      onChange={(event) =>
-                        handleLineChange(line.detailId, "quantity", event.target.value)
-                      }
-                      className="h-10 w-full rounded-[5px] border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                    />
-                  </td>
-                  <td className="px-3 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={line.amount}
-                      onChange={(event) =>
-                        handleLineChange(line.detailId, "amount", event.target.value)
-                      }
-                      className="h-10 w-full rounded-[5px] border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                    />
-                  </td>
+                  <th className="sticky top-0 w-[180px] border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Código
+                  </th>
+
+                  <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Producto
+                  </th>
+
+                  <th className="sticky top-0 w-[160px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Precio Unitario
+                  </th>
+
+                  <th className="sticky top-0 w-[160px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Cant. Devuelta
+                  </th>
+
+                  <th className="sticky top-0 w-[170px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Monto Devuelto
+                  </th>
+
+                  <th className="sticky top-0 w-[180px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Cant. A Acreditar
+                  </th>
+
+                  <th className="sticky top-0 w-[190px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Monto A Acreditar
+                  </th>
                 </tr>
-              ))}
+              </thead>
 
-              {lines.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="py-12 text-center text-sm text-muted-foreground"
+              <tbody>
+                {lines.map((line, index) => (
+                  <tr
+                    key={line.detailId}
+                    className="group border-b border-gray-100 text-sm text-foreground transition-colors hover:bg-[#f0f7ff]"
                   >
-                    No hay ítems disponibles.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <td className="px-4 py-3.5 text-center">
+                      {index + 1}
+                    </td>
+
+                    <td className="px-4 py-3.5 font-bold text-[#2b6df5]">
+                      {line.code}
+                    </td>
+
+                    <td
+                      className="truncate px-4 py-3.5 font-medium"
+                      title={line.description}
+                    >
+                      {line.description}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right">
+                      {formatMoney(line.unitCost)}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right">
+                      {line.returnedQuantity}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right font-bold">
+                      {formatMoney(line.amountReturned)}
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      <input
+                        type="number"
+                        min="0"
+                        max={line.returnedQuantity}
+                        value={line.quantity}
+                        onChange={(event) =>
+                          handleLineChange(line.detailId, "quantity", event.target.value)
+                        }
+                        className="h-10 w-full rounded-[5px] border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                      />
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={line.amount}
+                        onChange={(event) =>
+                          handleLineChange(line.detailId, "amount", event.target.value)
+                        }
+                        className="h-10 w-full rounded-[5px] border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                      />
+                    </td>
+                  </tr>
+                ))}
+
+                {lines.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="py-9 text-center text-sm text-muted-foreground"
+                    >
+                      No hay ítems disponibles.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+            <span>Mostrando {lines.length} resultados</span>
+          </div>
         </div>
 
         {submitError && (
@@ -911,7 +948,7 @@ export default function ReturnNoteDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full min-h-0 flex-col rounded-[5px] bg-surface p-4 md:p-6">
+      <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
         <div className="rounded-[5px] border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
           Cargando nota de devolución...
         </div>
@@ -921,7 +958,7 @@ export default function ReturnNoteDetailPage() {
 
   if (errorMessage || !returnNote) {
     return (
-      <div className="flex h-full min-h-0 flex-col rounded-[5px] bg-surface p-4 md:p-6">
+      <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
         <div className="mb-4 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage || "Nota de devolución no encontrada."}
         </div>
@@ -938,8 +975,8 @@ export default function ReturnNoteDetailPage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-[5px] bg-surface p-4 md:p-6">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
+      <div className="mb-3 shrink-0">
         <button
           type="button"
           onClick={() => router.back()}
@@ -950,25 +987,33 @@ export default function ReturnNoteDetailPage() {
         </button>
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center gap-8 border-b border-foreground/50 pb-2">
-        <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
-          Nota de Devolución N° {returnNote.returnNoteNumber}
-        </h1>
+      <div className="mb-5 shrink-0">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
+            Nota de Devolución N° {returnNote.returnNoteNumber}
+          </h1>
 
-        <ReturnNoteStatusBadge status={returnNote.status} />
+          <ReturnNoteStatusBadge status={returnNote.status} />
+        </div>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consultá el detalle de la devolución, factura asociada e ítems devueltos.
+        </p>
+
+        <div className="mt-2 h-px w-full bg-border" />
       </div>
 
-      <div className="mb-10 rounded-[5px] border border-border bg-surface px-6 py-3 shadow-sm">
-        <div className="flex flex-wrap gap-x-12 gap-y-2 text-lg">
+      <div className="mb-5 shrink-0 rounded-[5px] border border-border bg-surface px-6 py-3 shadow-sm">
+        <div className="flex flex-wrap gap-x-12 gap-y-2 text-sm sm:text-base">
           <div>
-            <span className="font-extrabold text-foreground">Proveedor:</span>{" "}
+            <span className="font-bold text-foreground">Proveedor:</span>{" "}
             <span className="font-medium text-secondary">
               {returnNote.supplier?.name || "Sin proveedor"}
             </span>
           </div>
 
           <div>
-            <span className="font-extrabold text-secondary">Creado</span>{" "}
+            <span className="font-bold text-secondary">Creado:</span>{" "}
             <span className="font-medium text-secondary">
               {formatDate(returnNote.createdAt)}
             </span>
@@ -976,23 +1021,23 @@ export default function ReturnNoteDetailPage() {
         </div>
       </div>
 
-      <div className="mb-16 grid max-w-[1020px] grid-cols-[250px_1fr] items-center gap-x-8 gap-y-8 pl-8 text-lg">
-        <div className="font-extrabold uppercase text-secondary">Motivo:</div>
+      <div className="mb-5 shrink-0 grid max-w-[1020px] grid-cols-1 gap-x-8 gap-y-4 text-sm sm:grid-cols-[250px_1fr] sm:text-base">
+        <div className="font-bold uppercase text-secondary">Motivo:</div>
         <div className="text-foreground">{returnNote.motive}</div>
 
-        <div className="font-extrabold uppercase text-secondary">Factura N°:</div>
+        <div className="font-bold uppercase text-secondary">Factura N°:</div>
         <div className="flex items-center gap-4">
-          <span className="min-w-[180px] font-extrabold text-foreground">
+          <span className="min-w-[180px] font-bold text-foreground">
             {returnNote.purchaseInvoiceNumber}
           </span>
           <ViewButton onClick={handleOpenPurchaseInvoice}>Ver</ViewButton>
         </div>
 
-        <div className="font-extrabold uppercase text-secondary">
+        <div className="font-bold uppercase text-secondary">
           Orden de Compra N°:
         </div>
         <div className="flex items-center gap-4">
-          <span className="min-w-[180px] font-extrabold text-foreground">
+          <span className="min-w-[180px] font-bold text-foreground">
             {returnNote.purchaseOrderId || "-"}
           </span>
           <ViewButton
@@ -1003,7 +1048,7 @@ export default function ReturnNoteDetailPage() {
           </ViewButton>
         </div>
 
-        <div className="font-extrabold uppercase text-secondary">
+        <div className="font-bold uppercase text-secondary">
           Nota de Crédito N°:
         </div>
 
@@ -1014,7 +1059,7 @@ export default function ReturnNoteDetailPage() {
                 key={note.id}
                 type="button"
                 onClick={() => handleOpenCreditNote(note.id)}
-                className="rounded-[5px] border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-extrabold text-primary transition hover:bg-primary/15"
+                className="rounded-[5px] border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-bold text-primary transition hover:bg-primary/15"
                 title={`Total: ${formatMoney(note.total)}`}
               >
                 {note.number}
@@ -1030,7 +1075,7 @@ export default function ReturnNoteDetailPage() {
             <button
               type="button"
               onClick={() => setShowCreditNoteMenu((prev) => !prev)}
-              className="flex h-11 items-center gap-3 rounded-[5px] bg-primary px-5 text-base font-extrabold text-primary-foreground transition hover:bg-primary-hover"
+              className="flex h-11 items-center gap-3 rounded-[5px] bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover"
             >
               Agregar Nota de Crédito
               <ChevronDownIcon className="h-5 w-5" />
@@ -1059,8 +1104,8 @@ export default function ReturnNoteDetailPage() {
         </div>
       </div>
 
-      <div className="mb-2 flex items-end justify-between gap-4">
-        <h2 className="pl-7 text-lg font-extrabold uppercase text-secondary">
+      <div className="mb-2 shrink-0 flex items-end justify-between gap-4">
+        <h2 className="text-lg font-bold uppercase text-secondary">
           Items Devueltos
         </h2>
 
@@ -1086,27 +1131,42 @@ export default function ReturnNoteDetailPage() {
         </div>
       </div>
 
+      {/* CAMBIO: tabla principal estilo DocumentsTable */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
         <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full table-fixed border-collapse">
+          <table className="w-full min-w-[950px] table-fixed border-collapse">
+            <colgroup>
+              <col className="w-[70px]" />
+              <col className="w-[180px]" />
+              <col />
+              <col className="w-[170px]" />
+              <col className="w-[170px]" />
+              <col className="w-[160px]" />
+            </colgroup>
+
             <thead>
-              <tr className="sticky top-0 z-10 bg-muted text-sm font-extrabold text-secondary">
-                <th className="w-[70px] border-b border-border px-3 py-2.5 text-center">
+              <tr className="bg-background">
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   #
                 </th>
-                <th className="w-[230px] border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Código
                 </th>
-                <th className="border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Producto
                 </th>
-                <th className="w-[200px] border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Cant. Facturada
                 </th>
-                <th className="w-[200px] border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Cant. Devuelta
                 </th>
-                <th className="w-[180px] border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Monto
                 </th>
               </tr>
@@ -1116,16 +1176,34 @@ export default function ReturnNoteDetailPage() {
               {returnNote.details.map((detail, index) => (
                 <tr
                   key={detail.id}
-                  className="text-base text-foreground transition hover:bg-background"
+                  className="group border-b border-gray-100 transition-colors hover:bg-[#f0f7ff]"
                 >
-                  <td className="px-3 py-3 text-center">{index + 1}</td>
-                  <td className="px-3 py-3 font-extrabold">{detail.code}</td>
-                  <td className="truncate px-3 py-3" title={detail.description}>
+                  <td className="px-4 py-3.5 text-center text-sm text-foreground">
+                    {index + 1}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
+                    {detail.code}
+                  </td>
+
+                  <td
+                    className="truncate px-4 py-3.5 text-sm font-medium text-foreground"
+                    title={detail.description}
+                  >
                     {detail.description}
                   </td>
-                  <td className="px-3 py-3">{detail.invoicedQuantity}</td>
-                  <td className="px-3 py-3">{detail.returnedQuantity}</td>
-                  <td className="px-3 py-3">{formatMoney(detail.amount)}</td>
+
+                  <td className="px-4 py-3.5 text-right text-sm text-foreground">
+                    {detail.invoicedQuantity}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-right text-sm text-foreground">
+                    {detail.returnedQuantity}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-right text-sm font-bold text-foreground">
+                    {formatMoney(detail.amount)}
+                  </td>
                 </tr>
               ))}
 
@@ -1133,7 +1211,7 @@ export default function ReturnNoteDetailPage() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="py-12 text-center text-sm text-muted-foreground"
+                    className="py-9 text-center text-sm text-muted-foreground"
                   >
                     No hay ítems devueltos.
                   </td>
@@ -1142,13 +1220,17 @@ export default function ReturnNoteDetailPage() {
             </tbody>
           </table>
         </div>
+
+        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+          <span>Mostrando {returnNote.details.length} resultados</span>
+        </div>
       </div>
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-4 shrink-0 flex justify-center">
         <button
           type="button"
           onClick={() => router.back()}
-          className="h-12 min-w-[280px] rounded-[5px] border border-border bg-surface px-4 text-base font-extrabold text-foreground transition hover:bg-background"
+          className="h-12 min-w-[280px] rounded-[5px] border border-border bg-surface px-4 text-base font-bold text-foreground transition hover:bg-background"
         >
           Atrás
         </button>

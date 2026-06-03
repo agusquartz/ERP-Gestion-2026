@@ -31,11 +31,17 @@ export default function CreditNotesListPage() {
   } = useSupplierCreditNotes(filters);
 
   return (
-    <div className="p-6 bg-white space-y-4 max-w-[1400px] mx-auto w-full">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Notas de Crédito de proveedores</h1>
+    <div className="flex h-[calc(100dvh-16px)] sm:h-[calc(100dvh-24px)] md:h-[calc(100dvh-48px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:p-4 md:p-6">
+      <div className="mb-5">
+        <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
+          Notas de Crédito
+        </h1>
+         <p className="mt-1 text-sm text-muted-foreground">
+           Consultá y gestioná notas de crédito de proveedores.
+       </p>
+       <div className="mt-2 h-px w-full bg-border" />
       </div>
-
+      
       {/* Barra de Filtros interactiva */}
       <CreditNoteSearch 
         onSearch={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
