@@ -21,7 +21,11 @@ SELECT
     cn.created_at AS created_at,
     cn.total AS total,
     si.id AS invoice_id,
-    si.invoice_nr AS invoice_number,
+    (
+        lpad(si.establishment::text, 3, '0') || '-' ||
+        lpad(si.emission_point::text, 3, '0') || '-' ||
+        lpad(si.invoice_sequential::text, 7, '0')
+    ) AS invoice_number,
     cnd.unit_cost AS detail_unit_cost,
     cnd.quantity AS detail_quantity,
     cnd.tax AS detail_tax,
@@ -69,12 +73,29 @@ pub async fn query_credit_notes(contains: Option<&str>) -> Result<Vec<model::Cre
     if let Some(q) = contains {
         let sql = format!("{} WHERE (COALESCE($1, '') = '' OR credit_note_number ILIKE '%' || $1 || '%' OR detail_product_description ILIKE '%' || $1 || '%' OR detail_product_code ILIKE '%' || $1 || '%') ORDER BY cn.id, cnd.id", CREDIT_NOTES_SELECT_BASE); 
     
-        let rows = client.query(&sql, &[&q]).await?;
+        let rows = match client.query(&sql, &[]).await {
+            Ok(rows) => rows,
+            Err(e) => {
+                dbg!(&e);
+            return Err(db_config::DbError::Other(e.to_string()))
+            }
+        };
+
         let aggregates = rows_to_aggregate(rows);
         return Ok(aggregates)
     }
+
     let sql = CREDIT_NOTES_SELECT_BASE.to_string();
-    let rows = client.query(&sql, &[]).await?;
+    //let rows = client.query(&sql, &[]).await?;
+    
+    let rows = match client.query(&sql, &[]).await {
+        Ok(rows) => rows,
+        Err(e) => {
+            dbg!(&e);
+        return Err(db_config::DbError::Other(e.to_string()))
+        }
+    };
+
     Ok(rows_to_aggregate(rows))
 }
 
