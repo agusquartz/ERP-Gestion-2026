@@ -87,10 +87,6 @@ export function OrderTable({ orders = [], onSelect, onView }) {
           </tbody>
         </table>
       </div>
-
-      <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-        <span>Total pedidos: {orders.length}</span>
-      </div>
     </div>
   );
 }

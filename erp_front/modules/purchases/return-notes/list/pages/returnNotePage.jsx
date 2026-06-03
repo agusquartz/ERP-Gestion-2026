@@ -263,13 +263,13 @@ export default function ReturnNotesPage() {
     <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
       {/* Title */}
       <div className="mb-5">
-        <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
+        <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
           Nota de Devolucion
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
          Devoluciones de productos registradas a partir de facturas de compra
         </p>
-        <div className="mt-2 h-px w-full bg-foreground/80" />
+        <div className="mt-2 h-px w-full bg-border" />
       </div>
 
       {/* Filters */}
