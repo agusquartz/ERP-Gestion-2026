@@ -62,7 +62,7 @@ function buildReturnNotesQuery(filters = {}) {
  *   cursor: 10,
  * });
  */
-export function getReturnNotesByQuery(filters = {}) {
+export function getReturnNotes(filters = {}) {
   const query = buildReturnNotesQuery(filters);
 
   return clientRequest(`/return-notes${query}`, {

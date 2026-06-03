@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { createReturnNotes, getReturnNotesByQuery } from "@/lib/http/client/return-notes.js";    
+import { createReturnNotes, getReturnNotes } from "@/lib/http/client/return-notes.js";    
 
 // Fetches and manages return notes for a given invoice.
 // Used by the "Notas de Devolución" tab.
@@ -23,7 +23,7 @@ export function usePurchaseInvoiceReturnNotes(id) {
             setError(null);
 
             try {
-                const data = await getReturnNotesByQuery(id);
+                const data = await getReturnNotes(id);
                 // Only update if component is still mounted
                 if (!cancelled) setReturnNotes(data ?? []);
             } catch (e) {
