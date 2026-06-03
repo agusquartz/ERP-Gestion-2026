@@ -460,12 +460,11 @@ export default function ReturnNotesPage() {
         </div>
       )}
 
-      {/* CAMBIO: tabla con estilo tipo DocumentsTable */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
-        <div className="min-h-0 flex-1 overflow-auto">
+      {/* CAMBIO: tabla igual al estilo de DocumentsTable */}
+      <div className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+        <div className="flex-1 min-h-0 overflow-auto">
           <table className="w-full min-w-[1050px] table-fixed border-collapse">
             <colgroup>
-              <col className="w-[70px]" />
               <col className="w-[150px]" />
               <col className="w-[190px]" />
               <col className="w-[150px]" />
@@ -477,42 +476,38 @@ export default function ReturnNotesPage() {
 
             <thead>
               <tr className="bg-background">
-                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  #
-                </th>
-
-                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <th className="sticky top-0 border-b border-border bg-background px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Factura
                 </th>
 
-                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <th className="sticky top-0 border-b border-border bg-background px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Nota Devolución Nro
                 </th>
 
-                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <th className="sticky top-0 border-b border-border bg-background px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Fecha
                 </th>
 
-                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <th className="sticky top-0 border-b border-border bg-background px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Proveedor
                 </th>
 
-                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <th className="sticky top-0 border-b border-border bg-background px-3 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Total
                 </th>
 
-                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <th className="sticky top-0 border-b border-border bg-background px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Estado
                 </th>
 
-                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <th className="sticky top-0 border-b border-border bg-background px-3 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Acción
                 </th>
               </tr>
             </thead>
 
             <tbody>
-              {filteredReturnNotes.map((note, index) => {
+              {filteredReturnNotes.map((note) => {
                 const isSelected = selectedId === note.id;
 
                 return (
@@ -523,40 +518,36 @@ export default function ReturnNotesPage() {
                       isSelected ? "bg-[#f0f7ff]" : "hover:bg-[#f0f7ff]"
                     }`}
                   >
-                    <td className="px-4 py-3.5 text-center text-sm text-foreground">
-                      {index + 1}
-                    </td>
-
-                    <td className="px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
-                      {note.returnNoteNumber}
-                    </td>
-
-                    <td className="px-4 py-3.5 text-sm text-foreground">
+                    <td className="px-3 py-2.5 text-sm font-bold text-[#2b6df5]">
                       {note.purchaseInvoiceId}
                     </td>
 
-                    <td className="px-4 py-3.5 text-sm text-foreground">
+                    <td className="px-3 py-2.5 text-sm font-bold text-foreground">
+                      {note.returnNoteNumber}
+                    </td>
+
+                    <td className="px-3 py-2.5 text-sm text-foreground">
                       {formatDate(note.date)}
                     </td>
 
                     <td
-                      className="truncate px-4 py-3.5 text-sm font-medium text-foreground"
+                      className="truncate px-3 py-2.5 text-sm font-medium text-foreground"
                       title={note.supplier}
                     >
                       {note.supplier}
                     </td>
 
-                    <td className="px-4 py-3.5 text-right text-sm font-bold text-foreground">
+                    <td className="px-3 py-2.5 text-right text-sm font-bold text-foreground">
                       {formatMoney(note.total)}
                     </td>
 
-                    <td className="px-4 py-3.5 text-center">
+                    <td className="px-3 py-2.5 text-center">
                       <div className="flex justify-center">
                         <ReturnNoteStatusBadge status={note.status} />
                       </div>
                     </td>
 
-                    <td className="px-4 py-3.5 text-right">
+                    <td className="px-3 py-2.5 text-right">
                       <div className="flex justify-end">
                         {isSelected && (
                           <button
@@ -579,7 +570,7 @@ export default function ReturnNotesPage() {
               {filteredReturnNotes.length === 0 && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={7}
                     className="py-9 text-center text-sm text-muted-foreground"
                   >
                     No hay notas de devolución disponibles.
@@ -590,7 +581,7 @@ export default function ReturnNotesPage() {
           </table>
         </div>
 
-        {/* CAMBIO: contador integrado como footer de tabla */}
+        {/* CAMBIO: footer igual al estilo de DocumentsTable */}
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
           <span>
             Mostrando {filteredReturnNotes.length} de {returnNotes.length} resultados
