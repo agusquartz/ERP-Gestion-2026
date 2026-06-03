@@ -20,6 +20,11 @@ pub fn map_credit_note(value: model::CreditNoteAggregate) -> response::CreditNot
             id: value.invoice.id,
             invoice_number: value.invoice.invoice_number,
         },
+        client: response::ClientReferenceResponse {
+            id: value.client.id,
+            name: value.client.name,
+            surname: value.client.surname,
+        },
         created_at: value.credit_note.created_at,
         total: value.credit_note.total,
         details: value.credit_note

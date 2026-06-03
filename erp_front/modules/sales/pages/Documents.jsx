@@ -69,7 +69,7 @@ function creditNoteToDocument(creditNote) {
     invoice_number: creditNote.invoice.invoiceNumber,
     invoiceId: creditNote.invoice.id,
     total: Number(creditNote.total),
-    client: "No disponible",
+    client: `${creditNote.client.name} ${creditNote.client.surname}`,
     raw: creditNote,
     details: creditNote.details ?? [],
   };

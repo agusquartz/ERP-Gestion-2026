@@ -20,21 +20,31 @@ SELECT
     cn.credit_note_nr AS credit_note_number,
     cn.created_at AS created_at,
     cn.total AS total,
+
     si.id AS invoice_id,
     (
         lpad(si.establishment::text, 3, '0') || '-' ||
         lpad(si.emission_point::text, 3, '0') || '-' ||
         lpad(si.invoice_sequential::text, 7, '0')
     ) AS invoice_number,
+    
+    c.id AS client_id,
+    c.name AS client_name,
+    c.surname AS client_surname,
+    
     cnd.unit_cost AS detail_unit_cost,
     cnd.quantity AS detail_quantity,
     cnd.tax AS detail_tax,
+    
     p.id AS detail_product_id,
     p.code AS detail_product_code,
     p.description AS detail_product_description
+
 FROM credit_notes AS cn
 INNER JOIN sales_invoices AS si
     ON cn.sale_invoice_id = si.id
+INNER JOIN clients AS c
+    ON si.client_id = c.id
 INNER JOIN credit_note_details AS cnd
     ON cn.id = cnd.credit_note_id
 INNER JOIN products AS p
@@ -120,6 +130,12 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::CreditNoteAggregate> {
             invoice_number: row.get("invoice_number"),
         };
 
+        let client_ref = model::ClientReference {
+            id: row.get("client_id"),
+            name: row.get("client_name"),
+            surname: row.get("client_surname"),
+        };
+
         let entry = map.entry(credit_note_id).or_insert_with(|| model::CreditNoteAggregate {
             credit_note: model::CreditNote {
                 id: credit_note_id,
@@ -130,6 +146,7 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::CreditNoteAggregate> {
                 details: Vec::new(), 
             },
             invoice: invoice_ref,
+            client: client_ref,
         }
         );
 

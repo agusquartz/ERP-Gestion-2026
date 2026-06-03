@@ -20,6 +20,17 @@ pub struct CreditNote {
     pub details: Vec<CreditNoteLineItem>,
 }
 
+/// Lightweight client projection.
+///
+/// Used to expose client information without loading
+/// the entire client domain model.
+#[derive(Debug, Clone)]
+pub struct ClientReference {
+    pub id: i32,
+    pub name: String,
+    pub surname: String,
+}
+
 /// Lightweight reference to an invoice.
 ///
 /// Used inside aggregates to avoid loading full invoice data.
@@ -65,6 +76,7 @@ pub struct LineProduct {
 pub struct CreditNoteAggregate {
     pub credit_note: CreditNote,
     pub invoice: InvoiceReference,
+    pub client: ClientReference,
 }
 
 /// Write model used when creating a new credit note.
