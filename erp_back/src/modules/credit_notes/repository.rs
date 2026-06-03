@@ -81,9 +81,20 @@ pub async fn query_credit_note_by_id(id: i32) -> Result<Option<model::CreditNote
 pub async fn query_credit_notes(contains: Option<&str>) -> Result<Vec<model::CreditNoteAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
     if let Some(q) = contains {
-        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR credit_note_number ILIKE '%' || $1 || '%' OR detail_product_description ILIKE '%' || $1 || '%' OR detail_product_code ILIKE '%' || $1 || '%') ORDER BY cn.id, cnd.id", CREDIT_NOTES_SELECT_BASE); 
+        let sql = format!(
+            "{} WHERE (
+                COALESCE($1, '') = '' 
+                OR cn.credit_note_nr ILIKE '%' || $1 || '%' 
+                OR p.description ILIKE '%' || $1 || '%' 
+                OR p.code ILIKE '%' || $1 || '%' 
+                OR c.name ILIKE '%' || $1 || '%'
+                OR c.surname ILIKE '%' || $1 || '%'
+            )
+            ORDER BY cn.id, cnd.id", 
+            CREDIT_NOTES_SELECT_BASE
+        ); 
     
-        let rows = match client.query(&sql, &[]).await {
+        let rows = match client.query(&sql, &[&q]).await {
             Ok(rows) => rows,
             Err(e) => {
                 dbg!(&e);
