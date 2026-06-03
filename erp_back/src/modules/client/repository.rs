@@ -20,6 +20,7 @@
 //! via the `From` implementation in `service.rs`.
 
 use std::collections::BTreeMap;
+use chrono::NaiveDate;
 
 use tokio_postgres::Row;
 use tokio_postgres::types::ToSql;
@@ -177,17 +178,35 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<ClientAggregate> {
 
 
 pub async fn query_clients(
-    contains: Option<&str>,
+    search: Option<String>,
+    filter: Option<String>,
+    since:  Option<NaiveDate>,
+    to:     Option<NaiveDate>,
+    status: Option<String>,
+    cursor: Option<i32>,
+    limit:  i64,
 ) -> Result<Vec<ClientAggregate>, db_config::DbError> {
     let conn = db_config::get_client().await?;
 
     let sql = format!(
-        "{} WHERE ($1::text IS NULL OR cl.name ILIKE '%' || $1 || '%' OR cl.surname ILIKE '%' || $1 || '%')
-         ORDER BY client_id, phone_id",
+        "{}
+    WHERE cl.id IN (
+            SELECT DISTINCT c.id
+            FROM clients AS c
+            LEFT JOIN clients_phones AS c_p ON c.id = c_p.client_id
+            LEFT JOIN phone_numbers AS ph ON c_p.phone_id = ph.id
+            WHERE ($1::INT  IS NULL OR c.id                      > $1)
+            AND ($3::TEXT IS NULL OR c.document::TEXT ILIKE '%' || $3 || '%' OR c.address::TEXT ILIKE '%' || $3 || '%' OR ph.phone_number::TEXT ILIKE '%' || $3 || '%')
+            ORDER BY c.id ASC
+            LIMIT $4
+            )
+    AND($2::TEXT IS NULL OR cl.name ILIKE '%' || $2 || '%' OR cl.surname ILIKE '%' || $2 || '%')
+    ORDER BY cl.id ASC, pn.id ASC
+        ",
         CLIENT_SELECT_BASE
     );
 
-    let rows = conn.query(&sql, &[&contains]).await?;
+    let rows = conn.query(&sql, &[&cursor, &search, &filter, &limit]).await?;
     Ok(rows_to_aggregates(rows))
 }
 
@@ -233,7 +252,7 @@ pub async fn query_client_by_id(
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /clients
 // ─────────────────────────────────────────────────────────────────────────────
- 
+
 /// Inserts a new client together with all their phone numbers in a single transaction.
 ///
 /// ## Transaction steps
@@ -275,13 +294,13 @@ pub async fn insert_client(
         RETURNING id
         "#,
         &[
-            &dto.name,
-            &dto.surname,
-            &dto.document,
-            &dto.address,
-            &dto.email,
-            &dto.birth_date,
-            &dto.credit_limit.unwrap_or(0.0),
+        &dto.name,
+        &dto.surname,
+        &dto.document,
+        &dto.address,
+        &dto.email,
+        &dto.birth_date,
+        &dto.credit_limit.unwrap_or(0.0),
         ],
     ).await?;
 
@@ -307,7 +326,7 @@ pub async fn insert_client(
         ).await?;
     }
 
-    
+
     // Step 3: Re-query the full aggregate to return authoritative DB state
     let sql = format!(
         "{} WHERE cl.id = $1 ORDER BY client_id, phone_id",
@@ -326,7 +345,7 @@ pub async fn insert_client(
 // ─────────────────────────────────────────────────────────────────────────────
 // PATCH /clients/{id}
 // ─────────────────────────────────────────────────────────────────────────────
- 
+
 /// Partially updates an existing client and optionally replaces their phones,
 /// all within a single transaction.
 ///
@@ -447,10 +466,10 @@ pub async fn patch_client(
         tx.execute(&stmt, &param_refs).await?;
     }
 
-    
+
     // Step 3: If phones are present in the patch, replace all existing phone associations
     if let Some(phones) = patch.phones.as_ref() {
-        
+
         // Deletes only the links, NOT orphan phone_numbers (conservative policy)
         tx.execute(
             "DELETE FROM clients_phones WHERE client_id = $1",
@@ -458,7 +477,7 @@ pub async fn patch_client(
         ).await?;
 
         for phone in phones {
-            
+
             // Insert a new phone_numbers row for each phone in the patch
             let phone_row = tx.query_one(
                 "INSERT INTO phone_numbers (phone_number, is_emergency) VALUES ($1, $2) RETURNING id",
