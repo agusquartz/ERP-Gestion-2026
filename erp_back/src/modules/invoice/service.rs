@@ -105,8 +105,11 @@ pub async fn get_invoice(id: i32) -> Result<Option<InvoiceResponse>, errors::Ser
 /// 3. Build `LineItem`s with tax and pricing
 /// 4. Compute total amount
 /// 5. Construct `NewInvoice`
-/// 6. Persist via repository
-/// 7. Map result to `InvoiceResponse`
+/// 6. Decrease product stock
+/// 7. Persist invoice via repository
+/// 8. Create automatic accounting entry
+/// 9. Commit transaction
+/// 10. Map result to `InvoiceResponse`
 pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, errors::ServiceError> {
     // Validations
     if dto.details.is_empty() {
@@ -222,6 +225,12 @@ pub async fn create_invoice(dto: CreateInvoiceDto) -> Result<InvoiceResponse, er
     }
 
     let invoice_id = repository::store_new_invoice(&tx, invoice).await?;
+
+    crate::modules::accounting::service::post_sales_invoice_tx(
+        &tx,
+        invoice_id,
+    )
+    .await?;
 
     tx.commit().await.map_err(db_config::DbError::from)?;
 

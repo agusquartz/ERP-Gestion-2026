@@ -1,6 +1,6 @@
 use core::error;
 use std::collections::BTreeMap;
-use tokio_postgres::Row;
+use tokio_postgres::{Row, Transaction};
 use chrono::NaiveDate;
 
 use crate::modules::purchases_credit_note::model::{
@@ -134,25 +134,27 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<credit_note_model::CreditNoteAggrega
     map.into_values().collect()
 }
 
-pub async fn store_new_credit_note(new_cn: new_credit_note_model::NewCreditNote) -> Result<credit_note_model::CreditNoteAggregate, db_config::DbError> {
-    let mut client = db_config::get_client().await?;
-    let tx = client.transaction().await?;
-
+pub async fn store_new_credit_note_tx(
+    tx: &Transaction<'_>,
+    new_cn: new_credit_note_model::NewCreditNote,
+) -> Result<i32, db_config::DbError> {
     // 1. Insert Header
-    let row = tx.query_one(
-        "INSERT INTO return_credit_notes 
-        (note_number, return_note_id, created_at, total)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id",
-        &[
-        &new_cn.note_number,
-        &new_cn.return_note_id,
-        &new_cn.created_at,
-        &new_cn.total,
-        ],
-    ).await?;
+    let row = tx
+        .query_one(
+            "INSERT INTO return_credit_notes 
+            (note_number, return_note_id, created_at, total)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id",
+            &[
+                &new_cn.note_number,
+                &new_cn.return_note_id,
+                &new_cn.created_at,
+                &new_cn.total,
+            ],
+        )
+        .await?;
 
-    let cn_id: i32 = row.get(0);
+    let return_credit_note_id: i32 = row.get(0);
 
     // 2. Insert Details and Deduct Stock
     for detail in new_cn.details {
@@ -162,37 +164,34 @@ pub async fn store_new_credit_note(new_cn: new_credit_note_model::NewCreditNote)
             (return_credit_note_id, product_id, quantity, unit_cost, subtotal)
             VALUES ($1, $2, $3, $4, $5)",
             &[
-            &cn_id,
-            &detail.product_id,
-            &detail.quantity,
-            &detail.unit_cost,
-            &detail.subtotal,
+                &return_credit_note_id,
+                &detail.product_id,
+                &detail.quantity,
+                &detail.unit_cost,
+                &detail.subtotal,
             ],
-        ).await?;
+        )
+        .await?;
 
-        // STOCK DEDUCTION: Deduct the returned quantity from the current stock.
-        // Enforce a safeguard condition to prevent negative stock levels.
-        let affected = tx.execute(
-            "UPDATE products 
-             SET stock = stock - $1 
-             WHERE id = $2 AND stock >= $1", 
-             &[&detail.quantity, &detail.product_id],
-        ).await?;
+        // STOCK DEDUCTION:
+        // Deduct the returned quantity from the current stock.
+        // The WHERE condition prevents negative stock.
+        let affected = tx
+            .execute(
+                "UPDATE products 
+                 SET stock = stock - $1 
+                 WHERE id = $2 AND stock >= $1",
+                &[&detail.quantity, &detail.product_id],
+            )
+            .await?;
 
         if affected == 0 {
             return Err(db_config::DbError::InvariantViolation(format!(
-                        "Insufficient stock to return product ID {}", detail.product_id
+                "Insufficient stock to return product ID {}",
+                detail.product_id
             )));
         }
     }
 
-    // Commit the transaction if all operations succeed
-    tx.commit().await?;
-
-    // 3. Re-fetch the complete domain aggregate to return it
-    let aggregate = query_credit_note_by_id(cn_id)
-        .await?
-        .ok_or(db_config::DbError::InvariantViolation("Inserted credit note not found".into()))?;
-
-    Ok(aggregate)
+    Ok(return_credit_note_id)
 }

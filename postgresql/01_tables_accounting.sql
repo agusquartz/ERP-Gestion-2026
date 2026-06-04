@@ -43,8 +43,17 @@ CREATE TABLE journal_entries (
 
     is_automatic BOOLEAN DEFAULT FALSE, -- true = system-generated, immutable
 
+    entry_model_id INT REFERENCES entry_models(id) ON DELETE RESTRICT,
+    source_type TEXT,
+    source_id INT,
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+ALTER TABLE journal_entries
+ADD COLUMN IF NOT EXISTS entry_model_id INT REFERENCES entry_models(id) ON DELETE RESTRICT,
+ADD COLUMN IF NOT EXISTS source_type TEXT,
+ADD COLUMN IF NOT EXISTS source_id INT;
 
 -- Journal entry lines (debits and credits).
 -- Purpose:

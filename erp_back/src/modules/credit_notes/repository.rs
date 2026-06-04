@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use tokio_postgres::Row;
+use tokio_postgres::{Row, Transaction};
 use chrono::NaiveDate;
 
 use crate::modules::credit_notes::model;
@@ -188,45 +188,36 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::CreditNoteAggregate> {
     map.into_values().collect()
 }
 
-/// Persists a new credit note and its associated line items.
+/// Persists a new credit note and its associated line items using an existing transaction.
 ///
 /// # Workflow
-/// 1. Begin transaction
-/// 2. Insert credit note header
-/// 3. Insert line items
-/// 4. Commit transaction
-/// 5. Re-query full aggregate
+/// 1. Insert credit note header
+/// 2. Insert line items
+/// 3. Return inserted credit note ID
 ///
-/// # Returns
-/// - Fully constructed `CreditNoteAggregate`
-///
-/// # Errors
-/// - Returns `DbError::NotFound` if re-query fails after insertion
-pub async fn store_new_credit_note(credit_note: model::NewCreditNote) -> Result<model::CreditNoteAggregate, db_config::DbError> {
-    let mut client = db_config::get_client().await?;
-    let tx = client.transaction().await?;
-
-    let row = match  tx.query_one(
-        "INSERT INTO credit_notes 
-        (credit_note_nr, sale_invoice_id, created_at, total)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id",
-        &[
-            &credit_note.credit_note_number,
-            &credit_note.sale_invoice_id,
-            &credit_note.created_at,
-            &credit_note.total,
-        ],
-    ).await {
-        Ok(row) => row,
-        Err(e) => {
-            println!("Db Error: {:?}", e);
-            return Err(e.into());
-        }
-    };
+/// # Important
+/// This function does not commit or rollback.
+/// The transaction is managed by the service layer.
+pub async fn store_new_credit_note(
+    tx: &Transaction<'_>,
+    credit_note: model::NewCreditNote,
+) -> Result<i32, db_config::DbError> {
+    let row = tx
+        .query_one(
+            "INSERT INTO credit_notes 
+            (credit_note_nr, sale_invoice_id, created_at, total)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id",
+            &[
+                &credit_note.credit_note_number,
+                &credit_note.sale_invoice_id,
+                &credit_note.created_at,
+                &credit_note.total,
+            ],
+        )
+        .await?;
 
     let credit_note_id: i32 = row.get(0);
-    println!("The credit note id is {credit_note_id}");
 
     for detail in credit_note.details {
         tx.execute(
@@ -240,14 +231,9 @@ pub async fn store_new_credit_note(credit_note: model::NewCreditNote) -> Result<
                 &detail.tax,
                 &detail.quantity,
             ],
-        ).await?;
+        )
+        .await?;
     }
-    tx.commit().await?;
 
-    let aggregate = query_credit_note_by_id(credit_note_id)
-        .await? 
-        .ok_or(db_config::DbError::InvariantViolation(
-                "Inserted credit note not found after commit".to_string()));
-
-    aggregate
+    Ok(credit_note_id)
 }

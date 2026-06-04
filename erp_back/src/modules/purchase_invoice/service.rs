@@ -116,9 +116,16 @@ pub async fn create_purchase_invoice(
     let result: Result<i32, ServiceError> = async {
  
         // Step 1 — insert invoice header and line items
-        let invoice_id = repository::create(&tx, &new_invoice).await?;
+        let purchase_invoice_id = repository::create(&tx, &new_invoice).await?;
+
+        // Step 2 — create automatic accounting entry
+        crate::modules::accounting::service::post_purchase_invoice_tx(
+            &tx,
+            purchase_invoice_id,
+        )
+        .await?;
  
-        // Steps 2 & 3 — cross-module side effects per line item
+        // Steps 3 & 4 — cross-module side effects per line item
         for item in &new_invoice.items {
             purchase_order::service::increase_received_quantity(
                 &tx,
@@ -134,7 +141,7 @@ pub async fn create_purchase_invoice(
             ).await?;
         }
  
-        Ok(invoice_id)
+        Ok(purchase_invoice_id)
  
     }.await;
  
