@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getReturnNoteById } from "@/lib/http/client/return-notes";
+import { getPurchaseInvoiceById } from "@/lib/http/client/purchase-invoices";
 import {
   createSupplierCreditNote,
   listSupplierCreditNotes,
@@ -200,25 +201,80 @@ function ChevronLeftIcon() {
 /**
  * Maps backend return note response into a UI-friendly object.
  *
+ * Supports both camelCase and snake_case responses from the backend.
+ *
  * @param {Object} data - Backend return note DTO.
  * @returns {Object} UI return note.
  */
 function mapReturnNote(data) {
+  const purchaseInvoice = data.purchaseInvoice ?? data.purchase_invoice ?? null;
+  const purchaseOrder = data.purchaseOrder ?? data.purchase_order ?? null;
+  const supplier =
+    data.supplier ??
+    data.provider ??
+    purchaseInvoice?.supplier ??
+    purchaseInvoice?.provider ??
+    { id: null, name: "Sin proveedor" };
+
+  const status = data.status ?? null;
+
+  const purchaseInvoiceId =
+    data.purchaseInvoiceId ??
+    data.purchase_invoice_id ??
+    purchaseInvoice?.id ??
+    null;
+
+  const purchaseOrderId =
+    data.purchaseOrderId ??
+    data.purchase_order_id ??
+    purchaseOrder?.id ??
+    purchaseInvoice?.purchaseOrderId ??
+    purchaseInvoice?.purchase_order_id ??
+    purchaseInvoice?.purchaseOrder?.id ??
+    purchaseInvoice?.purchase_order?.id ??
+    null;
+
   const details = (data.details || []).map((detail) => {
-    const returnedQuantity = toNumber(detail.returnedQuantity);
-    const amount = toNumber(detail.amount);
+    const product = detail.product ?? detail.item ?? null;
+
+    const returnedQuantity = toNumber(
+      detail.returnedQuantity ??
+        detail.returned_quantity ??
+        detail.quantity ??
+        0
+    );
+
+    const amount = toNumber(
+      detail.amount ??
+        detail.subtotal ??
+        detail.total ??
+        detail.total_amount ??
+        0
+    );
 
     return {
       id: detail.id,
-      productId: detail.product?.id,
-      code: detail.product?.code || "-",
-      description: detail.product?.description || "-",
+      productId:
+        detail.productId ??
+        detail.product_id ??
+        product?.id ??
+        null,
+      code:
+        product?.code ??
+        detail.code ??
+        "-",
+      description:
+        product?.description ??
+        detail.description ??
+        "-",
 
       // The current backend DTO does not expose invoiced quantity.
       // This fallback keeps the UI ready if the backend adds it later.
       invoicedQuantity:
         detail.invoicedQuantity ??
+        detail.invoiced_quantity ??
         detail.invoiceQuantity ??
+        detail.invoice_quantity ??
         detail.quantity ??
         "-",
 
@@ -232,23 +288,75 @@ function mapReturnNote(data) {
   return {
     id: data.id,
     returnNoteNumber: String(data.id).padStart(2, "0"),
-    purchaseInvoiceId: data.purchaseInvoiceId,
+
+    purchaseInvoiceId,
     purchaseInvoiceNumber:
-      data.purchaseInvoice?.invoiceNumber ||
-      data.purchaseInvoice?.invoiceNr ||
-      String(data.purchaseInvoiceId || "-"),
-    purchaseOrderId:
-      data.purchaseOrderId ||
-      data.purchaseOrder?.id ||
-      data.purchaseInvoice?.purchaseOrderId ||
-      null,
-    motive: data.motive || "-",
-    createdAt: data.createdAt,
-    total: toNumber(data.total),
-    supplier: data.supplier || { id: null, name: "Sin proveedor" },
-    status: normalizeStatus(data.status?.name),
+      purchaseInvoice?.invoiceNumber ??
+      purchaseInvoice?.invoice_number ??
+      purchaseInvoice?.invoiceNr ??
+      purchaseInvoice?.invoice_nr ??
+      String(purchaseInvoiceId || "-"),
+
+    purchaseOrderId,
+
+    motive:
+      data.motive ??
+      data.reason ??
+      "-",
+
+    createdAt:
+      data.createdAt ??
+      data.created_at,
+
+    total: toNumber(
+      data.total ??
+        data.total_amount ??
+        data.amount ??
+        0
+    ),
+
+    supplier,
+
+    status: normalizeStatus(
+      status?.name ??
+        status?.statusName ??
+        status?.status_name ??
+        data.statusName ??
+        data.status_name
+    ),
+
     details,
     raw: data,
+  };
+}
+
+/**
+ * Maps backend purchase invoice response into the small reference
+ * needed by this return note page.
+ *
+ * @param {Object} data - Backend purchase invoice DTO.
+ * @returns {{purchaseOrderId: number|null, purchaseInvoiceNumber: string}}
+ */
+function mapPurchaseInvoiceReference(data) {
+  const purchaseOrder = data.purchaseOrder ?? data.purchase_order ?? null;
+
+  const purchaseOrderId =
+    data.purchaseOrderId ??
+    data.purchase_order_id ??
+    purchaseOrder?.id ??
+    null;
+
+  const purchaseInvoiceNumber =
+    data.invoiceNumber ??
+    data.invoice_number ??
+    data.invoiceNr ??
+    data.invoice_nr ??
+    data.number ??
+    String(data.id || "-");
+
+  return {
+    purchaseOrderId,
+    purchaseInvoiceNumber,
   };
 }
 
@@ -878,7 +986,35 @@ export default function ReturnNoteDetailPage() {
         setErrorMessage(null);
 
         const data = await getReturnNoteById(id);
-        const mappedReturnNote = mapReturnNote(data);
+        let mappedReturnNote = mapReturnNote(data);
+
+        if (
+          !mappedReturnNote.purchaseOrderId &&
+          mappedReturnNote.purchaseInvoiceId
+        ) {
+          try {
+            const purchaseInvoiceData = await getPurchaseInvoiceById(
+              mappedReturnNote.purchaseInvoiceId
+            );
+            const purchaseInvoiceReference =
+              mapPurchaseInvoiceReference(purchaseInvoiceData);
+
+            mappedReturnNote = {
+              ...mappedReturnNote,
+              purchaseInvoiceNumber:
+                purchaseInvoiceReference.purchaseInvoiceNumber ||
+                mappedReturnNote.purchaseInvoiceNumber,
+              purchaseOrderId:
+                purchaseInvoiceReference.purchaseOrderId ||
+                mappedReturnNote.purchaseOrderId,
+            };
+          } catch (purchaseInvoiceError) {
+            console.warn(
+              "Purchase invoice reference could not be loaded:",
+              purchaseInvoiceError
+            );
+          }
+        }
 
         if (!ignore) {
           setReturnNote(mappedReturnNote);
@@ -1049,7 +1185,12 @@ export default function ReturnNoteDetailPage() {
           <span className="min-w-[180px] font-bold text-foreground">
             {returnNote.purchaseInvoiceNumber}
           </span>
-          <ViewButton onClick={handleOpenPurchaseInvoice}>Ver</ViewButton>
+          <ViewButton
+            disabled={!returnNote.purchaseInvoiceId}
+            onClick={handleOpenPurchaseInvoice}
+          >
+            Ver
+          </ViewButton>
         </div>
 
         <div className="font-bold uppercase text-secondary">
