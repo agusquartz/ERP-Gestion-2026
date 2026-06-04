@@ -10,6 +10,7 @@ use crate::modules::purchases_credit_note::{
     },
     errors,
 };
+use crate::shared::db_config;
 
 /// Lists all supplier credit notes, optionally filtered by a search term.
 pub async fn list_credit_notes(contains: Option<String>) -> Result<Vec<CreditNoteResponse>, errors::ServiceError> {
@@ -25,11 +26,14 @@ pub async fn get_credit_note(id: i32) -> Result<Option<CreditNoteResponse>, erro
 }
 
 /// Creates a new supplier credit note and deducts the corresponding inventory stock.
-/// 
+///
 /// Business Logic:
 /// 1. Validates that every referenced product in the details exists in the system.
-/// 2. Transforms the incoming request DTO into the domain creation model (NewCreditNote).
-/// 3. Persists the records and updates the inventory atomically through the repository layer.
+/// 2. Transforms the incoming request DTO into the domain creation model.
+/// 3. Opens a transaction at service level.
+/// 4. Persists the credit note and deducts stock using the same transaction.
+/// 5. Creates the automatic accounting entry using the same transaction.
+/// 6. Commits if everything succeeds, otherwise rolls back.
 pub async fn create_credit_note(dto: CreateCreditNoteDto) -> Result<CreditNoteResponse, errors::ServiceError> {
     // 1. Product existence validation
     for detail in &dto.details {
@@ -59,9 +63,50 @@ pub async fn create_credit_note(dto: CreateCreditNoteDto) -> Result<CreditNoteRe
         details,
     };
 
-    // 3. Persistence (The repository handles stock deduction within the transaction)
-    let aggregate = repository::store_new_credit_note(new_cn).await?;
-    
-    // 4. Map domain aggregate to response DTO
-    Ok(CreditNoteResponse::from(aggregate))
+    // 3. Open transaction
+    let mut client = db_config::get_client().await?;
+    let tx = client
+        .transaction()
+        .await
+        .map_err(db_config::DbError::from)?;
+
+    let result: Result<i32, errors::ServiceError> = async {
+        // 4. Persist credit note and deduct stock using the same transaction
+        let return_credit_note_id = repository::store_new_credit_note_tx(
+            &tx,
+            new_cn,
+        )
+        .await?;
+
+        // 5. Create automatic accounting entry using the same transaction
+        crate::modules::accounting::service::post_purchase_return_credit_note_tx(
+            &tx,
+            return_credit_note_id,
+        )
+        .await?;
+
+        Ok(return_credit_note_id)
+    }
+    .await;
+
+    match result {
+        Ok(return_credit_note_id) => {
+            tx.commit()
+                .await
+                .map_err(db_config::DbError::from)?;
+
+            // 6. Re-fetch the complete aggregate after commit
+            let aggregate = repository::query_credit_note_by_id(return_credit_note_id)
+                .await?
+                .ok_or(db_config::DbError::InvariantViolation(
+                    "Inserted credit note not found".into(),
+                ))?;
+
+            Ok(CreditNoteResponse::from(aggregate))
+        }
+        Err(e) => {
+            let _ = tx.rollback().await;
+            Err(e)
+        }
+    }
 }

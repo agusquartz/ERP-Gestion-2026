@@ -4770,4 +4770,353 @@ SELECT
 FROM tmp_seed_purchase_payment_orders ppo;
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- =========================================================
+-- MVP PAYROLL SEED
+-- Sueldo base mensual fijo.
+-- Sin timesheets, sin horas extra, sin feriados, sin permisos.
+-- Usa un payroll draft existente si ya existe para el mismo mes.
+-- =========================================================
+
+DROP TABLE IF EXISTS tmp_payroll_params;
+CREATE TEMP TABLE tmp_payroll_params (
+    pay_date DATE,
+    cutoff_date DATE
+) ON COMMIT DROP;
+
+INSERT INTO tmp_payroll_params (pay_date, cutoff_date)
+VALUES (DATE '2026-05-31', DATE '2026-05-31');
+
+
+-- =========================================================
+-- SALARIOS / CONTRATOS
+-- Ajustá los montos si querés.
+-- Estos salarios están en PYG.
+-- =========================================================
+
+DROP TABLE IF EXISTS tmp_contract_seed;
+CREATE TEMP TABLE tmp_contract_seed (
+    document TEXT,
+    contract_name TEXT,
+    salary DECIMAL(14,2)
+) ON COMMIT DROP;
+
+INSERT INTO tmp_contract_seed (
+    document,
+    contract_name,
+    salary
+)
+VALUES
+    ('10000001', 'Contrato mensual principal', 4800000),
+    ('10000002', 'Contrato mensual principal', 5000000),
+    ('10000003', 'Contrato mensual principal', 5200000),
+    ('10000004', 'Contrato mensual principal', 5200000),
+    ('10000005', 'Contrato mensual principal', 7000000),
+
+    ('10000006', 'Contrato mensual principal', 3500000),
+    ('10000007', 'Contrato mensual principal', 3500000),
+    ('10000008', 'Contrato mensual principal', 3200000),
+    ('10000009', 'Contrato mensual principal', 3500000),
+    ('10000010', 'Contrato mensual principal', 3500000),
+
+    ('10000011', 'Contrato mensual principal', 5500000),
+    ('10000012', 'Contrato mensual principal', 5500000),
+    ('10000013', 'Contrato mensual principal', 3300000),
+    ('10000014', 'Contrato mensual principal', 3300000),
+    ('10000015', 'Contrato mensual principal', 3300000),
+
+    ('10000016', 'Contrato mensual principal', 3300000),
+    ('10000017', 'Contrato mensual principal', 4000000),
+    ('10000018', 'Contrato mensual principal', 3300000),
+    ('10000019', 'Contrato mensual principal', 4600000),
+    ('10000020', 'Contrato mensual principal', 4500000),
+
+    -- Empleados extra que ya tenés en tu base
+    ('3256050',  'Contrato mensual principal', 8500000),
+    ('2256050',  'Contrato mensual principal', 3000000);
+
+
+-- =========================================================
+-- ACTUALIZAR CONTRATOS ACTIVOS EXISTENTES
+-- Si ya existe un contrato activo, actualiza salario y datos básicos.
+-- =========================================================
+
+UPDATE contracts c
+SET
+    contract_name = s.contract_name,
+    salary = s.salary,
+    salary_period_type = 'monthly',
+    payroll_account = 'PAYROLL-' || e.document,
+    is_active = TRUE
+FROM employees e
+JOIN tmp_contract_seed s
+    ON s.document = e.document
+WHERE c.employee_id = e.id
+  AND c.is_active = TRUE
+  AND c.end_date IS NULL;
+
+
+-- =========================================================
+-- INSERTAR CONTRATOS FALTANTES
+-- Solo inserta contrato si el empleado no tiene contrato activo.
+-- =========================================================
+
+INSERT INTO contracts (
+    employee_id,
+    contract_name,
+    start_date,
+    end_date,
+    salary,
+    salary_period_type,
+    payroll_account,
+    is_active
+)
+SELECT
+    e.id,
+    s.contract_name,
+    e.hire_date,
+    NULL,
+    s.salary,
+    'monthly',
+    'PAYROLL-' || e.document,
+    TRUE
+FROM employees e
+JOIN tmp_contract_seed s
+    ON s.document = e.document
+WHERE e.is_active = TRUE
+  AND e.termination_date IS NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM contracts c
+      WHERE c.employee_id = e.id
+        AND c.is_active = TRUE
+        AND c.end_date IS NULL
+  );
+
+
+-- =========================================================
+-- PAYROLL PROCESS DRAFT
+-- Usa uno existente si existe para salary / 2026-05-31 / draft.
+-- Si no existe, crea uno nuevo.
+-- =========================================================
+
+DROP TABLE IF EXISTS tmp_open_payroll_process;
+
+CREATE TEMP TABLE tmp_open_payroll_process ON COMMIT DROP AS
+WITH existing AS (
+    SELECT p.id
+    FROM payroll_processes p
+    CROSS JOIN tmp_payroll_params pp
+    WHERE p.process_type = 'salary'
+      AND p.pay_date = pp.pay_date
+      AND p.cutoff_date = pp.cutoff_date
+      AND p.state = 'draft'
+    ORDER BY p.id DESC
+    LIMIT 1
+),
+inserted AS (
+    INSERT INTO payroll_processes (
+        process_type,
+        pay_date,
+        cutoff_date,
+        state
+    )
+    SELECT
+        'salary',
+        pp.pay_date,
+        pp.cutoff_date,
+        'draft'
+    FROM tmp_payroll_params pp
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM existing
+    )
+    RETURNING id
+)
+SELECT id FROM inserted
+UNION ALL
+SELECT id FROM existing
+LIMIT 1;
+
+
+-- =========================================================
+-- LIMPIAR ITEMS GENERADOS POR ESTE SEED
+-- Esto permite volver a ejecutar el script sin duplicar.
+-- No borra ítems manuales reales que cargues desde la app.
+-- =========================================================
+
+DELETE FROM payroll_items pi
+USING tmp_open_payroll_process p
+WHERE pi.payroll_process_id = p.id
+  AND pi.origin IN (
+      'seed_mvp_base_salary',
+      'seed_mvp_manual_adjustment'
+  );
+
+
+-- =========================================================
+-- PAYROLL ITEMS: SALARIO BASE PARA TODOS
+-- Inserta un ítem SALARIO_BASE por cada empleado activo con contrato activo.
+-- =========================================================
+
+INSERT INTO payroll_items (
+    payroll_process_id,
+    employee_id,
+    novelty_id,
+    quantity,
+    unit_amount,
+    total_amount,
+    origin
+)
+SELECT
+    p.id AS payroll_process_id,
+    e.id AS employee_id,
+    n.id AS novelty_id,
+    1.00 AS quantity,
+    c.salary AS unit_amount,
+    c.salary AS total_amount,
+    'seed_mvp_base_salary' AS origin
+FROM tmp_open_payroll_process p
+JOIN employees e
+    ON e.is_active = TRUE
+   AND e.termination_date IS NULL
+JOIN contracts c
+    ON c.employee_id = e.id
+   AND c.is_active = TRUE
+   AND c.end_date IS NULL
+JOIN novelties n
+    ON n.code = 'SALARIO_BASE'
+WHERE e.document IN (
+    SELECT document
+    FROM tmp_contract_seed
+);
+
+
+-- =========================================================
+-- PAYROLL ITEMS MANUALES DE PRUEBA
+-- Podés borrar este bloque si querés solo sueldo base.
+-- =========================================================
+
+WITH manual_items AS (
+    SELECT *
+    FROM (
+        VALUES
+            ('10000001', 'BONIFICACION',  1.00, 250000.00),
+            ('10000002', 'DESC_ROTURA',   1.00, 150000.00),
+            ('10000004', 'DESC_ADELANTO', 1.00, 300000.00),
+            ('10000008', 'DESC_ROTURA',   1.00,  75000.00),
+            ('3256050',  'DESC_ADELANTO', 1.00, 200000.00)
+    ) AS x(
+        document,
+        novelty_code,
+        quantity,
+        unit_amount
+    )
+)
+INSERT INTO payroll_items (
+    payroll_process_id,
+    employee_id,
+    novelty_id,
+    quantity,
+    unit_amount,
+    total_amount,
+    origin
+)
+SELECT
+    p.id AS payroll_process_id,
+    e.id AS employee_id,
+    n.id AS novelty_id,
+    mi.quantity::DECIMAL(10,2),
+    mi.unit_amount::DECIMAL(14,2),
+    (mi.quantity * mi.unit_amount)::DECIMAL(14,2),
+    'seed_mvp_manual_adjustment'
+FROM manual_items mi
+JOIN employees e
+    ON e.document = mi.document
+JOIN novelties n
+    ON n.code = mi.novelty_code
+CROSS JOIN tmp_open_payroll_process p;
+
+
+-- =========================================================
+-- VALIDACIÓN
+-- =========================================================
+
+SELECT
+    'PAYROLL ABIERTO USADO' AS info,
+    pp.*
+FROM payroll_processes pp
+JOIN tmp_open_payroll_process tmp
+    ON tmp.id = pp.id;
+
+
+SELECT
+    e.document,
+    e.name,
+    e.surname,
+    n.code AS novelty_code,
+    n.name AS novelty_name,
+    n.sign,
+    pi.quantity,
+    pi.unit_amount,
+    pi.total_amount,
+    pi.origin
+FROM payroll_items pi
+JOIN tmp_open_payroll_process p
+    ON p.id = pi.payroll_process_id
+JOIN employees e
+    ON e.id = pi.employee_id
+JOIN novelties n
+    ON n.id = pi.novelty_id
+ORDER BY
+    e.id,
+    CASE
+        WHEN n.code = 'SALARIO_BASE' THEN 1
+        WHEN n.sign = 'C' THEN 2
+        ELSE 3
+    END,
+    n.code;
+
+
+-- Resumen simple por empleado:
+-- Créditos suman, débitos restan.
+SELECT
+    e.document,
+    e.name,
+    e.surname,
+    SUM(
+        CASE
+            WHEN n.sign = 'C' THEN pi.total_amount
+            WHEN n.sign = 'D' THEN -pi.total_amount
+            ELSE 0
+        END
+    ) AS neto_estimado
+FROM payroll_items pi
+JOIN tmp_open_payroll_process p
+    ON p.id = pi.payroll_process_id
+JOIN employees e
+    ON e.id = pi.employee_id
+JOIN novelties n
+    ON n.id = pi.novelty_id
+GROUP BY
+    e.document,
+    e.name,
+    e.surname,
+    e.id
+ORDER BY e.id;
+
+
 COMMIT;
