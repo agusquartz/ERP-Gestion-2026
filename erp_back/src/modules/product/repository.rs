@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use chrono::NaiveDate;
 
 use tokio_postgres::types::ToSql;
 use tokio_postgres::Row;
@@ -122,18 +123,43 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<model::ProductAggregate> {
 ///
 /// A list of fully populated `ProductAggregate`
 pub async fn query_products(
-    contains: Option<&str>,
+    search: Option<String>,
+    filter: Option<String>,
+    since:  Option<NaiveDate>,
+    to:     Option<NaiveDate>,
+    status: Option<String>,
+    cursor: Option<i32>,
+    limit:  i64,
 ) -> Result<Vec<model::ProductAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
     let sql = format!(
-        "{} WHERE ($1::text IS NULL OR p.code ILIKE '%' || $1 || '%' OR p.description ILIKE '%' || $1 || '%') ORDER BY product_id, tax_id",
+        "{} 
+	WHERE p.id IN (
+			SELECT DISTINCT p2.id
+			FROM products AS p2
+			INNER JOIN categories AS c2 ON p2.category_id = c2.id
+			LEFT JOIN brands AS b2 ON b2.id = p2.brand_id
+			LEFT JOIN product_taxes AS pt2 ON p2.id = pt2.product_id
+			LEFT JOIN taxes AS t2 ON t2.id = pt2.tax_id
+			WHERE ($1::INT  IS NULL OR p2.id                      > $1)
+			AND ($3::TEXT IS NULL OR b2.name::TEXT ILIKE '%' || $3 || '%' OR c2.name::TEXT ILIKE '%' || $3 || '%')
+			ORDER BY p2.id ASC
+			LIMIT $4
+			)
+	AND($2::TEXT IS NULL OR p.description ILIKE '%' || $2 || '%' OR p.code ILIKE '%' || $2 || '%')
+	ORDER BY p.id ASC",
         PRODUCT_SELECT_BASE
     );
 
-    let contains_param: Option<&str> = contains;
-    let rows = client.query(&sql, &[&contains_param]).await?;
-
+    //let rows = client.query(&sql, &[&cursor, &search, &filter, &limit]).await?;
+    let rows = match client.query(&sql, &[&cursor, &search, &filter, &limit]).await {
+        Ok(rows) => rows,
+        Err(e) => {
+            dbg!(&e);
+            return Err(db_config::DbError::Other("Query error".to_string()))
+        },
+    };
     Ok(rows_to_aggregates(rows))
 }
 

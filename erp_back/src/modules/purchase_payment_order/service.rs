@@ -23,8 +23,12 @@ use rust_decimal::Decimal;
 use crate::db_config::DbError;
 
 use crate::modules::purchase_payment_order::{
+    dto::PaymentsListQuery,
     dto::create::CreatePurchasePaymentOrderDto,
-    dto::response::PurchasePaymentOrderResponseDto,
+    dto::response::{
+        PurchasePaymentOrderResponseDto,
+        ListPaymentsView,
+    },
     repository,
     mapper,
 };
@@ -111,14 +115,29 @@ pub async fn get_purchase_payment_order_by_id(
 /// - `Ok(Vec<PurchasePaymentOrderResponseDto>)`: Possibly empty list.
 /// - `Err(DbError)`: Database query failed.
 pub async fn get_purchase_payment_orders(
-    contains: Option<String>,
-) -> Result<Vec<PurchasePaymentOrderResponseDto>, DbError> {
-    let payment_orders = repository::get_purchase_payment_orders(contains).await?;
+    query: PaymentsListQuery
+) -> Result<ListPaymentsView, DbError> {
+    let rows= repository::get_purchase_payment_orders(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        query.status, 
+        query.cursor, 
+        query.limit + 1,
+    ).await?;
 
-    Ok(payment_orders
-        .into_iter()
-        .map(mapper::purchase_payment_order_with_details_to_response)
-        .collect())
+    let mut payment_orders: Vec<PurchasePaymentOrderResponseDto> = rows.into_iter().map(mapper::purchase_payment_order_with_details_to_response).collect();
+
+    let limit = query.limit as usize;
+    let has_more = payment_orders.len() > limit; 
+    payment_orders.truncate(limit);
+    let view = ListPaymentsView {
+        payments: payment_orders,
+        has_more: has_more,
+    };
+
+    Ok(view)
 }
 
 /// Updates only the status of a purchase payment order.

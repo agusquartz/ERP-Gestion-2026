@@ -4,19 +4,26 @@ use axum::{
     Json,
 };
 
-use crate::modules::product::dto::{
-    PatchProductDto, ProductListQuery, ProductResponse,
+use crate::modules::product::{
+    dto::{
+        PatchProductDto, 
+        ProductListQuery, 
+        ProductResponse,
+        response::{
+            ListProductView,
+        },
+    },
+    service,
 };
-use crate::modules::product::service;
 
 /// GET /products
 /// GET /products?contains=string
 pub async fn list_products(
     Query(query): Query<ProductListQuery>,
-) -> Result<Json<Vec<ProductResponse>>, StatusCode> {
-    let result = service::list_products(query.contains)
+) -> Result<Json<ListProductView>, (StatusCode, String)> {
+    let result = service::list_products(query)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     Ok(Json(result))
 }

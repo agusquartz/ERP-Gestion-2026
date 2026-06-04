@@ -26,6 +26,13 @@
 use serde::{Serialize, Deserialize};
 use rust_decimal::Decimal;
 
+#[derive(Debug,Serialize,Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListPaymentsView {
+    pub payments: Vec<PurchasePaymentOrderResponseDto>,
+    pub has_more: bool,
+}
+
 /// The top-level JSON object returned for a purchase payment order.
 ///
 /// Returned as a single object by `GET /purchase-payment-orders/{id}` and

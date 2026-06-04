@@ -3,8 +3,13 @@ use crate::modules::credit_notes::errors;
 use crate::modules::credit_notes::model::{ NewCreditNote, 
                                            LineProduct, 
                                            CreditNoteLineItem };
-use crate::modules::credit_notes::dto::{ response::CreditNoteResponse,
-                                         create::CreateCreditNoteDto };
+use crate::modules::credit_notes::dto::{ 
+    CreditNoteListQuery,
+    response::{
+        CreditNoteResponse,
+        ListCreditNotesView,
+    },
+    create::CreateCreditNoteDto };
 
 use crate::modules::product::{ self,
                                dto::ProductResponse };
@@ -13,9 +18,32 @@ use rust_decimal::{ Decimal,
                     prelude::FromPrimitive};
 
 /// Lists credit notes with optional filtering.
-pub async fn list_credit_notes(contains: Option<String>) -> Result<Vec<CreditNoteResponse>, errors::ServiceError> {
-    let rows= repository::query_credit_notes(contains.as_deref()).await?;
-    Ok(rows.into_iter().map(|note| CreditNoteResponse::from(note)).collect())
+pub async fn list_credit_notes(query: CreditNoteListQuery) -> Result<ListCreditNotesView, errors::ServiceError> {
+
+    let rows= repository::query_credit_notes(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        query.status, 
+        query.cursor, 
+        query.limit + 1,
+    ).await?;
+
+    let mut credit_notes: Vec<CreditNoteResponse> = rows.into_iter().map(CreditNoteResponse::from).collect();
+
+    let limit = query.limit as usize;
+    //check if there's more quotes than what the limit allows us to return
+    let has_more = credit_notes.len() > limit; 
+    //drop the extra order from the vector
+    credit_notes.truncate(limit);
+    //create the list view
+    let view = ListCreditNotesView {
+        credit_notes: credit_notes,
+        has_more: has_more,
+    };
+
+    Ok(view)
 }
 
 /// Retrieves a single credit note by ID.

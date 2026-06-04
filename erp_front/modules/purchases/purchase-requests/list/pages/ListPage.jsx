@@ -42,7 +42,9 @@ export default function ListPage() {
       setLoading(true);
       setError("");
       const data = await listPurchaseRequests({ contains });
-      const mappedOrders = data.map(mapPurchaseRequestToOrder);
+
+      const mappedOrders = data.requests.map(mapPurchaseRequestToOrder);
+
       setOrders(mappedOrders);
     } catch (error) {
       console.error("Error cargando pedidos de compra:", error);

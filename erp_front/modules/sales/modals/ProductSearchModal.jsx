@@ -67,7 +67,8 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
 
     const timer = setTimeout(async () => {
       try {
-        let f = await getProductByQuery(query);
+        let response = await getProductByQuery(query);
+		let f = response.products;
 
         if (descFilter) {
           f = f.filter(

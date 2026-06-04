@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { createReturnNotes, getReturnNotesByQuery } from "@/lib/http/client/return-notes.js";    
+import { createReturnNotes, getReturnNotes } from "@/lib/http/client/return-notes.js";    
 
-// Fetches and manages return notes for a given invoice.
-// Used by the "Notas de Devolución" tab.
+/**
+ * Custom hook to fetch, manage, and create return notes for a specific invoice.
+ * Encapsulates the loading/error state logic and ensures data synchronization 
+ * after new note creation.
+ */
 export function usePurchaseInvoiceReturnNotes(id) {
     // State for the list of return notes
     const [returnNotes, setReturnNotes] = useState([]);
@@ -11,45 +14,56 @@ export function usePurchaseInvoiceReturnNotes(id) {
     // Error state: holds any error message
     const [error,       setError]       = useState(null);
 
-    // Effect runs when invoice id changes
+    /**
+     * Memoized 'load' function. 
+     * Extracted from useEffect to be reachable by other functions (e.g., createReturnNote).
+     * Uses useCallback to maintain a stable reference, preventing unnecessary 
+     * re-triggering of effects that depend on this function.
+     */
+    const load = useCallback(async (isCancelled = () => false) => {
+        if (!id) return;
+        setLoading(true);
+        setError(null);
+
+        try {
+            const data = await getReturnNotes(id);
+            // Only update state if component is still mounted
+            if (!isCancelled()) setReturnNotes(data ?? []);
+        } catch (e) {
+            if (!isCancelled()) {
+                setReturnNotes([]);
+                setError(null); // Suppress error for missing notes
+            }
+        } finally {
+            if (!isCancelled()) setLoading(false);
+        }
+    }, [id]);
+
+    /**
+     * Effect to trigger the initial fetch whenever the invoice ID changes.
+     * It relies on the memoized 'load' function to keep the effect logic clean.
+     */
     useEffect(() => {
-        // Cancellation flag to prevent state updates on unmounted component
         let cancelled = false;
 
-        // Inner load function (shadows the outer one)
-        async function load() {
-            if (!id) return;
-            setLoading(true);
-            setError(null);
+        // Execute fetch and pass a closure to check for cleanup/unmount
+        load(() => cancelled);
 
-            try {
-                const data = await getReturnNotesByQuery(id);
-                // Only update if component is still mounted
-                if (!cancelled) setReturnNotes(data ?? []);
-            } catch (e) {
-                if (!cancelled) {
-                    setReturnNotes([]);
-                    setError(null);   // Suppress error for missing notes
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        }
+        return () => { 
+            cancelled = true; 
+        };
+    }, [load]); 
 
-        // Execute the fetch
-        load();
-        // Cleanup: mark cancelled on unmount or id change
-        return () => { cancelled = true; };
-    }, [id]); // Re-run when `id` changes
-
-    // Creates a new return note and refreshes the list on success.
-    // Returns { ok: true } or throws so the modal can handle the error.
-    // NOTE: createPurchaseInvoiceReturnNote is not defined in this scope.
+    /**
+     * Handler to create a new return note.
+     * Refreshes the data list automatically upon success by calling the memoized 'load'.
+     */
     const createReturnNote = useCallback(async (payload) => {
         await createReturnNotes(payload);
-        await load(); // Calls the outer load? Actually calls the one in scope?
+        // Sync the state with the server after a successful mutation
+        await load(); 
         return { ok: true };
-    }, [id]);
+    }, [load]); 
 
     return { returnNotes, loading, error, createReturnNote };
 }

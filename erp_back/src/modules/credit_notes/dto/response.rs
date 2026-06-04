@@ -5,6 +5,12 @@ use rust_decimal::Decimal;
 use crate::modules::credit_notes::model;
 use crate::modules::credit_notes::mapper;
 
+#[derive(Debug,Clone,Serialize,Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListCreditNotesView {
+    pub credit_notes: Vec<CreditNoteResponse>,
+    pub has_more: bool,
+}
 
 /// Line item representation returned to clients.
 ///
@@ -44,6 +50,17 @@ pub struct InvoiceReferenceResponse {
     pub invoice_number: String,
 }
 
+/// Lightweight client representation returned by the API.
+///
+/// Contains only the information required for display.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClientReferenceResponse {
+    pub id: i32,
+    pub name: String,
+    pub surname: String,
+}
+
 /// API response representing a credit note.
 ///
 /// # Structure
@@ -58,6 +75,7 @@ pub struct CreditNoteResponse {
     pub created_at: NaiveDate,
     pub total: Decimal,
     pub invoice: InvoiceReferenceResponse,
+    pub client: ClientReferenceResponse,
     pub details: Vec<CreditNoteLineItemResponse>,
 }
 

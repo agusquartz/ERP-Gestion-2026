@@ -4,15 +4,22 @@ use axum::{
     Json,
 };
 
-use crate::modules::credit_notes::dto::{CreditNoteListQuery, response::CreditNoteResponse, create::CreateCreditNoteDto};
+use crate::modules::credit_notes::dto::{
+    CreditNoteListQuery, 
+    response::{ 
+        CreditNoteResponse, 
+        ListCreditNotesView,
+    },
+    create::CreateCreditNoteDto
+};
 use crate::modules::credit_notes::service;
 
 /// # Query Parameters
 /// - `contains`: optional filter string
 pub async fn list_credit_notes(
     Query(query): Query<CreditNoteListQuery>,
-) -> Result<Json<Vec<CreditNoteResponse>>,StatusCode> {
-    let result = service::list_credit_notes(query.contains).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+) -> Result<Json<ListCreditNotesView>,StatusCode> {
+    let result = service::list_credit_notes(query).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(result))
 }
 

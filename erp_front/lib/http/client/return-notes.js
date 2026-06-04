@@ -98,7 +98,7 @@ export function getReturnNoteById(id) {
  *   ]
  * }
  */
-export function createReturnNote(payload) {
+export function createReturnNotes(payload) {
   return clientRequest("/return-notes", {
     method: "POST",
     body: JSON.stringify(payload),

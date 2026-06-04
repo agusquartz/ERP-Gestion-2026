@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use tokio_postgres::Row;
+use chrono::NaiveDate;
 
 use crate::modules::credit_notes::model;
 use crate::db_config;
@@ -20,17 +21,31 @@ SELECT
     cn.credit_note_nr AS credit_note_number,
     cn.created_at AS created_at,
     cn.total AS total,
+
     si.id AS invoice_id,
-    si.invoice_nr AS invoice_number,
+    (
+        lpad(si.establishment::text, 3, '0') || '-' ||
+        lpad(si.emission_point::text, 3, '0') || '-' ||
+        lpad(si.invoice_sequential::text, 7, '0')
+    ) AS invoice_number,
+    
+    c.id AS client_id,
+    c.name AS client_name,
+    c.surname AS client_surname,
+    
     cnd.unit_cost AS detail_unit_cost,
     cnd.quantity AS detail_quantity,
     cnd.tax AS detail_tax,
+    
     p.id AS detail_product_id,
     p.code AS detail_product_code,
     p.description AS detail_product_description
+
 FROM credit_notes AS cn
 INNER JOIN sales_invoices AS si
     ON cn.sale_invoice_id = si.id
+INNER JOIN clients AS c
+    ON si.client_id = c.id
 INNER JOIN credit_note_details AS cnd
     ON cn.id = cnd.credit_note_id
 INNER JOIN products AS p
@@ -64,17 +79,54 @@ pub async fn query_credit_note_by_id(id: i32) -> Result<Option<model::CreditNote
 /// # Behavior
 /// - Filters by credit note number or product fields
 /// - Returns full aggregates
-pub async fn query_credit_notes(contains: Option<&str>) -> Result<Vec<model::CreditNoteAggregate>, db_config::DbError> {
+pub async fn query_credit_notes(
+    search: Option<String>,
+    filter: Option<String>,
+    since:  Option<NaiveDate>,
+    to:     Option<NaiveDate>,
+    status: Option<String>,
+    cursor: Option<i32>,
+    limit:  i64,
+    ) -> Result<Vec<model::CreditNoteAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
-    if let Some(q) = contains {
-        let sql = format!("{} WHERE (COALESCE($1, '') = '' OR credit_note_number ILIKE '%' || $1 || '%' OR detail_product_description ILIKE '%' || $1 || '%' OR detail_product_code ILIKE '%' || $1 || '%') ORDER BY cn.id, cnd.id", CREDIT_NOTES_SELECT_BASE); 
+
+    let sql = format!("
+            {}
+	WHERE cn.id IN (
+			SELECT DISTINCT cn2.id
+			FROM credit_notes AS cn2
+			INNER JOIN credit_note_details AS cnd2 ON cn2.id = cnd2.credit_note_id
+			INNER JOIN products AS p2 ON cnd2.product_id = p2.id
+			INNER JOIN sales_invoices AS si2 ON cn2.sale_invoice_id = si2.id
+      INNER JOIN clients AS c2 ON si2.client_id = c2.id
+			WHERE ($1::INT  IS NULL OR cn2.id                    > $1)
+			AND ($3::TEXT IS NULL OR p2.description::TEXT ILIKE '%' || $3 || '%'
+        OR c2.name::TEXT ILIKE                        '%' || $3 || '%' 
+        OR c2.surname::TEXT ILIKE                     '%' || $3 || '%')
+			AND ($4::DATE IS NULL OR cn2.created_at             >= $4)
+			AND ($5::DATE IS NULL OR cn2.created_at             <= $5)
+			AND ($6::TEXT IS NULL OR si2.invoice_nr          ILIKE $6)
+			ORDER BY cn2.id ASC
+			LIMIT $7
+			)
+	AND($2::TEXT IS NULL OR cn.credit_note_nr     ILIKE '%' || $2 || '%')
+	ORDER BY cn.id ASC, cnd.id ASC
+            ", CREDIT_NOTES_SELECT_BASE); 
+
+
+    let rows = client.query(&sql, &[&cursor, &search, &filter, &since, &to, &status, &limit]).await?; 
     
-        let rows = client.query(&sql, &[&q]).await?;
-        let aggregates = rows_to_aggregate(rows);
-        return Ok(aggregates)
-    }
-    let sql = CREDIT_NOTES_SELECT_BASE.to_string();
-    let rows = client.query(&sql, &[]).await?;
+    /*dbg!(&search);
+    let rows = match client.query(&sql, &[&cursor, &search, &filter, &since, &to, &status, &limit]).await { 
+        Ok(rows) => rows,
+        Err(e) => {
+            dbg!(&e);
+            return Err(db_config::DbError::Other(e.to_string()));
+        }
+    };
+    dbg!(&rows);
+    */
+
     Ok(rows_to_aggregate(rows))
 }
 
@@ -99,6 +151,12 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::CreditNoteAggregate> {
             invoice_number: row.get("invoice_number"),
         };
 
+        let client_ref = model::ClientReference {
+            id: row.get("client_id"),
+            name: row.get("client_name"),
+            surname: row.get("client_surname"),
+        };
+
         let entry = map.entry(credit_note_id).or_insert_with(|| model::CreditNoteAggregate {
             credit_note: model::CreditNote {
                 id: credit_note_id,
@@ -109,6 +167,7 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<model::CreditNoteAggregate> {
                 details: Vec::new(), 
             },
             invoice: invoice_ref,
+            client: client_ref,
         }
         );
 

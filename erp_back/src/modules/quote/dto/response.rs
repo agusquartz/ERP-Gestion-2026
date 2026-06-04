@@ -27,6 +27,12 @@
 use serde::{Serialize, Deserialize};
 use rust_decimal::Decimal;
 
+#[derive(Debug,Clone,Serialize,Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListQuotesView {
+    pub quotes: Vec<QuoteResponseDto>,
+    pub has_more: bool,
+}
 
 /// The top-level JSON object returned for a quote in every endpoint response.
 ///
@@ -53,7 +59,7 @@ use rust_decimal::Decimal;
 /// }
 /// ```
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuoteResponseDto {
     /// Database-generated primary key of the quote.
@@ -85,7 +91,7 @@ pub struct QuoteResponseDto {
 /// Provides both the numeric `id` (useful for front-end logic / filtering)
 /// and the human-readable `name` (useful for display).
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuoteStatusResponseDto {
     /// Primary key of the status.
     pub id: i32,
@@ -99,7 +105,7 @@ pub struct QuoteStatusResponseDto {
 /// A minimal projection of the client — only the fields relevant to
 /// identifying the client on a quote are included.
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone,Serialize, Deserialize)]
 pub struct QuoteClientResponseDto {
     /// Primary key of the client.
     pub id: i32,
@@ -115,7 +121,7 @@ pub struct QuoteClientResponseDto {
 /// Describes the product referenced by a line item, using only the
 /// fields needed for display on a quote document.
     
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone,Serialize, Deserialize)]
 pub struct QuoteProductResponseDto {
     /// Primary key of the product.
     pub id: i32,
@@ -134,7 +140,7 @@ pub struct QuoteProductResponseDto {
 /// Note: `id` is intentionally omitted from the response because consumers
 /// identify line items by their product, not by the internal detail row id.
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone,Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuoteDetailResponseDto {
     /// The product associated with this line item.

@@ -32,8 +32,12 @@ use crate::db_config::DbError;
 use crate::modules::purchase_payment_order::service;
 
 use crate::modules::purchase_payment_order::dto::{
+    PaymentsListQuery,
     create::CreatePurchasePaymentOrderDto,
-    response::PurchasePaymentOrderResponseDto,
+    response::{
+        PurchasePaymentOrderResponseDto,
+        ListPaymentsView,
+    },
     update::{
         UpdatePurchasePaymentOrderStatusDto,
         ApprovePurchasePaymentOrderDto,
@@ -105,11 +109,10 @@ pub async fn get_purchase_payment_order_handler(
 /// - `200 OK` with `Vec<PurchasePaymentOrderResponseDto>`.
 /// - `500 Internal Server Error` if the query fails.
 pub async fn list_purchase_payment_orders_handler(
-    Query(params): Query<HashMap<String, String>>,
-) -> Result<Json<Vec<PurchasePaymentOrderResponseDto>>, (StatusCode, String)> {
-    let contains = params.get("contains").cloned();
+    Query(query): Query<PaymentsListQuery>,
+) -> Result<Json<ListPaymentsView>, (StatusCode, String)> {
 
-    match service::get_purchase_payment_orders(contains).await {
+    match service::get_purchase_payment_orders(query).await {
         Ok(data) => Ok(Json(data)),
         Err(e) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,

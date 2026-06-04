@@ -31,30 +31,17 @@ use axum::{
 };
 
 use serde::Deserialize;
-use crate::modules::client::dto::create::CreateClientDto;
-use crate::modules::client::dto::update::PatchClientDto;
-use crate::modules::client::service;
 
+use crate::modules::client::{
+    dto::{
+        ClientListQuery,
+        create::CreateClientDto,
+        update::PatchClientDto,
+        response::ListClientView,
+    },
+    service,
+};
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Query parameter extractor
-// ─────────────────────────────────────────────────────────────────────────────
- 
-/// Query string parameters accepted by `GET /clients`.
-///
-/// Axum's `Query<T>` extractor deserializes the URL query string into this struct.
-/// All fields are `Option` so that missing parameters result in `None` rather
-/// than a 400 Bad Request error.
-///
-/// # Example URLs
-/// - `GET /clients`                → `contains: None`  (returns all)
-/// - `GET /clients?contains=john`  → `contains: Some("john")` (filtered)
-
-#[derive(Deserialize)]
-pub struct ClientQuery {
-    /// Optional substring to filter clients by name or surname (case-insensitive).
-    pub contains: Option<String>,
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Handlers
@@ -72,13 +59,13 @@ pub struct ClientQuery {
 
 
 pub async fn get_clients(
-    Query(params): Query<ClientQuery>,
-) -> impl IntoResponse {
-    match service::get_clients(params.contains).await {
-        Ok(clients) => (StatusCode::OK, Json(clients)).into_response(),
+    Query(query): Query<ClientListQuery>,
+) -> Result<Json<ListClientView>, (StatusCode, String)> {
+    match service::get_clients(query).await {
+        Ok(clients) => Ok(Json(clients)),
         Err(e) => {
             eprintln!("Error: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
         }
     }
 }

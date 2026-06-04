@@ -46,7 +46,8 @@ export function PurchaseSearchModal({ open, onClose, onSelect }) {
     const timer = setTimeout(async () => {
       try {
         // Fetch products matching the main search term
-        let f = await getProductByQuery(query);
+        let response = await getProductByQuery(query);
+		let f = response.products;
 
         // Client-side filtering by description/code for refined searches
         if (descFilter) {
