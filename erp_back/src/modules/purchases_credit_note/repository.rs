@@ -1,6 +1,7 @@
 use core::error;
 use std::collections::BTreeMap;
 use tokio_postgres::{Row, Transaction};
+use chrono::NaiveDate;
 
 use crate::modules::purchases_credit_note::model::{
     credit_note_model,
@@ -48,36 +49,44 @@ pub async fn query_credit_note_by_id(id: i32) -> Result<Option<credit_note_model
 }
 
 /// Retrieves all credit notes, optionally filtered by supplier name or note number.
-pub async fn query_credit_notes(contains: Option<&str>) -> Result<Vec<credit_note_model::CreditNoteAggregate>, db_config::DbError> {
+pub async fn query_credit_notes(
+    search: Option<String>,
+    filter: Option<String>,
+    since:  Option<NaiveDate>,
+    to:     Option<NaiveDate>,
+    status: Option<String>,
+    cursor: Option<i32>,
+    limit:  i64,
+    ) -> Result<Vec<credit_note_model::CreditNoteAggregate>, db_config::DbError> {
 
     println!("Llega hasta repository");
     let client = db_config::get_client().await?;
-    
-    let mut sql = PURCHASES_CREDIT_NOTE_SELECT_BASE.to_string();
-    let mut params: Vec<String> = Vec::new();
 
-    if let Some(q) = contains {
-        sql.push_str(" WHERE s.name ILIKE '%' || $1 || '%' OR cn.note_number ILIKE '%' || $1 || '%'");
-        params.push(q.to_string());
-    }
-    
-    sql.push_str(" ORDER BY cn.id, cnd.id");
+    let sql = format!("
+            {}
+	WHERE cn.id IN (
+			SELECT DISTINCT cn2.id
+			FROM return_credit_notes AS cn2
+			INNER JOIN return_credit_note_details AS cnd2 ON cn2.id = cnd2.return_credit_note_id
+			INNER JOIN return_notes AS rn2 ON cn2.return_note_id = rn2.id
+			INNER JOIN products AS p2 ON cnd2.product_id = p2.id
+			INNER JOIN purchase_invoices AS pi2 ON rn2.purchase_invoice_id = pi2.id
+			INNER JOIN purchase_orders AS po2 ON pi2.purchase_order_id = po2.id
+			INNER JOIN suppliers AS s2 on po2.supplier_id = s2.id
+			WHERE ($1::INT  IS NULL OR cn2.id                      > $1)
+			AND ($3::TEXT IS NULL OR p2.description::TEXT ILIKE '%' || $3 || '%')
+			AND ($4::DATE IS NULL OR cn2.created_at             >= $4)
+			AND ($5::DATE IS NULL OR cn2.created_at             <= $5)
+			AND ($6::TEXT IS NULL OR pi2.invoice_nr ILIKE $6)
+			ORDER BY cn2.id ASC
+			LIMIT $7
+			)
+	AND($2::TEXT IS NULL OR cn.note_number ILIKE '%' || $2 || '%')
+	ORDER BY cn.id ASC, cnd.id ASC
+            ", PURCHASES_CREDIT_NOTE_SELECT_BASE); 
 
-    // Dynamic param mapping
-    let rows = if params.is_empty() {
-        match client.query(&sql, &[]).await{
-            Ok(rows) => rows,
-            Err(e) => {
-                eprintln!("Query Error {:?}", e);
-                return Err(db_config::DbError::Other("Query error".to_string()))
-            }
-        }
-        
-    } else {
-        client.query(&sql, &[&params[0]]).await?
-    };
 
-    
+            let rows = client.query(&sql, &[&cursor, &search, &filter, &since, &to, &status, &limit]).await?; 
 
     Ok(rows_to_aggregate(rows))
 }
@@ -88,7 +97,7 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<credit_note_model::CreditNoteAggrega
 
     for row in rows {
         let cn_id: i32 = row.get("credit_note_id");
-        
+
         let supplier = credit_note_model::Supplier {
             id: row.get("supplier_id"),
             name: row.get("supplier_name"),

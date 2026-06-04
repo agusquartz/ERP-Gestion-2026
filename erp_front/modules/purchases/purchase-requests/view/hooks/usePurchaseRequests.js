@@ -970,7 +970,7 @@ export default function usePurchaseRequests(id) {
 
       const seen = new Set();
       const result = searches
-        .flat()
+        .flatMap(response => response.suppliers)
         .filter((supplier) => {
           if (seen.has(supplier.id)) return false;
           seen.add(supplier.id);

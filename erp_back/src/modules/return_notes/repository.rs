@@ -98,31 +98,51 @@ pub async fn query_return_notes(
 ) -> Result<Vec<model::ReturnNoteAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
+    dbg!(&query);
+
     let sql = format!(
         "{} 
-        WHERE (
-            $1::text IS NULL
-            OR rn.motive ILIKE '%' || $1 || '%'
-            OR rn.id::text ILIKE '%' || $1 || '%'
-            OR rn.purchase_invoice_id::text ILIKE '%' || $1 || '%'
-            OR st.status ILIKE '%' || $1 || '%'
-            OR p.code ILIKE '%' || $1 || '%'
-            OR p.description ILIKE '%' || $1 || '%'
-            OR s.id::text ILIKE '%' || $1 || '%'
-            OR s.name ILIKE '%' || $1 || '%'
-        )
-        AND ($2::int IS NULL OR rn.status_id = $2)
-        AND ($3::date IS NULL OR rn.created_at >= $3)
-        AND ($4::date IS NULL OR rn.created_at <= $4)
-        AND ($5::int IS NULL OR rn.id > $5)
-        ORDER BY rn.id, rnd.id",
+        WHERE rn.id IN (
+    SELECT DISTINCT sub_rn.id
+    FROM return_notes sub_rn
+    INNER JOIN purchase_invoices sub_pi ON sub_pi.id = sub_rn.purchase_invoice_id
+    INNER JOIN purchase_orders sub_po ON sub_po.id = sub_pi.purchase_order_id
+    INNER JOIN suppliers sub_s ON sub_s.id = sub_po.supplier_id
+    INNER JOIN statuses sub_st ON sub_st.id = sub_rn.status_id
+    INNER JOIN return_note_details sub_rnd ON sub_rnd.return_note_id = sub_rn.id
+    INNER JOIN products sub_p ON sub_p.id = sub_rnd.product_id
+    WHERE (
+        $1::text IS NULL
+        OR sub_rn.motive ILIKE '%' || $1 || '%'
+        OR sub_rn.id::text ILIKE '%' || $1 || '%'
+        OR sub_rn.purchase_invoice_id::text ILIKE '%' || $1 || '%'
+        OR sub_st.status ILIKE '%' || $1 || '%'
+        OR sub_p.code ILIKE '%' || $1 || '%'
+        OR sub_p.description ILIKE '%' || $1 || '%'
+        OR sub_s.id::text ILIKE '%' || $1 || '%'
+        OR sub_s.name ILIKE '%' || $1 || '%'
+    )
+    AND ($2::int IS NULL OR sub_rn.status_id = $2)
+    AND ($3::date IS NULL OR sub_rn.created_at >= $3)
+    AND ($4::date IS NULL OR sub_rn.created_at <= $4)
+    AND ($5::int IS NULL OR sub_rn.id > $5)
+    ORDER BY sub_rn.id
+    LIMIT $6
+)
+ORDER BY rn.id, rnd.id;
+        ",
         RETURN_NOTE_SELECT_BASE
     );
 
-    let rows = client
-        .query(&sql, &[&query.contains, &query.status_id, &query.from_date, &query.to_date,&query.cursor])
-        .await?;
-
+    let rows = match client
+        .query(&sql, &[&query.contains, &query.status_id, &query.from_date, &query.to_date,&query.cursor, &query.limit])
+        .await {
+            Ok(rows) => rows,
+            Err(e) => {
+                dbg!(&e);
+                return Err(db_config::DbError::Other("Failed to database :(".to_string()))
+            },
+        };
     Ok(rows_to_aggregates(rows))
 }
 

@@ -37,17 +37,15 @@ const SearchPurchaseOrdersPage = () => {
   const debouncedFilter = useDebounce(filters.filter, 600);
 
   useEffect(() => {
-	setCursor(null);
-	setCursorStack([]);
+    setCursor(null);
+    setCursorStack([]);
   }, [
     debouncedSearch,
-	debouncedFilter,
+    debouncedFilter,
     filters.status,
     filters.since,
     filters.to,
   ]);
-
-	  
 
   useEffect(() => {
     const loadData = async () => {
@@ -56,17 +54,17 @@ const SearchPurchaseOrdersPage = () => {
       try {
         const response = await getPurchaseOrdersByQuery({
           search: debouncedSearch,
-		  filter: debouncedFilter,
+          filter: debouncedFilter,
           status: filters.status,
           since: filters.since,
           to: filters.to,
-		  
-	      cursor,
-		  limit: PAGE_SIZE,
+
+          cursor,
+          limit: PAGE_SIZE,
         });
 
         setOrders(response.orders);
-		setHasMore(response.hasMore);
+        setHasMore(response.hasMore);
       } catch (err) {
         console.error("Failed to load orders:", err);
       } finally {
@@ -76,32 +74,32 @@ const SearchPurchaseOrdersPage = () => {
 
     loadData();
   }, [
-	cursor,
+    cursor,
     debouncedSearch,
-	debouncedFilter,
+    debouncedFilter,
     filters.status,
     filters.since,
     filters.to,
   ]);
 
   const handleNextPage = () => {
-	  if(!orders.length) return;
+    if (!orders.length) return;
 
-	  const lastOrder = orders[orders.length - 1];
+    const lastOrder = orders[orders.length - 1];
 
-	  setCursorStack((prev) => [...prev,cursor]);
+    setCursorStack((prev) => [...prev, cursor]);
 
-	  setCursor(lastOrder.id);
+    setCursor(lastOrder.id);
   };
 
   const handlePreviousPage = () => {
-	  if(!orders.length) return;
+    if (!orders.length) return;
 
-	  const previousCursor = cursorStack[cursorStack.length - 1];
+    const previousCursor = cursorStack[cursorStack.length - 1];
 
-	  setCursorStack((prev) => prev.slice(0, -1));
+    setCursorStack((prev) => prev.slice(0, -1));
 
-	  setCursor(previousCursor);
+    setCursor(previousCursor);
   };
 
   const handleViewDetail = (orderId) => {
@@ -109,47 +107,49 @@ const SearchPurchaseOrdersPage = () => {
   };
 
   return (
-    <div className="flex-1 flex min-h-[calc(100vh-32px)] mx-auto">
-      <div className="flex-1 bg-white rounded-[5px] shadow-sm border border-gray-200 overflow-hidden">
-        
-        <h1 className="text-3xl font-bold text-[#1E293B] mt-8 mb-6 ml-5 tracking-tight">
+    // CAMBIO: contenedor con el mismo estilo base de DocumentsPage.
+    <div className="flex h-[calc(100dvh-16px)] sm:h-[calc(100dvh-24px)] md:h-[calc(100dvh-48px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:p-4 md:p-6">
+      {/* CAMBIO: header copiado del estilo de DocumentsPage. */}
+      <div className="mb-5">
+        <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
           Órdenes de Compra
         </h1>
 
-        <div className="mx-8">
-          <PurchaseFilters onSearch={setFilters} />
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consultá y gestioná órdenes de compra.
+        </p>
 
-          <PurchaseTable
-            data={orders}
-            totalResults={orders.length}
-            isLoading={isLoading}
-            onView={handleViewDetail}
-          />
+        <div className="mt-2 h-px w-full bg-border" />
+      </div>
 
-		  <div className="flex gap-4 my-6">
+      <PurchaseFilters onSearch={setFilters} />
 
-            <button
-              onClick={handlePreviousPage}
-              disabled={!cursorStack.length}
-              className="px-4 py-2 border rounded disabled:opacity-50"
-            >
-              Previous
-            </button>
+      <PurchaseTable
+        data={orders}
+        totalResults={orders.length}
+        isLoading={isLoading}
+        onView={handleViewDetail}
+      />
 
-            <button
-              onClick={handleNextPage}
-              disabled={!hasMore}
-              className="px-4 py-2 border rounded disabled:opacity-50"
-            >
-              Next
-            </button>
+      <div className="flex gap-4 my-6">
+        <button
+          onClick={handlePreviousPage}
+          disabled={!cursorStack.length}
+          className="px-4 py-2 border rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
 
-          </div>
-        </div>
+        <button
+          onClick={handleNextPage}
+          disabled={!hasMore}
+          className="px-4 py-2 border rounded disabled:opacity-50"
+        >
+          Next
+        </button>
       </div>
     </div>
   );
 };
 
 export default SearchPurchaseOrdersPage;
-

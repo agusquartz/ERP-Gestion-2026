@@ -6,6 +6,14 @@ use crate::modules::purchase_request::{
     mapper,
 };
 
+
+#[derive(Debug,Serialize,Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListRequestView {
+    pub requests: Vec<PurchaseRequestResponse>,
+    pub has_more: bool,
+}
+
 /// Response DTO representing a purchase request with its details and quotes.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

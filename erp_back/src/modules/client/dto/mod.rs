@@ -15,6 +15,9 @@
 //! - [`update`]   — shape of the `PATCH /clients/{id}` request body
 //! - [`response`] — shape of every client JSON response + `From<ClientAggregate>` conversions
  
+use chrono::NaiveDate;
+use serde::{ Deserialize, Serialize };
+
 /// DTO for creating a new client (`POST /clients`).
 pub mod create;
 
@@ -24,3 +27,17 @@ pub mod response;
 /// DTO returned in all client API responses, plus model-to-DTO conversion logic.
 pub mod update;
 
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+pub struct ClientListQuery {
+    pub search: Option<String>,
+    pub filter: Option<String>,
+    pub status: Option<String>,
+    pub since: Option<NaiveDate>,
+    pub to: Option<NaiveDate>,
+    pub cursor: Option<i32>,
+    #[serde(default = "default_limit")]
+    pub limit: i64,
+}
+
+fn default_limit()-> i64 { 30 }

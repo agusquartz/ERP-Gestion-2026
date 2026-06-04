@@ -85,7 +85,7 @@ export function ReturnNotesTab({ returnNotes, invoice, loading, error, onCreated
                                 {/* Action column: eye icon to view details */}
                                 <td className="px-5 py-3.5 text-center">
                                     <button
-                                        onClick={() => router.push(`/return-notes/${note.id}`)}
+                                        onClick={() => router.push(`/purchases/return-notes/${note.id}`)}
                                         className="inline-flex items-center justify-center rounded-[5px] p-1.5 text-slate-500 hover:bg-primary/10 duration-200"
                                         title="Ver nota de devolución"
                                     >

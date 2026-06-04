@@ -106,8 +106,13 @@ export default function SalesReportsPage() {
 
       {/* Encabezado de la Pantalla (Oculto en impresión) */}
       <div className="print:hidden">
-        <h1 className="text-2xl font-bold text-slate-800">Reportes de Ventas</h1>
-        <p className="text-sm text-slate-500">Genera análisis detallados de los movimientos de venta del sistema.</p>
+        <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
+          Reportes de Ventas
+        </h1>
+
+
+        <p className="mt-1 text-sm text-muted-foreground">Genera análisis detallados de los movimientos de venta del sistema.</p>
+        <div className="mt-2 h-px w-full bg-border" />
       </div>
 
       {/* Panel de Filtros (Formulario) (Oculto en impresión) */}

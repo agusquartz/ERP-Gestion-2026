@@ -30,7 +30,7 @@ export function ClientSearchModal({
     const fetchClients = async () => {
       try {
         const data = await getClients();
-        setClientsList(data);
+        setClientsList(data.clients);
       } catch (err) {
         console.error(err);
       }
@@ -98,6 +98,27 @@ export function ClientSearchModal({
     newClientModal.close();
     onClose();
   };
+  useEffect(() => {
+    if (!open) return;
+
+    const handleEscape = (event) => {
+      if (event.key !== "Escape") return;
+
+      // Evita cerrar el modal de lista si encima está abierto Nuevo Cliente o Editar Cliente
+      if (newClientModal.isOpen || editClientModal.isOpen) return;
+
+      event.preventDefault();
+      onClose();
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onClose, newClientModal.isOpen, editClientModal.isOpen]);
+
+
 
 
   return (
@@ -165,13 +186,15 @@ export function ClientSearchModal({
               <tbody>
                 {filtered.map((c, i) => (
                   <tr
-                    key={c.id}
-                    className={`cursor-pointer border-b border-border transition-colors duration-150 ${
-                      activeRow === i ? "bg-[#ebf4ff]" : "bg-white hover:bg-[#f8fafc]"
-                    }`}
-                    onClick={() => setActiveRow(i)}
-                    onDoubleClick={() => handleSelect(c)}
-                  >
+                      key={c.id}
+                      className={`cursor-pointer border-b border-border transition-colors duration-150 ${
+                        activeRow === i ? "bg-[#ebf4ff]" : "bg-white hover:bg-[#f8fafc]"
+                      }`}
+                      onClick={() => {
+                        setActiveRow(i);
+                        handleSelect(c);
+                      }}
+                  >     
                     <td className="px-3 py-3 text-sm text-foreground">{c.name}</td>
                     <td className="px-3 py-3 text-sm text-foreground">{c.surname}</td>
                     <td className="px-3 py-3 text-sm text-foreground">{c.document}</td>

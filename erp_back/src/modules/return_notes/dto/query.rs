@@ -9,4 +9,9 @@ pub struct ReturnNoteListQuery {
     pub from_date: Option<NaiveDate>,
     pub to_date: Option<NaiveDate>,
     pub cursor: Option<i32>,
+    #[serde(default = "default_limit")]
+    pub limit: i64,
 }
+
+fn default_limit()-> i64 { 30 }
+

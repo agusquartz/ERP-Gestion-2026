@@ -25,7 +25,9 @@ export function AddPurchaseProductPanel({ onAdd, onOpenSearch, selectedProduct, 
 
     try {
       // Fetch product data from the API based on the entered code
-      let products = await getProductByQuery(queryValue);
+      let response  = await getProductByQuery(queryValue);
+
+	  let products = response.products
       
       // Perform a case-insensitive search for an exact match in the results
       const foundProduct = products.find(

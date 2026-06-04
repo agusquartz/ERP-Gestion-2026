@@ -14,7 +14,10 @@ use crate::modules::purchase_request::{
             CreatePurchaseRequestDto,
         },
         update::PatchPurchaseQuoteDto,
-        response::PurchaseRequestResponse,
+        response::{
+            ListRequestView,
+            PurchaseRequestResponse,
+        },
     },
     service,
     errors,
@@ -26,8 +29,8 @@ use crate::modules::purchase_request::{
 /// Returns HTTP 500 on unexpected service errors.
 pub async fn list_purchase_requests(
     Query(query): Query<PurchaseRequestListQuery>,
-) -> Result<Json<Vec<PurchaseRequestResponse>>,StatusCode> {
-    let result = service::list_purchase_requests(query.contains).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+) -> Result<Json<ListRequestView>,StatusCode> {
+    let result = service::list_purchase_requests(query).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(result))
 }
 

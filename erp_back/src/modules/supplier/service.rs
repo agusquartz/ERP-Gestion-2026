@@ -1,5 +1,6 @@
 use crate::modules::supplier::{
     dto::{
+        response::ListSupplierView,
         SupplierCategoryResponse,
         SupplierListQuery,
         SupplierResponse,
@@ -47,14 +48,7 @@ impl std::error::Error for ServiceError {}
 /// GET /suppliers?contains=acme&categories=1&categories=2
 pub async fn list_suppliers(
     query: SupplierListQuery,
-) -> Result<Vec<SupplierResponse>, ServiceError> {
-    let contains = query
-        .contains
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(str::to_string);
-
+) -> Result<ListSupplierView, ServiceError> {
     let mut category_ids = query.categories;
 
     if category_ids.iter().any(|id| *id <= 0) {
@@ -66,16 +60,39 @@ pub async fn list_suppliers(
     category_ids.sort_unstable();
     category_ids.dedup();
 
-    let suppliers = repository::query_suppliers(
-        contains.as_deref(),
+    let limit_plus_one = query.limit + 1;
+    let cursor = match query.cursor {
+        Some(id) => Some(id),
+        None => None
+    };
+        
+
+    let rows = repository::query_suppliers(
+        &query.search, 
+        &query.filter, 
+        &query.since, 
+        &query.to, 
+        &query.status, 
+        &cursor, 
+        &limit_plus_one,
         &category_ids,
     )
     .await?;
 
-    Ok(suppliers
-        .into_iter()
-        .map(SupplierResponse::from)
-        .collect())
+    let mut suppliers: Vec<SupplierResponse> = rows.into_iter().map(SupplierResponse::from).collect();
+
+    let limit = query.limit as usize;
+
+    let has_more = suppliers.len() > limit;
+    
+    suppliers.truncate(limit);
+
+    let view = ListSupplierView {
+        suppliers: suppliers,
+        has_more: has_more,
+    };
+
+    Ok(view)
 }
 
 /// Retrieves a single supplier by its ID.

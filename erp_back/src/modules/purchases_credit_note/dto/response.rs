@@ -4,6 +4,14 @@ use rust_decimal::Decimal;
 use crate::modules::purchases_credit_note::model::credit_note_model::CreditNoteAggregate;
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListPurchaseCreditNoteView {
+    pub credit_notes: Vec<CreditNoteResponse>,
+    pub has_more: bool,
+}
+
+
+#[derive(Debug, Serialize)]
 pub struct CreditNoteResponse {
     pub id: i32,
     pub note_number: String,

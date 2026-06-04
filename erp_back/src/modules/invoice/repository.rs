@@ -18,6 +18,7 @@
 //! - Returns domain aggregates to service layer
 use std::collections::BTreeMap;
 use tokio_postgres::Row;
+use chrono::NaiveDate;
 
 use crate::modules::invoice::model::{self, NewInvoice, InvoiceAggregate};
 use crate::shared::db_config;
@@ -86,32 +87,40 @@ pub async fn query_invoice_by_id(id: i32) -> Result<Option<model::InvoiceAggrega
 ///
 /// # Arguments
 /// - `contains`: optional search string
-pub async fn query_invoices(contains: Option<&str>) -> Result<Vec<model::InvoiceAggregate>, db_config::DbError> {
+pub async fn query_invoices(
+    search: Option<String>,
+    filter: Option<String>,
+    since:  Option<NaiveDate>,
+    to:     Option<NaiveDate>,
+    status: Option<String>,
+    cursor: Option<i32>,
+    limit:  i64,
+    ) -> Result<Vec<model::InvoiceAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
-    if let Some(q) = contains {
-        let sql = format!(
-            "{} WHERE (
-                COALESCE($1, '') = ''
-                OR (
-                    lpad(inv.establishment::text, 3, '0') || '-' ||
-                    lpad(inv.emission_point::text, 3, '0') || '-' ||
-                    lpad(inv.invoice_sequential::text, 7, '0')
-                ) ILIKE '%' || $1 || '%'
-                OR c.name ILIKE '%' || $1 || '%'
-                OR c.surname ILIKE '%' || $1 || '%'
+    let sql = format!("
+            {}
+    WHERE inv.id IN (
+            SELECT DISTINCT inv2.id
+            FROM sales_invoices AS inv2
+            LEFT JOIN sale_invoice_details AS line2 ON inv2.id = line2.invoice_id
+            LEFT JOIN products AS p2 ON line2.product_id = p2.id
+            INNER JOIN clients AS c2 ON inv2.client_id = c2.id
+            INNER JOIN sale_conditions AS s2 ON inv2.sale_condition_id = s2.id
+            WHERE ($1::INT  IS NULL OR inv2.id                      > $1)
+            AND ($3::TEXT IS NULL OR p2.description::TEXT ILIKE '%' || $3 || '%' OR c2.name ILIKE '%' || $3 || '%' OR c2.surname ILIKE '%' || $3 || '%' OR ( lpad(inv.establishment::text, 3, '0') || '-' || lpad(inv.emission_point::text, 3, '0') || '-' || lpad(inv.invoice_sequential::text, 7, '0') ILIKE $3))
+            AND ($4::DATE IS NULL OR inv2.created_at             >= $4)
+            AND ($5::DATE IS NULL OR inv2.created_at             <= $5)
+            ORDER BY inv2.id ASC
+            LIMIT $6
             )
-            ORDER BY invoice_id, detail_id",
-            INVOICE_SELECT_BASE
-        );
+    AND($2::TEXT IS NULL OR c.name ILIKE '%' || $2 || '%' OR c.surname ILIKE '%' || $2 || '%')
+    ORDER BY inv.id ASC, line.id ASC
+            ", INVOICE_SELECT_BASE); 
 
-        let rows = client.query(&sql, &[&q]).await?;
-        let aggregates = rows_to_aggregate(rows);
-        return Ok(aggregates)
-    }
-    let sql = INVOICE_SELECT_BASE.to_string();
-    let rows = client.query(&sql, &[]).await?;
+        let rows = client.query(&sql, &[&cursor, &search, &filter, &since, &to, &limit]).await?;
+
     Ok(rows_to_aggregate(rows))
-    
+
 }
 
 /// Converts flat SQL rows into structured `InvoiceAggregate`s.
@@ -181,7 +190,7 @@ pub async fn store_new_invoice(
     tx: &tokio_postgres::Transaction<'_>,
     invoice: NewInvoice,
 ) -> Result<i32, db_config::DbError> {
-    let row = tx.query_one(
+    let row = match tx.query_one(
     "INSERT INTO sales_invoices 
         (
             client_id,
@@ -201,7 +210,14 @@ pub async fn store_new_invoice(
             &invoice.quote_id,
             &invoice.sale_condition_id,
         ],
-    ).await?;
+    ).await {
+        Ok(rows) => rows,
+        Err(e) => {
+            eprintln!("{:?}", e);
+            return Err(db_config::DbError::Other("lol".to_string()))
+        }
+    };
+    println!("Insertó el header");
 
     let invoice_id: i32 = row.get(0);
 
@@ -211,11 +227,11 @@ pub async fn store_new_invoice(
             (invoice_id, product_id, unit_cost, tax, quantity)
             VALUES ($1, $2, $3, $4, $5)",
             &[
-                &invoice_id,
-                &detail.product.id,
-                &detail.unit_cost,
-                &detail.tax,
-                &detail.quantity,
+            &invoice_id,
+            &detail.product.id,
+            &detail.unit_cost,
+            &detail.tax,
+            &detail.quantity,
             ],
         ).await?;
     }

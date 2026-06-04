@@ -73,7 +73,15 @@ export default function NewPurchasePage() {
       {/* HEADER SECTION */}
       <div className={s.titleSection}>
         <h1 className={s.pageTitle}>Nuevo Pedido</h1>
+         <p className="mt-1 text-sm text-muted-foreground">
+          Registrá un nuevo pedido de compra.
+        </p>
+         <div className="mt-2 h-px w-full bg-border" />
+
+       
+
       </div>
+      
 
       <div className={s.contentLayout}>
         {/* LEFT COLUMN: Main items table and action triggers */}

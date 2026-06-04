@@ -5,7 +5,11 @@ use crate::modules::purchases_credit_note::{
         new_credit_note_model::{NewCreditNote, NewCreditNoteDetail}
     },
     dto::{
-        response::CreditNoteResponse,
+        PurchaseCreditNoteListQuery,
+        response::{
+            ListPurchaseCreditNoteView,
+            CreditNoteResponse,
+        },
         create::CreateCreditNoteDto,
     },
     errors,
@@ -13,10 +17,32 @@ use crate::modules::purchases_credit_note::{
 use crate::shared::db_config;
 
 /// Lists all supplier credit notes, optionally filtered by a search term.
-pub async fn list_credit_notes(contains: Option<String>) -> Result<Vec<CreditNoteResponse>, errors::ServiceError> {
+pub async fn list_credit_notes(query: PurchaseCreditNoteListQuery) -> Result<ListPurchaseCreditNoteView, errors::ServiceError> {
     
-    let aggregates = repository::query_credit_notes(contains.as_deref()).await?;
-    Ok(aggregates.into_iter().map(CreditNoteResponse::from).collect())
+    let rows= repository::query_credit_notes(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        query.status, 
+        query.cursor, 
+        query.limit + 1,
+    ).await?;
+
+    let mut credit_notes: Vec<CreditNoteResponse> = rows.into_iter().map(CreditNoteResponse::from).collect();
+
+    let limit = query.limit as usize;
+    //check if there's more quotes than what the limit allows us to return
+    let has_more = credit_notes.len() > limit; 
+    //drop the extra order from the vector
+    credit_notes.truncate(limit);
+    //create the list view
+    let view = ListPurchaseCreditNoteView {
+        credit_notes: credit_notes,
+        has_more: has_more,
+    };
+
+    Ok(view)
 }
 
 /// Retrieves a single supplier credit note by its identifier.

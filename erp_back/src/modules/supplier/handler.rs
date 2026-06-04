@@ -8,6 +8,7 @@ use axum_extra::extract::Query;
 
 use crate::modules::supplier::{
     dto::{
+        response::ListSupplierView,
         SupplierCategoryResponse,
         SupplierListQuery,
         SupplierResponse,
@@ -28,7 +29,7 @@ fn map_service_error(err: service::ServiceError) -> StatusCode {
 /// GET /suppliers?contains=string&categories=1&categories=2
 pub async fn list_suppliers(
     Query(query): Query<SupplierListQuery>,
-) -> Result<Json<Vec<SupplierResponse>>, StatusCode> {
+) -> Result<Json<ListSupplierView>, StatusCode> {
     let result = service::list_suppliers(query)
         .await
         .map_err(map_service_error)?;

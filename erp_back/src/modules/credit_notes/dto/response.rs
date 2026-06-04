@@ -5,6 +5,12 @@ use rust_decimal::Decimal;
 use crate::modules::credit_notes::model;
 use crate::modules::credit_notes::mapper;
 
+#[derive(Debug,Clone,Serialize,Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListCreditNotesView {
+    pub credit_notes: Vec<CreditNoteResponse>,
+    pub has_more: bool,
+}
 
 /// Line item representation returned to clients.
 ///

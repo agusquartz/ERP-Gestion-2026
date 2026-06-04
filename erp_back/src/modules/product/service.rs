@@ -1,4 +1,9 @@
-use crate::modules::product::dto::{ProductResponse, PatchProductDto};
+use crate::modules::product::dto::{
+    ProductListQuery,
+    ProductResponse, 
+    PatchProductDto,
+    response::ListProductView,
+};
 use crate::modules::product::repository;
 use crate::shared::db_config;
 
@@ -34,9 +39,31 @@ impl std::error::Error for ServiceError {}
 ///
 /// If `contains` is provided, filters products by code or description.
 /// Otherwise, returns all products.
-pub async fn list_products(contains: Option<String>) -> Result<Vec<ProductResponse>, ServiceError> {
-    let rows = repository::query_products(contains.as_deref()).await?;
-    Ok(rows.into_iter().map(ProductResponse::from).collect())
+pub async fn list_products(query: ProductListQuery) -> Result<ListProductView, ServiceError> {
+    let rows= repository::query_products(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        query.status, 
+        query.cursor, 
+        query.limit + 1,
+    ).await?;
+
+    let mut products: Vec<ProductResponse> = rows.into_iter().map(ProductResponse::from).collect();
+
+    let limit = query.limit as usize;
+
+    let has_more = products.len() > limit; 
+
+    products.truncate(limit);
+    //create the list view
+    let view = ListProductView {
+        products: products,
+        has_more: has_more,
+    };
+
+    Ok(view)
 }
 
 /// Retrieves a single product by its ID.
