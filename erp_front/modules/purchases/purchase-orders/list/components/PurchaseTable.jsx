@@ -1,70 +1,143 @@
-import React from 'react';
-import { Eye } from 'lucide-react';
+import React from "react";
+import { Eye } from "lucide-react";
 
-import {formatDate, formatCurrency, translateOrderStatusName} from '../components/utils.js';
+import {
+  formatDate,
+  translateOrderStatusName,
+} from "../components/utils.js";
 
-const PurchaseTable = ({ data, totalResults, onView }) => {
+const PurchaseTable = ({ data = [], totalResults = 0, onView }) => {
   const filteredResults = data.length;
+
   const getStatusStyles = (status) => {
     const s = status?.toLowerCase();
-    if (s === 'pending' || s === 'unsent') return "bg-[#FFE6E5] text-[#5D0000] border-[#91372B]";
-    if (s === 'partial') return "bg-[#FFFDE5] text-[#5D5200] border-[#FFE44A]";
-	if (s === 'completed' || s === 'ok') return "bg-[#E5EAFF] text-[#00085D] border-[#4A83FF]";
+
+    if (s === "pending" || s === "unsent") {
+      return "bg-[#FFE6E5] text-[#5D0000] border-[#91372B]";
+    }
+
+    if (s === "partial") {
+      return "bg-[#FFFDE5] text-[#5D5200] border-[#FFE44A]";
+    }
+
+    if (s === "completed" || s === "ok") {
+      return "bg-[#E5EAFF] text-[#00085D] border-[#4A83FF]";
+    }
+
     return "bg-[#DADADA] text-[#374151] border-[#476559]";
   };
 
+  const headers = [
+    "Orden Nro.",
+    "Proveedor",
+    "Fecha",
+    "Pedido Nro.",
+    "Estado",
+    "Acción",
+  ];
 
   return (
-	  <>
+    // CAMBIO: mismo contenedor visual que OrderTable.
+    <div className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+      {/* CAMBIO: scroll interno para que la tabla no rompa el layout. */}
+      <div className="flex-1 min-h-0 overflow-auto">
+        <table className="w-full table-fixed border-collapse">
+          {/* CAMBIO: anchos controlados como OrderTable. */}
+          <colgroup>
+            <col className="w-[140px]" />
+            <col />
+            <col className="w-[140px]" />
+            <col className="w-[140px]" />
+            <col className="w-[150px]" />
+            <col className="w-[120px]" />
+          </colgroup>
 
-      {/* Dynamic Counter */}
-      <div className="mb-1 px-4">
-        <p className="text-[11px] text-[#6B6B6B] font-bold">
-          Mostrando {filteredResults} de {totalResults} resultados
-        </p>
+          <thead>
+            <tr className="bg-background">
+              {headers.map((h, idx) => (
+                <th
+                  key={h}
+                  className={`sticky top-0 border-b border-border bg-background px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider ${
+                    idx === 0 || idx === 1 ? "text-left" : "text-right"
+                  }`}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {data.map((item) => (
+              <tr
+                key={item.id}
+                className="group border-b border-gray-100 hover:bg-[#f0f7ff] transition-colors cursor-pointer"
+              >
+                <td className="px-4 py-3.5 text-sm font-bold text-[#2b6df5] text-left">
+                  {item.id}
+                </td>
+
+                <td className="truncate px-4 py-3.5 text-sm font-medium text-foreground text-left">
+                  {item.supplier?.name}
+                </td>
+
+                <td className="px-4 py-3.5 text-sm text-foreground text-right">
+                  {formatDate(item.createdAt)}
+                </td>
+
+                <td className="px-4 py-3.5 text-sm text-foreground text-right">
+                  {item.purchaseRequestId}
+                </td>
+
+                <td className="px-4 py-3.5 text-right">
+                  <div className="flex justify-end">
+                    <span
+                      className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[10px] font-bold w-[90px] justify-center ${getStatusStyles(
+                        item.status?.name
+                      )}`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+                      {translateOrderStatusName(item.status?.name)}
+                    </span>
+                  </div>
+                </td>
+
+                <td className="px-4 py-3.5 text-right">
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => onView(item.id)}
+                      className="inline-flex rounded-[5px] p-1 text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+
+            {data.length === 0 && (
+              <tr>
+                <td
+                  colSpan={headers.length}
+                  className="py-9 text-center text-sm text-muted-foreground"
+                >
+                  No hay órdenes de compra disponibles.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-    <div className="w-full overflow-hidden rounded-t-[5px]">
-      <table className="w-full border-separate border-spacing-0">
-        <thead>
-          <tr className="bg-[#DBE3EE]"> 
-            <th className="px-4 py-1.5 text-left text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200 first:rounded-tl-lg">Orden N°</th>
-            <th className="px-4 py-1.5 text-left text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200">Proveedor</th>
-            <th className="px-4 py-1.5 text-left text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200">Fecha</th>
-            <th className="px-4 py-1.5 text-left text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200">Pedido N°</th>
-            <th className="px-4 py-1.5 text-center text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200">Estado</th>
-            <th className="px-4 py-1.5 text-center text-[11px] font-bold text-[#374151] uppercase border-b border-gray-200 last:rounded-tr-lg">Accion</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white">
-          {data.map((item) => (
-            <tr key={item.id} className="hover:bg-[#F2F3F7] transition-colors group">
-              <td className="px-4 py-1.5 text-sm font-bold text-[#111827] border-b border-gray-100">{item.id}</td>
-              <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{item.supplier?.name}</td>
-              <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{formatDate(item.createdAt)}</td>
-              <td className="px-4 py-1.5 text-sm text-[#111827] border-b border-gray-100">{item.purchaseRequestId}</td>
-              <td className="px-4 py-1.5 border-b border-gray-100">
-                <div className="flex justify-center">
-                  <span className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full border text-[10px] font-bold w-[90px] justify-center ${getStatusStyles(item.status.name)}`}>
-                    <span className="h-1.5 w-1.5 rounded-full bg-current shrink-0" />
-                    {translateOrderStatusName(item.status.name)}
-                  </span>
-                </div>
-              </td>
-              <td className="px-4 py-1.5 text-center border-b border-gray-100">
-                <button 
-			  	onClick={() => onView(item.id)}
-			    className="text-center text-[#000000] hover:text-blue-600 transition-opacity opacity-0 group-hover:opacity-100"
-			  >
-                  <Eye size={16} />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* CAMBIO: footer igual al estilo de OrderTable. */}
+      <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+        <span>
+          Mostrando {filteredResults} de {totalResults} resultados
+        </span>
+      </div>
     </div>
-	  </>
   );
 };
+
 export default PurchaseTable;

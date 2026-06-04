@@ -36,6 +36,29 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
     }
   }, [open]);
 
+
+  // Handles the Escape key to close the category dropdown first, or close the modal if the dropdown is not open.
+  useEffect(() => {
+  if (!open) return;
+
+  function handleEscape(event) {
+    if (event.key === "Escape") {
+      if (showCatDrop) {
+        setShowCatDrop(false);
+        return;
+      }
+
+      onClose();
+    }
+  }
+
+  window.addEventListener("keydown", handleEscape);
+
+  return () => {
+    window.removeEventListener("keydown", handleEscape);
+  };
+}, [open, onClose, showCatDrop]);
+
   useEffect(() => {
     if (query.length < 3) {
       setFiltered([]);
@@ -69,16 +92,33 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
     return () => clearTimeout(timer);
   }, [query, descFilter, catFilter]);
 
+
+  // Handles keyboard actions inside the search input: Escape closes the modal, Enter selects a product, and arrow keys move between rows.
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && filtered.length > 0) {
-      onSelect(filtered[activeRow]);
-      onClose();
-    } else if (e.key === "ArrowDown") {
-      setActiveRow((r) => Math.min(r + 1, filtered.length - 1));
-    } else if (e.key === "ArrowUp") {
-      setActiveRow((r) => Math.max(r - 1, 0));
-    }
-  };
+  if (e.key === "Escape") {
+    e.preventDefault();
+    onClose();
+    return;
+  }
+
+  if (e.key === "Enter" && filtered.length > 0) {
+    e.preventDefault();
+    onSelect(filtered[activeRow]);
+    onClose();
+    return;
+  }
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    setActiveRow((r) => Math.min(r + 1, filtered.length - 1));
+    return;
+  }
+
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    setActiveRow((r) => Math.max(r - 1, 0));
+  }
+};
 
   const handleSelect = (product) => {
     onSelect(product);
@@ -270,7 +310,7 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
         </div>
 
         <p className="text-center text-xs text-muted">
-          Usá ↑ y ↓ para navegar y Enter para seleccionar.
+          Usá ↑ y ↓ para navegar, Enter para seleccionar y Esc para cerrar.
         </p>
       </div>
     </Modal>

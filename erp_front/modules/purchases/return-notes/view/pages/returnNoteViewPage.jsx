@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getReturnNoteById } from "@/lib/http/client/return-notes";
-import { createCreditNote, listCreditNotes } from "@/lib/http/client/credit-notes";
-
+import { getPurchaseInvoiceById } from "@/lib/http/client/purchase-invoices";
+import {
+  createSupplierCreditNote,
+  listSupplierCreditNotes,
+} from "@/lib/http/client/supplier-credit-notes";
 /**
  * Gets today's date in YYYY-MM-DD format for date inputs.
  *
@@ -154,9 +157,9 @@ function ReturnNoteStatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex min-w-[140px] items-center justify-center gap-2 rounded-[5px] border px-3 py-1 text-sm font-semibold ${border} ${bg} ${text}`}
+      className={`inline-flex min-w-[120px] items-center justify-center gap-1.5 rounded-full border px-3 py-0.5 text-[10px] font-bold ${border} ${bg} ${text}`}
     >
-      <span className={`h-2 w-2 rounded-full ${dot}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
       {normalizeStatus(status)}
     </span>
   );
@@ -198,25 +201,80 @@ function ChevronLeftIcon() {
 /**
  * Maps backend return note response into a UI-friendly object.
  *
+ * Supports both camelCase and snake_case responses from the backend.
+ *
  * @param {Object} data - Backend return note DTO.
  * @returns {Object} UI return note.
  */
 function mapReturnNote(data) {
+  const purchaseInvoice = data.purchaseInvoice ?? data.purchase_invoice ?? null;
+  const purchaseOrder = data.purchaseOrder ?? data.purchase_order ?? null;
+  const supplier =
+    data.supplier ??
+    data.provider ??
+    purchaseInvoice?.supplier ??
+    purchaseInvoice?.provider ??
+    { id: null, name: "Sin proveedor" };
+
+  const status = data.status ?? null;
+
+  const purchaseInvoiceId =
+    data.purchaseInvoiceId ??
+    data.purchase_invoice_id ??
+    purchaseInvoice?.id ??
+    null;
+
+  const purchaseOrderId =
+    data.purchaseOrderId ??
+    data.purchase_order_id ??
+    purchaseOrder?.id ??
+    purchaseInvoice?.purchaseOrderId ??
+    purchaseInvoice?.purchase_order_id ??
+    purchaseInvoice?.purchaseOrder?.id ??
+    purchaseInvoice?.purchase_order?.id ??
+    null;
+
   const details = (data.details || []).map((detail) => {
-    const returnedQuantity = toNumber(detail.returnedQuantity);
-    const amount = toNumber(detail.amount);
+    const product = detail.product ?? detail.item ?? null;
+
+    const returnedQuantity = toNumber(
+      detail.returnedQuantity ??
+        detail.returned_quantity ??
+        detail.quantity ??
+        0
+    );
+
+    const amount = toNumber(
+      detail.amount ??
+        detail.subtotal ??
+        detail.total ??
+        detail.total_amount ??
+        0
+    );
 
     return {
       id: detail.id,
-      productId: detail.product?.id,
-      code: detail.product?.code || "-",
-      description: detail.product?.description || "-",
+      productId:
+        detail.productId ??
+        detail.product_id ??
+        product?.id ??
+        null,
+      code:
+        product?.code ??
+        detail.code ??
+        "-",
+      description:
+        product?.description ??
+        detail.description ??
+        "-",
 
       // The current backend DTO does not expose invoiced quantity.
       // This fallback keeps the UI ready if the backend adds it later.
       invoicedQuantity:
         detail.invoicedQuantity ??
+        detail.invoiced_quantity ??
         detail.invoiceQuantity ??
+        detail.invoice_quantity ??
         detail.quantity ??
         "-",
 
@@ -230,23 +288,75 @@ function mapReturnNote(data) {
   return {
     id: data.id,
     returnNoteNumber: String(data.id).padStart(2, "0"),
-    purchaseInvoiceId: data.purchaseInvoiceId,
+
+    purchaseInvoiceId,
     purchaseInvoiceNumber:
-      data.purchaseInvoice?.invoiceNumber ||
-      data.purchaseInvoice?.invoiceNr ||
-      String(data.purchaseInvoiceId || "-"),
-    purchaseOrderId:
-      data.purchaseOrderId ||
-      data.purchaseOrder?.id ||
-      data.purchaseInvoice?.purchaseOrderId ||
-      null,
-    motive: data.motive || "-",
-    createdAt: data.createdAt,
-    total: toNumber(data.total),
-    supplier: data.supplier || { id: null, name: "Sin proveedor" },
-    status: normalizeStatus(data.status?.name),
+      purchaseInvoice?.invoiceNumber ??
+      purchaseInvoice?.invoice_number ??
+      purchaseInvoice?.invoiceNr ??
+      purchaseInvoice?.invoice_nr ??
+      String(purchaseInvoiceId || "-"),
+
+    purchaseOrderId,
+
+    motive:
+      data.motive ??
+      data.reason ??
+      "-",
+
+    createdAt:
+      data.createdAt ??
+      data.created_at,
+
+    total: toNumber(
+      data.total ??
+        data.total_amount ??
+        data.amount ??
+        0
+    ),
+
+    supplier,
+
+    status: normalizeStatus(
+      status?.name ??
+        status?.statusName ??
+        status?.status_name ??
+        data.statusName ??
+        data.status_name
+    ),
+
     details,
     raw: data,
+  };
+}
+
+/**
+ * Maps backend purchase invoice response into the small reference
+ * needed by this return note page.
+ *
+ * @param {Object} data - Backend purchase invoice DTO.
+ * @returns {{purchaseOrderId: number|null, purchaseInvoiceNumber: string}}
+ */
+function mapPurchaseInvoiceReference(data) {
+  const purchaseOrder = data.purchaseOrder ?? data.purchase_order ?? null;
+
+  const purchaseOrderId =
+    data.purchaseOrderId ??
+    data.purchase_order_id ??
+    purchaseOrder?.id ??
+    null;
+
+  const purchaseInvoiceNumber =
+    data.invoiceNumber ??
+    data.invoice_number ??
+    data.invoiceNr ??
+    data.invoice_nr ??
+    data.number ??
+    String(data.id || "-");
+
+  return {
+    purchaseOrderId,
+    purchaseInvoiceNumber,
   };
 }
 
@@ -256,14 +366,22 @@ function mapReturnNote(data) {
  * @param {Object} data - Backend credit note DTO.
  * @returns {Object} UI credit note.
  */
-function mapCreditNote(data) {
+function mapSupplierCreditNote(data) {
   return {
     id: data.id,
-    number: data.creditNoteNumber || String(data.id).padStart(4, "0"),
-    createdAt: data.createdAt,
+    number:
+      data.noteNumber ||
+      data.note_number ||
+      data.creditNoteNumber ||
+      data.credit_note_number ||
+      String(data.id).padStart(4, "0"),
+    createdAt: data.createdAt || data.created_at,
     total: toNumber(data.total),
-    invoiceId: data.invoice?.id,
-    invoiceNumber: data.invoice?.invoiceNumber || "-",
+    returnNoteId:
+      data.returnNoteId ??
+      data.return_note_id ??
+      data.returnNote?.id ??
+      data.return_note?.id,
     details: data.details || [],
     raw: data,
   };
@@ -278,12 +396,16 @@ function mapCreditNote(data) {
  * @returns {Object} Payload for POST /credit-notes.
  */
 function buildQuickCreditNotePayload(returnNote, form) {
-  const totalToCredit = toNumber(form.totalToCredit);
+  const totalToCredit = roundDecimal(form.totalToCredit);
   const sourceLines = returnNote.details.filter(
     (line) => line.productId && line.returnedQuantity > 0
   );
 
-  const sourceTotal = sourceLines.reduce((sum, line) => sum + toNumber(line.amount), 0);
+  const sourceTotal = sourceLines.reduce(
+    (sum, line) => sum + toNumber(line.amount),
+    0
+  );
+
   let remainingAmount = totalToCredit;
 
   const details = sourceLines.map((line, index) => {
@@ -302,20 +424,18 @@ function buildQuickCreditNotePayload(returnNote, form) {
       line.returnedQuantity > 0 ? allocatedAmount / line.returnedQuantity : 0;
 
     return {
-      productId: line.productId,
+      product_id: line.productId,
       quantity: line.returnedQuantity,
-      unitCost: toDecimalString(unitCost),
+      unit_cost: toDecimalString(unitCost),
+      subtotal: toDecimalString(allocatedAmount),
     };
   });
 
   return {
-    creditNoteNumber: form.creditNoteNumber.trim(),
-    createdAt: form.createdAt,
-
-    // Current backend DTO expects saleInvoiceId.
-    // For purchase return notes, consider renaming this in the backend to purchaseInvoiceId.
-    saleInvoiceId: returnNote.purchaseInvoiceId,
-
+    note_number: form.creditNoteNumber.trim(),
+    return_note_id: Number(returnNote.id),
+    created_at: form.createdAt,
+    total: toDecimalString(totalToCredit),
     details,
   };
 }
@@ -330,27 +450,35 @@ function buildQuickCreditNotePayload(returnNote, form) {
  */
 function buildDetailedCreditNotePayload(returnNote, form, lines) {
   const details = lines
-    .filter((line) => line.productId && toNumber(line.quantity) > 0 && toNumber(line.amount) > 0)
+    .filter(
+      (line) =>
+        line.productId &&
+        toNumber(line.quantity) > 0 &&
+        toNumber(line.amount) > 0
+    )
     .map((line) => {
       const quantity = toNumber(line.quantity);
-      const amount = toNumber(line.amount);
+      const amount = roundDecimal(line.amount);
       const unitCost = quantity > 0 ? amount / quantity : 0;
 
       return {
-        productId: line.productId,
+        product_id: line.productId,
         quantity,
-        unitCost: toDecimalString(unitCost),
+        unit_cost: toDecimalString(unitCost),
+        subtotal: toDecimalString(amount),
       };
     });
 
+  const totalToCredit = details.reduce(
+    (sum, detail) => sum + toNumber(detail.subtotal),
+    0
+  );
+
   return {
-    creditNoteNumber: form.creditNoteNumber.trim(),
-    createdAt: form.createdAt,
-
-    // Current backend DTO expects saleInvoiceId.
-    // For purchase return notes, consider renaming this in the backend to purchaseInvoiceId.
-    saleInvoiceId: returnNote.purchaseInvoiceId,
-
+    note_number: form.creditNoteNumber.trim(),
+    return_note_id: Number(returnNote.id),
+    created_at: form.createdAt,
+    total: toDecimalString(totalToCredit),
     details,
   };
 }
@@ -375,7 +503,7 @@ function ModalShell({ title, maxWidthClass = "max-w-[760px]", children, onClose 
         className={`w-full ${maxWidthClass} rounded-[5px] border border-border bg-surface p-6 shadow-panel md:p-10`}
       >
         <div className="mb-8 flex items-start justify-between gap-4">
-          <h2 className="text-[28px] font-extrabold leading-none tracking-tight text-foreground md:text-[36px]">
+          <h2 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
             {title}
           </h2>
 
@@ -653,87 +781,124 @@ function DetailedCreditNoteModal({
           Items de la factura
         </h3>
 
-        <div className="min-h-[320px] overflow-auto rounded-[5px] border border-border bg-surface shadow-panel">
-          <table className="w-full min-w-[1100px] table-fixed border-collapse">
-            <thead>
-              <tr className="bg-muted text-sm font-bold text-secondary">
-                <th className="w-[60px] border-b border-border px-3 py-2.5 text-center">
-                  #
-                </th>
-                <th className="w-[180px] border-b border-border px-3 py-2.5 text-left">
-                  Código
-                </th>
-                <th className="border-b border-border px-3 py-2.5 text-left">
-                  Producto
-                </th>
-                <th className="w-[160px] border-b border-border px-3 py-2.5 text-left">
-                  Precio Unitario
-                </th>
-                <th className="w-[160px] border-b border-border px-3 py-2.5 text-left">
-                  Cant. Devuelta
-                </th>
-                <th className="w-[170px] border-b border-border px-3 py-2.5 text-left">
-                  Monto Devuelto
-                </th>
-                <th className="w-[180px] border-b border-border px-3 py-2.5 text-left">
-                  Cant. A Acreditar
-                </th>
-                <th className="w-[190px] border-b border-border px-3 py-2.5 text-left">
-                  Monto A Acreditar
-                </th>
-              </tr>
-            </thead>
+        {/* CAMBIO: tabla del modal detallado con estilo tipo DocumentsTable */}
+        <div className="flex min-h-[320px] flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+          <div className="min-h-0 flex-1 overflow-auto">
+            <table className="w-full min-w-[1100px] table-fixed border-collapse">
+              <thead>
+                <tr className="bg-background">
+                  <th className="sticky top-0 w-[60px] border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    #
+                  </th>
 
-            <tbody>
-              {lines.map((line, index) => (
-                <tr key={line.detailId} className="text-sm text-foreground">
-                  <td className="px-3 py-3 text-center">{index + 1}</td>
-                  <td className="px-3 py-3 font-extrabold">{line.code}</td>
-                  <td className="truncate px-3 py-3" title={line.description}>
-                    {line.description}
-                  </td>
-                  <td className="px-3 py-3">{formatMoney(line.unitCost)}</td>
-                  <td className="px-3 py-3">{line.returnedQuantity}</td>
-                  <td className="px-3 py-3">{formatMoney(line.amountReturned)}</td>
-                  <td className="px-3 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      max={line.returnedQuantity}
-                      value={line.quantity}
-                      onChange={(event) =>
-                        handleLineChange(line.detailId, "quantity", event.target.value)
-                      }
-                      className="h-10 w-full rounded-[5px] border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                    />
-                  </td>
-                  <td className="px-3 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={line.amount}
-                      onChange={(event) =>
-                        handleLineChange(line.detailId, "amount", event.target.value)
-                      }
-                      className="h-10 w-full rounded-[5px] border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                    />
-                  </td>
+                  <th className="sticky top-0 w-[180px] border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Código
+                  </th>
+
+                  <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Producto
+                  </th>
+
+                  <th className="sticky top-0 w-[160px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Precio Unitario
+                  </th>
+
+                  <th className="sticky top-0 w-[160px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Cant. Devuelta
+                  </th>
+
+                  <th className="sticky top-0 w-[170px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Monto Devuelto
+                  </th>
+
+                  <th className="sticky top-0 w-[180px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Cant. A Acreditar
+                  </th>
+
+                  <th className="sticky top-0 w-[190px] border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Monto A Acreditar
+                  </th>
                 </tr>
-              ))}
+              </thead>
 
-              {lines.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="py-12 text-center text-sm text-muted-foreground"
+              <tbody>
+                {lines.map((line, index) => (
+                  <tr
+                    key={line.detailId}
+                    className="group border-b border-gray-100 text-sm text-foreground transition-colors hover:bg-[#f0f7ff]"
                   >
-                    No hay ítems disponibles.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <td className="px-4 py-3.5 text-center">
+                      {index + 1}
+                    </td>
+
+                    <td className="px-4 py-3.5 font-bold text-[#2b6df5]">
+                      {line.code}
+                    </td>
+
+                    <td
+                      className="truncate px-4 py-3.5 font-medium"
+                      title={line.description}
+                    >
+                      {line.description}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right">
+                      {formatMoney(line.unitCost)}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right">
+                      {line.returnedQuantity}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right font-bold">
+                      {formatMoney(line.amountReturned)}
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      <input
+                        type="number"
+                        min="0"
+                        max={line.returnedQuantity}
+                        value={line.quantity}
+                        onChange={(event) =>
+                          handleLineChange(line.detailId, "quantity", event.target.value)
+                        }
+                        className="h-10 w-full rounded-[5px] border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                      />
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={line.amount}
+                        onChange={(event) =>
+                          handleLineChange(line.detailId, "amount", event.target.value)
+                        }
+                        className="h-10 w-full rounded-[5px] border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                      />
+                    </td>
+                  </tr>
+                ))}
+
+                {lines.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="py-9 text-center text-sm text-muted-foreground"
+                    >
+                      No hay ítems disponibles.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+            <span>Mostrando {lines.length} resultados</span>
+          </div>
         </div>
 
         {submitError && (
@@ -821,22 +986,49 @@ export default function ReturnNoteDetailPage() {
         setErrorMessage(null);
 
         const data = await getReturnNoteById(id);
-        const mappedReturnNote = mapReturnNote(data);
+        let mappedReturnNote = mapReturnNote(data);
+
+        if (
+          !mappedReturnNote.purchaseOrderId &&
+          mappedReturnNote.purchaseInvoiceId
+        ) {
+          try {
+            const purchaseInvoiceData = await getPurchaseInvoiceById(
+              mappedReturnNote.purchaseInvoiceId
+            );
+            const purchaseInvoiceReference =
+              mapPurchaseInvoiceReference(purchaseInvoiceData);
+
+            mappedReturnNote = {
+              ...mappedReturnNote,
+              purchaseInvoiceNumber:
+                purchaseInvoiceReference.purchaseInvoiceNumber ||
+                mappedReturnNote.purchaseInvoiceNumber,
+              purchaseOrderId:
+                purchaseInvoiceReference.purchaseOrderId ||
+                mappedReturnNote.purchaseOrderId,
+            };
+          } catch (purchaseInvoiceError) {
+            console.warn(
+              "Purchase invoice reference could not be loaded:",
+              purchaseInvoiceError
+            );
+          }
+        }
 
         if (!ignore) {
           setReturnNote(mappedReturnNote);
         }
 
         try {
-          const rawCreditNotes = await listCreditNotes({
-            contains: String(mappedReturnNote.purchaseInvoiceId),
+          const rawCreditNotes = await listSupplierCreditNotes({
+            search: String(mappedReturnNote.id),
           });
 
           const linkedCreditNotes = (rawCreditNotes || [])
-            .map(mapCreditNote)
+            .map(mapSupplierCreditNote)
             .filter(
-              (note) =>
-                Number(note.invoiceId) === Number(mappedReturnNote.purchaseInvoiceId)
+              (note) => Number(note.returnNoteId) === Number(mappedReturnNote.id)
             );
 
           if (!ignore) {
@@ -881,7 +1073,7 @@ export default function ReturnNoteDetailPage() {
 
   const handleOpenCreditNote = (creditNoteId) => {
     if (!creditNoteId) return;
-    router.push(`/purchases/credit-notes/${creditNoteId}`);
+    router.push(`/purchases/supplier-credit-notes/${creditNoteId}`);
   };
 
   const handleCreateCreditNote = async (payload) => {
@@ -889,8 +1081,8 @@ export default function ReturnNoteDetailPage() {
       setIsSubmittingCreditNote(true);
       setCreditNoteSubmitError(null);
 
-      const createdCreditNote = await createCreditNote(payload);
-      const mappedCreditNote = mapCreditNote(createdCreditNote);
+      const createdCreditNote = await createSupplierCreditNote(payload);
+      const mappedCreditNote = mapSupplierCreditNote(createdCreditNote);
 
       setCreditNotes((prev) => [mappedCreditNote, ...prev]);
       setCreditNoteMode(null);
@@ -911,7 +1103,7 @@ export default function ReturnNoteDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full min-h-0 flex-col rounded-[5px] bg-surface p-4 md:p-6">
+      <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
         <div className="rounded-[5px] border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
           Cargando nota de devolución...
         </div>
@@ -921,7 +1113,7 @@ export default function ReturnNoteDetailPage() {
 
   if (errorMessage || !returnNote) {
     return (
-      <div className="flex h-full min-h-0 flex-col rounded-[5px] bg-surface p-4 md:p-6">
+      <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
         <div className="mb-4 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage || "Nota de devolución no encontrada."}
         </div>
@@ -938,8 +1130,8 @@ export default function ReturnNoteDetailPage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-[5px] bg-surface p-4 md:p-6">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
+      <div className="mb-3 shrink-0">
         <button
           type="button"
           onClick={() => router.back()}
@@ -950,25 +1142,33 @@ export default function ReturnNoteDetailPage() {
         </button>
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center gap-8 border-b border-foreground/50 pb-2">
-        <h1 className="text-[34px] font-extrabold leading-none tracking-tight text-foreground md:text-[42px]">
-          Nota de Devolución N° {returnNote.returnNoteNumber}
-        </h1>
+      <div className="mb-5 shrink-0">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
+            Nota de Devolución N° {returnNote.returnNoteNumber}
+          </h1>
 
-        <ReturnNoteStatusBadge status={returnNote.status} />
+          <ReturnNoteStatusBadge status={returnNote.status} />
+        </div>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consultá el detalle de la devolución, factura asociada e ítems devueltos.
+        </p>
+
+        <div className="mt-2 h-px w-full bg-border" />
       </div>
 
-      <div className="mb-10 rounded-[5px] border border-border bg-surface px-6 py-3 shadow-sm">
-        <div className="flex flex-wrap gap-x-12 gap-y-2 text-lg">
+      <div className="mb-5 shrink-0 rounded-[5px] border border-border bg-surface px-6 py-3 shadow-sm">
+        <div className="flex flex-wrap gap-x-12 gap-y-2 text-sm sm:text-base">
           <div>
-            <span className="font-extrabold text-foreground">Proveedor:</span>{" "}
+            <span className="font-bold text-foreground">Proveedor:</span>{" "}
             <span className="font-medium text-secondary">
               {returnNote.supplier?.name || "Sin proveedor"}
             </span>
           </div>
 
           <div>
-            <span className="font-extrabold text-secondary">Creado</span>{" "}
+            <span className="font-bold text-secondary">Creado:</span>{" "}
             <span className="font-medium text-secondary">
               {formatDate(returnNote.createdAt)}
             </span>
@@ -976,23 +1176,28 @@ export default function ReturnNoteDetailPage() {
         </div>
       </div>
 
-      <div className="mb-16 grid max-w-[1020px] grid-cols-[250px_1fr] items-center gap-x-8 gap-y-8 pl-8 text-lg">
-        <div className="font-extrabold uppercase text-secondary">Motivo:</div>
+      <div className="mb-5 shrink-0 grid max-w-[1020px] grid-cols-1 gap-x-8 gap-y-4 text-sm sm:grid-cols-[250px_1fr] sm:text-base">
+        <div className="font-bold uppercase text-secondary">Motivo:</div>
         <div className="text-foreground">{returnNote.motive}</div>
 
-        <div className="font-extrabold uppercase text-secondary">Factura N°:</div>
+        <div className="font-bold uppercase text-secondary">Factura N°:</div>
         <div className="flex items-center gap-4">
-          <span className="min-w-[180px] font-extrabold text-foreground">
+          <span className="min-w-[180px] font-bold text-foreground">
             {returnNote.purchaseInvoiceNumber}
           </span>
-          <ViewButton onClick={handleOpenPurchaseInvoice}>Ver</ViewButton>
+          <ViewButton
+            disabled={!returnNote.purchaseInvoiceId}
+            onClick={handleOpenPurchaseInvoice}
+          >
+            Ver
+          </ViewButton>
         </div>
 
-        <div className="font-extrabold uppercase text-secondary">
+        <div className="font-bold uppercase text-secondary">
           Orden de Compra N°:
         </div>
         <div className="flex items-center gap-4">
-          <span className="min-w-[180px] font-extrabold text-foreground">
+          <span className="min-w-[180px] font-bold text-foreground">
             {returnNote.purchaseOrderId || "-"}
           </span>
           <ViewButton
@@ -1003,7 +1208,7 @@ export default function ReturnNoteDetailPage() {
           </ViewButton>
         </div>
 
-        <div className="font-extrabold uppercase text-secondary">
+        <div className="font-bold uppercase text-secondary">
           Nota de Crédito N°:
         </div>
 
@@ -1014,7 +1219,7 @@ export default function ReturnNoteDetailPage() {
                 key={note.id}
                 type="button"
                 onClick={() => handleOpenCreditNote(note.id)}
-                className="rounded-[5px] border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-extrabold text-primary transition hover:bg-primary/15"
+                className="rounded-[5px] border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-bold text-primary transition hover:bg-primary/15"
                 title={`Total: ${formatMoney(note.total)}`}
               >
                 {note.number}
@@ -1030,7 +1235,7 @@ export default function ReturnNoteDetailPage() {
             <button
               type="button"
               onClick={() => setShowCreditNoteMenu((prev) => !prev)}
-              className="flex h-11 items-center gap-3 rounded-[5px] bg-primary px-5 text-base font-extrabold text-primary-foreground transition hover:bg-primary-hover"
+              className="flex h-11 items-center gap-3 rounded-[5px] bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover"
             >
               Agregar Nota de Crédito
               <ChevronDownIcon className="h-5 w-5" />
@@ -1059,8 +1264,8 @@ export default function ReturnNoteDetailPage() {
         </div>
       </div>
 
-      <div className="mb-2 flex items-end justify-between gap-4">
-        <h2 className="pl-7 text-lg font-extrabold uppercase text-secondary">
+      <div className="mb-2 shrink-0 flex items-end justify-between gap-4">
+        <h2 className="text-lg font-bold uppercase text-secondary">
           Items Devueltos
         </h2>
 
@@ -1086,27 +1291,42 @@ export default function ReturnNoteDetailPage() {
         </div>
       </div>
 
+      {/* CAMBIO: tabla principal estilo DocumentsTable */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
         <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full table-fixed border-collapse">
+          <table className="w-full min-w-[950px] table-fixed border-collapse">
+            <colgroup>
+              <col className="w-[70px]" />
+              <col className="w-[180px]" />
+              <col />
+              <col className="w-[170px]" />
+              <col className="w-[170px]" />
+              <col className="w-[160px]" />
+            </colgroup>
+
             <thead>
-              <tr className="sticky top-0 z-10 bg-muted text-sm font-extrabold text-secondary">
-                <th className="w-[70px] border-b border-border px-3 py-2.5 text-center">
+              <tr className="bg-background">
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   #
                 </th>
-                <th className="w-[230px] border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Código
                 </th>
-                <th className="border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Producto
                 </th>
-                <th className="w-[200px] border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Cant. Facturada
                 </th>
-                <th className="w-[200px] border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Cant. Devuelta
                 </th>
-                <th className="w-[180px] border-b border-border px-3 py-2.5 text-left">
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Monto
                 </th>
               </tr>
@@ -1116,16 +1336,34 @@ export default function ReturnNoteDetailPage() {
               {returnNote.details.map((detail, index) => (
                 <tr
                   key={detail.id}
-                  className="text-base text-foreground transition hover:bg-background"
+                  className="group border-b border-gray-100 transition-colors hover:bg-[#f0f7ff]"
                 >
-                  <td className="px-3 py-3 text-center">{index + 1}</td>
-                  <td className="px-3 py-3 font-extrabold">{detail.code}</td>
-                  <td className="truncate px-3 py-3" title={detail.description}>
+                  <td className="px-4 py-3.5 text-center text-sm text-foreground">
+                    {index + 1}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
+                    {detail.code}
+                  </td>
+
+                  <td
+                    className="truncate px-4 py-3.5 text-sm font-medium text-foreground"
+                    title={detail.description}
+                  >
                     {detail.description}
                   </td>
-                  <td className="px-3 py-3">{detail.invoicedQuantity}</td>
-                  <td className="px-3 py-3">{detail.returnedQuantity}</td>
-                  <td className="px-3 py-3">{formatMoney(detail.amount)}</td>
+
+                  <td className="px-4 py-3.5 text-right text-sm text-foreground">
+                    {detail.invoicedQuantity}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-right text-sm text-foreground">
+                    {detail.returnedQuantity}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-right text-sm font-bold text-foreground">
+                    {formatMoney(detail.amount)}
+                  </td>
                 </tr>
               ))}
 
@@ -1133,7 +1371,7 @@ export default function ReturnNoteDetailPage() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="py-12 text-center text-sm text-muted-foreground"
+                    className="py-9 text-center text-sm text-muted-foreground"
                   >
                     No hay ítems devueltos.
                   </td>
@@ -1142,13 +1380,17 @@ export default function ReturnNoteDetailPage() {
             </tbody>
           </table>
         </div>
+
+        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+          <span>Mostrando {returnNote.details.length} resultados</span>
+        </div>
       </div>
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-4 shrink-0 flex justify-center">
         <button
           type="button"
           onClick={() => router.back()}
-          className="h-12 min-w-[280px] rounded-[5px] border border-border bg-surface px-4 text-base font-extrabold text-foreground transition hover:bg-background"
+          className="h-12 min-w-[280px] rounded-[5px] border border-border bg-surface px-4 text-base font-bold text-foreground transition hover:bg-background"
         >
           Atrás
         </button>
