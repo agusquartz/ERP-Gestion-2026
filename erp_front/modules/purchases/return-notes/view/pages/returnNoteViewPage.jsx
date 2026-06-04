@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getReturnNoteById } from "@/lib/http/client/return-notes";
-import { createCreditNote, listCreditNotes } from "@/lib/http/client/credit-notes";
-
+import {
+  createSupplierCreditNote,
+  listSupplierCreditNotes,
+} from "@/lib/http/client/supplier-credit-notes";
 /**
  * Gets today's date in YYYY-MM-DD format for date inputs.
  *
@@ -256,14 +258,22 @@ function mapReturnNote(data) {
  * @param {Object} data - Backend credit note DTO.
  * @returns {Object} UI credit note.
  */
-function mapCreditNote(data) {
+function mapSupplierCreditNote(data) {
   return {
     id: data.id,
-    number: data.creditNoteNumber || String(data.id).padStart(4, "0"),
-    createdAt: data.createdAt,
+    number:
+      data.noteNumber ||
+      data.note_number ||
+      data.creditNoteNumber ||
+      data.credit_note_number ||
+      String(data.id).padStart(4, "0"),
+    createdAt: data.createdAt || data.created_at,
     total: toNumber(data.total),
-    invoiceId: data.invoice?.id,
-    invoiceNumber: data.invoice?.invoiceNumber || "-",
+    returnNoteId:
+      data.returnNoteId ??
+      data.return_note_id ??
+      data.returnNote?.id ??
+      data.return_note?.id,
     details: data.details || [],
     raw: data,
   };
@@ -278,12 +288,16 @@ function mapCreditNote(data) {
  * @returns {Object} Payload for POST /credit-notes.
  */
 function buildQuickCreditNotePayload(returnNote, form) {
-  const totalToCredit = toNumber(form.totalToCredit);
+  const totalToCredit = roundDecimal(form.totalToCredit);
   const sourceLines = returnNote.details.filter(
     (line) => line.productId && line.returnedQuantity > 0
   );
 
-  const sourceTotal = sourceLines.reduce((sum, line) => sum + toNumber(line.amount), 0);
+  const sourceTotal = sourceLines.reduce(
+    (sum, line) => sum + toNumber(line.amount),
+    0
+  );
+
   let remainingAmount = totalToCredit;
 
   const details = sourceLines.map((line, index) => {
@@ -302,20 +316,18 @@ function buildQuickCreditNotePayload(returnNote, form) {
       line.returnedQuantity > 0 ? allocatedAmount / line.returnedQuantity : 0;
 
     return {
-      productId: line.productId,
+      product_id: line.productId,
       quantity: line.returnedQuantity,
-      unitCost: toDecimalString(unitCost),
+      unit_cost: toDecimalString(unitCost),
+      subtotal: toDecimalString(allocatedAmount),
     };
   });
 
   return {
-    creditNoteNumber: form.creditNoteNumber.trim(),
-    createdAt: form.createdAt,
-
-    // Current backend DTO expects saleInvoiceId.
-    // For purchase return notes, consider renaming this in the backend to purchaseInvoiceId.
-    saleInvoiceId: returnNote.purchaseInvoiceId,
-
+    note_number: form.creditNoteNumber.trim(),
+    return_note_id: Number(returnNote.id),
+    created_at: form.createdAt,
+    total: toDecimalString(totalToCredit),
     details,
   };
 }
@@ -330,27 +342,35 @@ function buildQuickCreditNotePayload(returnNote, form) {
  */
 function buildDetailedCreditNotePayload(returnNote, form, lines) {
   const details = lines
-    .filter((line) => line.productId && toNumber(line.quantity) > 0 && toNumber(line.amount) > 0)
+    .filter(
+      (line) =>
+        line.productId &&
+        toNumber(line.quantity) > 0 &&
+        toNumber(line.amount) > 0
+    )
     .map((line) => {
       const quantity = toNumber(line.quantity);
-      const amount = toNumber(line.amount);
+      const amount = roundDecimal(line.amount);
       const unitCost = quantity > 0 ? amount / quantity : 0;
 
       return {
-        productId: line.productId,
+        product_id: line.productId,
         quantity,
-        unitCost: toDecimalString(unitCost),
+        unit_cost: toDecimalString(unitCost),
+        subtotal: toDecimalString(amount),
       };
     });
 
+  const totalToCredit = details.reduce(
+    (sum, detail) => sum + toNumber(detail.subtotal),
+    0
+  );
+
   return {
-    creditNoteNumber: form.creditNoteNumber.trim(),
-    createdAt: form.createdAt,
-
-    // Current backend DTO expects saleInvoiceId.
-    // For purchase return notes, consider renaming this in the backend to purchaseInvoiceId.
-    saleInvoiceId: returnNote.purchaseInvoiceId,
-
+    note_number: form.creditNoteNumber.trim(),
+    return_note_id: Number(returnNote.id),
+    created_at: form.createdAt,
+    total: toDecimalString(totalToCredit),
     details,
   };
 }
@@ -865,15 +885,14 @@ export default function ReturnNoteDetailPage() {
         }
 
         try {
-          const rawCreditNotes = await listCreditNotes({
-            contains: String(mappedReturnNote.purchaseInvoiceId),
+          const rawCreditNotes = await listSupplierCreditNotes({
+            search: String(mappedReturnNote.id),
           });
 
           const linkedCreditNotes = (rawCreditNotes || [])
-            .map(mapCreditNote)
+            .map(mapSupplierCreditNote)
             .filter(
-              (note) =>
-                Number(note.invoiceId) === Number(mappedReturnNote.purchaseInvoiceId)
+              (note) => Number(note.returnNoteId) === Number(mappedReturnNote.id)
             );
 
           if (!ignore) {
@@ -918,7 +937,7 @@ export default function ReturnNoteDetailPage() {
 
   const handleOpenCreditNote = (creditNoteId) => {
     if (!creditNoteId) return;
-    router.push(`/purchases/credit-notes/${creditNoteId}`);
+    router.push(`/purchases/supplier-credit-notes/${creditNoteId}`);
   };
 
   const handleCreateCreditNote = async (payload) => {
@@ -926,8 +945,8 @@ export default function ReturnNoteDetailPage() {
       setIsSubmittingCreditNote(true);
       setCreditNoteSubmitError(null);
 
-      const createdCreditNote = await createCreditNote(payload);
-      const mappedCreditNote = mapCreditNote(createdCreditNote);
+      const createdCreditNote = await createSupplierCreditNote(payload);
+      const mappedCreditNote = mapSupplierCreditNote(createdCreditNote);
 
       setCreditNotes((prev) => [mappedCreditNote, ...prev]);
       setCreditNoteMode(null);
