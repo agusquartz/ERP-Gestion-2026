@@ -19,8 +19,15 @@
 //! `DbError` variants to HTTP status codes (e.g. `NotFound` → 404, `Other` → 400).
  
 use crate::modules::quote::{
-    dto::response::QuoteResponseDto,
-    dto::create::CreateQuoteDto,
+
+    dto::{
+        QuoteListQuery,
+        response::{
+            QuoteResponseDto,
+            ListQuotesView,
+        },
+        create::CreateQuoteDto,
+    },
     repository,
     mapper,
 };
@@ -61,7 +68,7 @@ pub async fn create_quote(
 
     if dto.details.is_empty() {
         return Err(DbError::Other(
-        "Quote must contain at least one detail".to_string()
+                "Quote must contain at least one detail".to_string()
         ));
     }
 
@@ -114,13 +121,31 @@ pub async fn get_quote_by_id(id: i32) -> Result<QuoteResponseDto, crate::db_conf
 /// - `Err(DbError)`: Database query failed.
 
 pub async fn get_quotes(
-    contains: Option<String>,
-) -> Result<Vec<QuoteResponseDto>, crate::db_config::DbError> {
+    query: QuoteListQuery
+) -> Result<ListQuotesView, crate::db_config::DbError> {
 
-    let quotes = repository::get_quotes(contains).await?;
+    let rows= repository::get_quotes(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        query.status, 
+        query.cursor, 
+        query.limit + 1,
+    ).await?;
 
-    Ok(quotes
-        .into_iter()
-        .map(mapper::quote_with_details_to_response)    // Map each aggregate to DTO
-        .collect())
+    let mut quotes: Vec<QuoteResponseDto> = rows.into_iter().map(mapper::quote_with_details_to_response).collect();
+
+    let limit = query.limit as usize;
+    //check if there's more quotes than what the limit allows us to return
+    let has_more = quotes.len() > limit; 
+    //drop the extra order from the vector
+    quotes.truncate(limit);
+    //create the list view
+    let view = ListQuotesView {
+        quotes: quotes,
+        has_more: has_more,
+    };
+
+    Ok(view)
 }

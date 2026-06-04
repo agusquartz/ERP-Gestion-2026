@@ -30,7 +30,7 @@ export function ClientSearchModal({
     const fetchClients = async () => {
       try {
         const data = await getClients();
-        setClientsList(data);
+        setClientsList(data.clients);
       } catch (err) {
         console.error(err);
       }

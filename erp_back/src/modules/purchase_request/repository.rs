@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use chrono::Local;
+use chrono::NaiveDate;
 use tokio_postgres::Row;
 
 
@@ -78,19 +78,40 @@ INNER JOIN categories AS cat ON p.category_id = cat.id
 /// - product category name
 ///
 /// Returns fully populated aggregates including associated quotes.
-pub async fn query_requests(contains: Option<&str>) -> Result<Vec<model::PurchaseRequestAggregate>, db_config::DbError> {
+pub async fn query_requests(
+    search: Option<String>,
+    filter: Option<String>,
+    since:  Option<NaiveDate>,
+    to:     Option<NaiveDate>,
+    status: Option<String>,
+    cursor: Option<i32>,
+    limit:  i64,
+    ) -> Result<Vec<model::PurchaseRequestAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
     let req_aggregates: Vec<model::PurchaseRequestAggregate>;
-    if let Some(q) = contains {
-        let req_sql = format!("{} WHERE (COALESCE($1, '') = '' OR p.description ILIKE '%' || $1 || '%' OR cat.name ILIKE '%' || $1 || '%') ORDER BY pr.id, prd.id", PURCHASE_REQUEST_SELECT_BASE); 
 
-        let req_rows = client.query(&req_sql, &[&q]).await?;
-        req_aggregates = rows_to_request_aggregate(req_rows);
-    } else {
-        let req_sql = PURCHASE_REQUEST_SELECT_BASE.to_string();
-        let req_rows = client.query(&req_sql, &[]).await?; 
-        req_aggregates = rows_to_request_aggregate(req_rows);
-    }
+    let sql = format!("
+            {}
+	WHERE pr.id IN (
+			SELECT DISTINCT pr2.id
+			FROM purchase_requests AS pr2
+			INNER JOIN purchase_request_details AS prd2 ON pr.id = prd.purchase_request_id
+			INNER JOIN products AS p2 ON prd2.product_id = p2.id
+			WHERE ($1::INT  IS NULL OR pr2.id                      > $1)
+			AND ($3::TEXT IS NULL OR p2.description::TEXT ILIKE '%' || $3 || '%' OR p2.code::TEXT ILIKE '%' || $3 || '%')
+			AND ($4::DATE IS NULL OR pr2.created_at             >= $4)
+			AND ($5::DATE IS NULL OR pr2.created_at             <= $5)
+			ORDER BY pr2.id ASC
+			LIMIT $6
+			)
+	AND($2::TEXT IS NULL OR e.name ILIKE '%' || $2 || '%' OR e.surname ILIKE '%' || $2 || '%')
+	ORDER BY pr.id ASC, prd.id ASC
+            ", PURCHASE_REQUEST_SELECT_BASE); 
+
+    let req_rows = client.query(&sql, &[&cursor, &search, &filter, &since, &to, &limit]).await?;
+
+    req_aggregates = rows_to_request_aggregate(req_rows);
+
     let complete_aggs = get_the_quotes( &client,req_aggregates).await?;
     Ok(complete_aggs)
 }
@@ -359,34 +380,34 @@ pub async fn patch_purchase_quote(
     match dto.status_id {
         s if s == STATUS_PENDING => {
             tx.execute(
-                    "UPDATE purchase_quotes
+                "UPDATE purchase_quotes
                      SET status_id = $1, 
                      date_sent = COALESCE(date_sent, $2)
                      WHERE id = $3
                      AND purchase_request_id = $4",
                      &[&dto.status_id, &dto.date_sent, &dto.quote_id, &purchase_request_id],
-                )
+            )
                 .await?
         }
         s if s == STATUS_OK => {
             tx.execute(
-                    "UPDATE purchase_quotes
+                "UPDATE purchase_quotes
                      SET status_id = $1, 
                      date_received = COALESCE(date_received, $2)
                      WHERE id = $3
                      AND purchase_request_id = $4",
                      &[&dto.status_id, &dto.date_received, &dto.quote_id, &purchase_request_id],
-                )
+            )
                 .await?
         }
         _ => {
             tx.execute(
-                    "UPDATE purchase_quotes
+                "UPDATE purchase_quotes
                      SET status_id = $1
                      WHERE id = $2
                      AND purchase_request_id = $3",
                      &[&dto.status_id, &dto.quote_id, &purchase_request_id],
-                )
+            )
                 .await?
         }
     };
@@ -416,4 +437,4 @@ pub async fn patch_purchase_quote(
     Ok(agg)
 }
 
-    
+

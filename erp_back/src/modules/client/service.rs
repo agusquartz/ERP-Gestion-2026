@@ -16,10 +16,19 @@
 //! Repositories should only deal with SQL concerns. The service layer is the
 //! boundary that keeps both clean and independently testable.
 
-use crate::modules::client::dto::create::CreateClientDto;
-use crate::modules::client::dto::response::ClientResponseDto;
-use crate::modules::client::dto::update::PatchClientDto;
-use crate::modules::client::repository;
+use crate::modules::client::{
+    dto::{
+        ClientListQuery,
+        create::CreateClientDto,
+        response::{
+            ClientResponseDto,
+            ListClientView,
+        },
+        update::PatchClientDto, 
+    },
+    model::ClientAggregate,
+    repository,
+};
 use crate::shared::db_config;
 
 
@@ -40,7 +49,7 @@ use crate::shared::db_config;
 pub enum ServiceError {
     /// Wraps a database-level error from `tokio_postgres`.
     Db(db_config::DbError),
-    
+
     /// A business rule validation failure. The inner `String` contains a
     /// human-readable description of the violated rule.
     Validation(String),
@@ -82,7 +91,7 @@ impl std::error::Error for ServiceError {}
 // ─────────────────────────────────────────────────────────────────────────────
 // Service functions
 // ─────────────────────────────────────────────────────────────────────────────
- 
+
 /// Returns all clients, optionally filtered by a name/surname substring.
 ///
 /// Delegates to [`repository::query_clients`] and maps each result to a
@@ -97,10 +106,32 @@ impl std::error::Error for ServiceError {}
 /// - `Ok(Vec<ClientResponseDto>)`: Possibly empty list of matching clients.
 /// - `Err(ServiceError::Db(...))`: Database query failed.
 pub async fn get_clients(
-    contains: Option<String>,
-) -> Result<Vec<ClientResponseDto>, ServiceError> {
-    let results = repository::query_clients(contains.as_deref()).await?;
-    Ok(results.into_iter().map(Into::into).collect())
+    query: ClientListQuery
+) -> Result<ListClientView, ServiceError> {
+    let rows= repository::query_clients(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        query.status, 
+        query.cursor, 
+        query.limit + 1,
+    ).await?;
+
+    let mut clients: Vec<ClientResponseDto> = rows.into_iter().map(Into::into).collect();
+
+    let limit = query.limit as usize;
+
+    let has_more = clients.len() > limit; 
+
+    clients.truncate(limit);
+
+    let view = ListClientView {
+        clients: clients,
+        has_more: has_more,
+    };
+
+    Ok(view)
 }
 
 

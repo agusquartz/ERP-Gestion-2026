@@ -73,7 +73,14 @@ impl From<crate::modules::client::model::Phone> for PhoneResponseDto {
 // ─────────────────────────────────────────────────────────────────────────────
 // DTO structs
 // ─────────────────────────────────────────────────────────────────────────────
- 
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListClientView {
+    pub clients: Vec<ClientResponseDto>,
+    pub has_more: bool,
+}
+
 /// The JSON object returned for a client in every endpoint response.
 ///
 /// All field names are serialized in `camelCase` to match JavaScript/TypeScript

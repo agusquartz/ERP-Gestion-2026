@@ -35,8 +35,12 @@ use axum::{
 use std::collections::HashMap;
 use crate::modules::quote::service;
 use crate::modules::quote::dto::{
+    QuoteListQuery,
     create::CreateQuoteDto,
-    response::QuoteResponseDto,
+    response::{
+        QuoteResponseDto,
+        ListQuotesView,
+    }
 };
 
 
@@ -131,14 +135,10 @@ pub async fn get_quote_handler(
 /// - `500 Internal Server Error` with error message if the query fails
 
 pub async fn list_quotes_handler(
-    Query(params): Query<HashMap<String, String>>,
-) -> Result<Json<Vec<QuoteResponseDto>>, (StatusCode, String)> {
+    Query(query): Query<QuoteListQuery> 
+) -> Result<Json<ListQuotesView>, (StatusCode, String)> {
 
-    // Extract the optional filter from the raw query parameter map
-
-    let contains = params.get("contains").cloned();
-
-    match service::get_quotes(contains).await {
+    match service::get_quotes(query).await {
         Ok(data) => Ok(Json(data)),
         Err(e) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,

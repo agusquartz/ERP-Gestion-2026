@@ -130,13 +130,13 @@ export default function DocumentsPage() {
 
         if (activeTab === DOCUMENT_TYPES.INVOICE) {
           data = await listInvoices({ contains: search });
-          mapped = data.map(invoiceToDocument);
+          mapped = data.invoices.map(invoiceToDocument);
         } else if (activeTab === DOCUMENT_TYPES.QUOTE) {
           data = await listQuotes({ contains: search });
-          mapped = data.map(quoteToDocument);
+          mapped = data.quotes.map(quoteToDocument);
         } else if (activeTab === DOCUMENT_TYPES.CREDIT_NOTE) {
           data = await listCreditNotes({ contains: search });
-          mapped = data.map(creditNoteToDocument);
+          mapped = data.creditNotes.map(creditNoteToDocument);
         }
 
         if (!ignore) {

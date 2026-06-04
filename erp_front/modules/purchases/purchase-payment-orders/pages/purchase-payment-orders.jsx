@@ -161,7 +161,7 @@ export default function PurchasePaymentOrdersPage() {
         setIsLoading(true);
         setErrorMessage(null);
         const data = await getPurchasePaymentOrders(search);
-        const mapped = data.map(paymentOrderToRow);
+        const mapped = data.payments.map(paymentOrderToRow);
         if (!ignore) setOrders(mapped);
       } catch (error) {
         if (!ignore) {

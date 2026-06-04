@@ -17,6 +17,14 @@ use rust_decimal::Decimal;
 use crate::modules::invoice::model;
 use crate::modules::invoice::mapper;
 
+
+#[derive(Debug,Clone,Serialize,Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListInvoicesView {
+    pub invoices: Vec<InvoiceResponse>,
+    pub has_more: bool,
+}
+
 /// Client representation exposed through the API.
 ///
 /// This is a projection of the internal `Client` model adapted for external use.
