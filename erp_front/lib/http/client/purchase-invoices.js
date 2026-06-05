@@ -29,3 +29,11 @@ export function getPurchaseInvoiceById(id) {
 	  method: "GET",
 	});
 }
+
+export function getPurchaseInvoicesByOrderId(order_id) {
+	if (order_id == null) throw new Error("Purchase Order ID is required");
+	
+	return clientRequest(`/purchases/purchase-invoices/by-order/${order_id}`, {
+	  method: "GET",
+	});
+}

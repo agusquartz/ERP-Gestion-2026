@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getPurchaseOrderById, cancelPurchaseOrder } from '@/lib/http/client/purchase-orders';
-import { createPurchaseInvoice } from "@/lib/http/client/purchase-invoices";
+import { createPurchaseInvoice, getPurchaseInvoicesByOrderId } from "@/lib/http/client/purchase-invoices";
 
 import ItemsTable from '../components/ItemsTable';
 import InvoicesTable from '../components/InvoicesTable';
@@ -16,6 +16,7 @@ const ViewPurchaseOrderPage = () => {
 	const params = useParams();
 	const router = useRouter();
 	const [order, setOrder] = useState(null);
+	const [invoices, setInvoices] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [isCancelling, setIsCancelling] = useState(false);
 	const [showCancelModal, setShowCancelModal] = useState(false);
@@ -26,6 +27,8 @@ const ViewPurchaseOrderPage = () => {
 		try {
 			const data = await getPurchaseOrderById(params.id);
 			setOrder(data);
+			const inv = await getPurchaseInvoicesByOrderId(params.id);
+			setInvoices(inv);
 		} catch (err) {
 			console.error(err);
 		} finally {
@@ -103,7 +106,7 @@ const ViewPurchaseOrderPage = () => {
                 <div className="flex-1 overflow-y-auto px-8 pb-4 custom-scrollbar">
                     <div className="flex flex-col gap-8">
                         <ItemsTable items={order.details} />
-                        <InvoicesTable invoices={[]} />
+                        <InvoicesTable invoices={invoices} />
                     </div>
                 </div>
 
