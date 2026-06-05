@@ -26,31 +26,36 @@ use crate::modules::purchase_request::status::is_valid_transition;
 /// - product category name
 ///
 /// Returns mapped API response DTOs.
-pub async fn list_purchase_requests(query: PurchaseRequestListQuery) -> Result<response::ListRequestView, errors::ServiceError> {
+pub async fn list_purchase_requests(
+    query: PurchaseRequestListQuery,
+) -> Result<response::ListRequestView, errors::ServiceError> {
+    let search = query.search.or(query.contains);
 
-    let rows= repository::query_requests(
-        query.search, 
-        query.filter, 
-        query.since, 
-        query.to, 
-        query.status, 
-        query.cursor, 
+    let rows = repository::query_requests(
+        search,
+        query.filter,
+        query.since,
+        query.to,
+        query.status,
+        query.cursor,
         query.limit + 1,
-    ).await?;
+    )
+    .await?;
 
-    let mut requests: Vec<response::PurchaseRequestResponse> = rows.into_iter().map(response::PurchaseRequestResponse::from).collect();
+    let mut requests: Vec<response::PurchaseRequestResponse> = rows
+        .into_iter()
+        .map(response::PurchaseRequestResponse::from)
+        .collect();
 
     let limit = query.limit as usize;
-    let has_more = requests.len() > limit; 
+    let has_more = requests.len() > limit;
+
     requests.truncate(limit);
-    //create the list view
-    let view = response::ListRequestView {
-        requests: requests,
-        has_more: has_more,
-    };
 
-    Ok(view)
-
+    Ok(response::ListRequestView {
+        requests,
+        has_more,
+    })
 }
 
 /// Retrieves a single purchase request by identifier.
