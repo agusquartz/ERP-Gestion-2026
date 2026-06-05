@@ -18,8 +18,8 @@ use crate::modules::credit_notes::service;
 /// - `contains`: optional filter string
 pub async fn list_credit_notes(
     Query(query): Query<CreditNoteListQuery>,
-) -> Result<Json<ListCreditNotesView>,StatusCode> {
-    let result = service::list_credit_notes(query).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+) -> Result<Json<ListCreditNotesView>,(StatusCode, String)> {
+    let result = service::list_credit_notes(query).await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(Json(result))
 }
 

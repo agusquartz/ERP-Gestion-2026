@@ -13,7 +13,7 @@ export function listCreditNotes({ contains } = {}) {
   const params = new URLSearchParams();
 
   if (contains?.trim()) {
-    params.set("contains", contains.trim());
+    params.set("search", contains.trim());
   }
 
   const queryString = params.toString();
