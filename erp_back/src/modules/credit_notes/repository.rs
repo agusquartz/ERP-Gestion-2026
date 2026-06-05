@@ -105,7 +105,10 @@ pub async fn query_credit_notes(
         OR c2.surname::TEXT ILIKE                     '%' || $3 || '%')
 			AND ($4::DATE IS NULL OR cn2.created_at             >= $4)
 			AND ($5::DATE IS NULL OR cn2.created_at             <= $5)
-			AND ($6::TEXT IS NULL OR si2.invoice_nr          ILIKE $6)
+			AND ($6::TEXT IS NULL OR (
+                lpad(si2.establishment::text, 3, '0') || '-' ||
+                lpad(si2.emission_point::text, 3, '0') || '-' ||
+                lpad(si2.invoice_sequential::text, 7, '0'))  ILIKE $6)
 			ORDER BY cn2.id ASC
 			LIMIT $7
 			)
