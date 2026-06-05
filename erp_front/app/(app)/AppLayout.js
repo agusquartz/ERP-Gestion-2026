@@ -231,13 +231,13 @@ export default function AppLayout({
             permissionPrefix: ["hr", "payroll"],
           },
           {
-            label: "Proceso de Pago",
-            href: "/hr/payroll-process",
+            label: "Nuevo Proceso de Pago",
+            href: "/hr/payroll",
             permissionPrefix: ["hr", "payroll"],
           },
           {
-            label: "Novedades",
-            href: "/hr/news",
+            label: "Procesos de Pago",
+            href: "/hr/payrolls",
             permissionPrefix: ["hr", "payroll"],
           },
         ],
