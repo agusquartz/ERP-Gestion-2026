@@ -6,11 +6,19 @@ import { getPurchasePaymentOrders } from "@/lib/http/client/purchase-payment-ord
 import { EyeIcon } from "@/shared/components/Icons";
 
 const PAYMENT_TABS = {
-  ALL: "Todos",
-  PAID: "Pagos",
-  PENDING: "Pendientes",
-  PARTIAL: "Parciales",
-  CANCELLED: "Anulados",
+  ALL: "all",
+  PAID: "paid",
+  PENDING: "pending",
+  PARTIAL: "partial",
+  CANCELLED: "cancelled",
+};
+
+const PAYMENT_TAB_LABELS = {
+  [PAYMENT_TABS.ALL]: "Todos",
+  [PAYMENT_TABS.PAID]: "Pagos",
+  [PAYMENT_TABS.PENDING]: "Pendientes",
+  [PAYMENT_TABS.PARTIAL]: "Parciales",
+  [PAYMENT_TABS.CANCELLED]: "Anulados",
 };
 
 function formatMoney(value) {
@@ -154,10 +162,10 @@ export default function PurchasePaymentOrdersPage() {
 
   const PAYMENT_TAB_STATUS = {
     [PAYMENT_TABS.ALL]: "",
-    [PAYMENT_TABS.PAID]: "paid",
-    [PAYMENT_TABS.PENDING]: "pending",
-    [PAYMENT_TABS.PARTIAL]: "partial",
-    [PAYMENT_TABS.CANCELLED]: "cancelled",
+    [PAYMENT_TABS.PAID]: "OK",
+    [PAYMENT_TABS.PENDING]: "PENDING",
+    [PAYMENT_TABS.PARTIAL]: "PARTIAL",
+    [PAYMENT_TABS.CANCELLED]: "CANCELLED",
   };
 
   const [activeTab, setActiveTab] = useState(PAYMENT_TABS.ALL);
@@ -241,15 +249,15 @@ export default function PurchasePaymentOrdersPage() {
     cursor,
   ]);
 
-  const counts = useMemo(() => {
-    return {
-      [PAYMENT_TABS.ALL]: orders.length,
-      [PAYMENT_TABS.PAID]: orders.filter((o) => statusToTab(o.status) === PAYMENT_TABS.PAID).length,
-      [PAYMENT_TABS.PENDING]: orders.filter((o) => statusToTab(o.status) === PAYMENT_TABS.PENDING).length,
-      [PAYMENT_TABS.PARTIAL]: orders.filter((o) => statusToTab(o.status) === PAYMENT_TABS.PARTIAL).length,
-      [PAYMENT_TABS.CANCELLED]: orders.filter((o) => statusToTab(o.status) === PAYMENT_TABS.CANCELLED).length,
-    };
-  }, [orders]);
+  // const counts = useMemo(() => {
+  //   return {
+  //     [PAYMENT_TABS.ALL]: orders.length,
+  //     [PAYMENT_TABS.PAID]: orders.filter((o) => statusToTab(o.status) === PAYMENT_TABS.PAID).length,
+  //     [PAYMENT_TABS.PENDING]: orders.filter((o) => statusToTab(o.status) === PAYMENT_TABS.PENDING).length,
+  //     [PAYMENT_TABS.PARTIAL]: orders.filter((o) => statusToTab(o.status) === PAYMENT_TABS.PARTIAL).length,
+  //     [PAYMENT_TABS.CANCELLED]: orders.filter((o) => statusToTab(o.status) === PAYMENT_TABS.CANCELLED).length,
+  //   };
+  // }, [orders]);
 
   const filteredOrders = orders;
 
@@ -307,9 +315,9 @@ export default function PurchasePaymentOrdersPage() {
   return (
     <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
       {/* Title */}
-      <div className="mb-5 shrink-0">
+      <div className="mb-5">
         <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
-          Órdenes de Pago
+          Ordenes de Pago
         </h1>
 
         <p className="mt-1 text-sm text-muted-foreground">
@@ -412,10 +420,6 @@ export default function PurchasePaymentOrdersPage() {
         <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => {
             const isActive = activeTab === tab;
-            const showCount =
-              tab === PAYMENT_TABS.PENDING ||
-              tab === PAYMENT_TABS.PARTIAL ||
-              tab === PAYMENT_TABS.CANCELLED;
 
             return (
               <button
@@ -424,6 +428,9 @@ export default function PurchasePaymentOrdersPage() {
                 onClick={() => {
                   setActiveTab(tab);
                   setSelectedId(null);
+                  setCursor(null);
+                  setCursorStack([]);
+                  setHasMore(false);
                 }}
                 className={`flex items-center gap-2 rounded-[5px] px-4 py-2 text-sm font-semibold transition ${
                   isActive
@@ -431,13 +438,7 @@ export default function PurchasePaymentOrdersPage() {
                     : "text-foreground hover:bg-background"
                 }`}
               >
-                {tab}
-
-                {showCount && counts[tab] > 0 && (
-                  <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-muted px-1.5 text-xs font-semibold text-muted-foreground">
-                    {counts[tab]}
-                  </span>
-                )}
+                {PAYMENT_TAB_LABELS[tab]}
               </button>
             );
           })}

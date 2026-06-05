@@ -248,7 +248,7 @@ pub async fn get_purchase_payment_orders(
 
             AND (
                 $6::TEXT IS NULL
-                OR st2.status ILIKE '%' || $6 || '%'
+                OR UPPER(st2.status) = UPPER($6)
             )
 
             ORDER BY ppo2.id ASC

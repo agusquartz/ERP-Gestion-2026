@@ -4,6 +4,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::modules::return_notes::model;
 
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListReturnNoteView {
+    pub return_notes: Vec<ReturnNoteResponseDto>,
+    pub has_more: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ReturnNoteResponseDto {
