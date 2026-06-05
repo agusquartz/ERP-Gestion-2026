@@ -21,6 +21,14 @@ pub enum ServiceError {
     NotFound(Context),
     /// Errors originating from external dependencies (e.g., other modules/services).
     Dependency(DependencyError),
+    InsufficientStock(StockError),
+}
+
+
+
+#[derive(Debug)]
+pub struct StockError {
+    pub product_id: i32,
 }
 
 /// Context information for "not found" errors.
@@ -103,6 +111,15 @@ impl std::fmt::Display for ServiceError {
                 None => write!(f,"{} doesn't exist", context.entity)
             }
             ServiceError::Dependency(err) => write!(f,"{} system has failed, because: {}", err.system, err.message),
+
+
+            ServiceError::InsufficientStock(err) => {
+                write!(
+                    f,
+                    "insufficient stock for product ID {}",
+                    err.product_id
+                )
+            }
         }
     }
 }

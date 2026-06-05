@@ -2,6 +2,7 @@ use core::error;
 use std::collections::BTreeMap;
 use tokio_postgres::{Row, Transaction};
 use chrono::NaiveDate;
+use crate::modules::purchases_credit_note::errors;
 
 use crate::modules::purchases_credit_note::model::{
     credit_note_model,
@@ -137,7 +138,7 @@ fn rows_to_aggregate(rows: Vec<Row>) -> Vec<credit_note_model::CreditNoteAggrega
 pub async fn store_new_credit_note_tx(
     tx: &Transaction<'_>,
     new_cn: new_credit_note_model::NewCreditNote,
-) -> Result<i32, db_config::DbError> {
+) -> Result<i32, errors::ServiceError> {
     // 1. Insert Header
     let row = tx
         .query_one(
@@ -152,7 +153,8 @@ pub async fn store_new_credit_note_tx(
                 &new_cn.total,
             ],
         )
-        .await?;
+        .await
+        .map_err(db_config::DbError::from)?;
 
     let return_credit_note_id: i32 = row.get(0);
 
@@ -171,7 +173,8 @@ pub async fn store_new_credit_note_tx(
                 &detail.subtotal,
             ],
         )
-        .await?;
+        .await
+        .map_err(db_config::DbError::from)?;
 
         // STOCK DEDUCTION:
         // Deduct the returned quantity from the current stock.
@@ -183,13 +186,15 @@ pub async fn store_new_credit_note_tx(
                  WHERE id = $2 AND stock >= $1",
                 &[&detail.quantity, &detail.product_id],
             )
-            .await?;
+            .await
+            .map_err(db_config::DbError::from)?;
 
         if affected == 0 {
-            return Err(db_config::DbError::InvariantViolation(format!(
-                "Insufficient stock to return product ID {}",
-                detail.product_id
-            )));
+            return Err(errors::ServiceError::InsufficientStock(
+                errors::StockError {
+                    product_id: detail.product_id,
+                },
+            ));
         }
     }
 
