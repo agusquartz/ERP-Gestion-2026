@@ -1,11 +1,47 @@
 import { clientRequest } from "./request";
 
-export function getProductByQuery(q) {
-  return clientRequest(`/products?search=${encodeURIComponent(q)}`, {
+function buildProductQueryParams({
+  search = "",
+  filter = "",
+  status = "",
+  since = "",
+  to = "",
+  cursor,
+  limit,
+} = {}) {
+  const params = new URLSearchParams();
+
+  if (search?.trim()) params.set("search", search.trim());
+  if (filter?.trim()) params.set("filter", filter.trim());
+  if (status?.trim()) params.set("status", status.trim());
+  if (since) params.set("since", since);
+  if (to) params.set("to", to);
+
+  if (cursor !== null && cursor !== undefined && cursor !== "") {
+    params.set("cursor", String(cursor));
+  }
+
+  if (limit !== null && limit !== undefined && limit !== "") {
+    params.set("limit", String(limit));
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `?${queryString}` : "";
+}
+
+export function getProductByQuery(filters = {}) {
+  const normalizedFilters =
+    typeof filters === "string"
+      ? { search: filters }
+      : filters;
+
+  const query = buildProductQueryParams(normalizedFilters);
+
+  return clientRequest(`/products${query}`, {
     method: "GET",
   });
 }
-
 export function getProductById(id) {
   if (!id) throw new Error("Product ID is required");
 

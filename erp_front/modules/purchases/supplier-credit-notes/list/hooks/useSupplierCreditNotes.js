@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { listSupplierCreditNotes } from "@/lib/http/client/supplier-credit-notes"; // Tu endpoint HTTP
+// Usamos el servicio de proveedores correcto que me pasaste
+import { listSupplierCreditNotes } from "@/lib/http/client/supplier-credit-notes"; 
 
-const PAGE_SIZE = 20; // 20 notas de crédito por página
+const PAGE_SIZE = 5; // 20 notas de crédito por página
 
 function useDebounce(value, delay = 400) {
     const [debounced, setDebounced] = useState(value);
@@ -21,16 +22,21 @@ export function useSupplierCreditNotes(filters) {
     const [currentPage, setCurrentPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
 
-    // Tabla de mapeo de cursores: cursors[0] es undefined para la página 1
-    const [cursors, setCursors] = useState([undefined]);
+    // CAMBIO CLAVE: Usamos un objeto en lugar de un array para evitar problemas de desincronización.
+    // La página 1 no necesita cursor, por eso es 'undefined'.
+    const [cursors, setCursors] = useState({ 1: undefined });
+    
+    // Guardamos el número máximo de páginas que hemos "descubierto" al avanzar
+    const [maxPageDiscovered, setMaxPageDiscovered] = useState(1);
 
     const debouncedSearch = useDebounce(filters.search, 400);
     const debouncedFilter = useDebounce(filters.filter, 400);
 
-    // Si los filtros cambian, volvemos inmediatamente a la página 1 y limpiamos el historial de cursores
+    // RESET GLOBAL: Si cambian los filtros de búsqueda, reseteamos la paginación por completo
     useEffect(() => {
         setCurrentPage(1);
-        setCursors([undefined]);
+        setMaxPageDiscovered(1);
+        setCursors({ 1: undefined });
     }, [debouncedSearch, debouncedFilter, filters.since, filters.to]);
 
     useEffect(() => {
@@ -41,38 +47,42 @@ export function useSupplierCreditNotes(filters) {
             setError(null);
 
             try {
-                // Recuperar el cursor correspondiente a la página actual
-                const cursor = cursors[currentPage - 1];
+                // 1. LEER EL CURSOR: Obtenemos el token guardado específicamente para la página actual
+                const currentCursor = cursors[currentPage];
 
-                // Adaptamos las variables a lo que espera el endpoint
                 const response = await listSupplierCreditNotes({
                     search: debouncedSearch || undefined,
                     filter: debouncedFilter || undefined,
                     since: filters.since || undefined,
                     to: filters.to || undefined,
-                    cursor: cursor,
+                    cursor: currentCursor, // Enviamos el ID correspondiente a Rust
                     limit: PAGE_SIZE,
                 });
 
                 if (!cancelled) {
-                    // Rust suele retornar la data envuelta en response.data o directo en la raíz.
-                    // Si tu endpoint devuelve el arreglo directo, cámbialo a: response || []
+                    // Mapeamos según las propiedades de tu objeto Rust (camelCase en JS)
                     const fetchedData = response.creditNotes ?? []; 
                     const fetchedHasMore = response.hasMore ?? false;
+                    const nextCursor = response.next_cursor ?? null;
 
                     setCreditNotes(fetchedData);
                     setHasMore(fetchedHasMore);
 
-                    // Si hay más registros y el backend proveyó un nuevo puntero, lo indexamos
-                    if (fetchedHasMore && response.nextCursor != null) {
-                        setCursors(prev => {
-                            if (prev[currentPage] == null) {
-                                const next = [...prev];
-                                next[currentPage] = response.nextCursor;
-                                return next;
-                            }
-                            return prev;
-                        });
+                    // LÓGICA EN EL FRONT: Extraemos el cursor desde el último elemento traído
+                    if (fetchedHasMore && fetchedData.length > 0) {
+                        const lastItem = fetchedData[fetchedData.length - 1];
+                        const calculatedNextCursor = lastItem.id; // Tomamos el ID de la última nota de crédito
+
+                        const nextPage = currentPage + 1;
+                        
+                        setCursors(prev => ({
+                            ...prev,
+                            [nextPage]: calculatedNextCursor // Registramos el cursor para usarlo al ir a 'nextPage'
+                        }));
+
+                        if (nextPage > maxPageDiscovered) {
+                            setMaxPageDiscovered(nextPage);
+                        }
                     }
                 }
             } catch (e) {
@@ -84,13 +94,18 @@ export function useSupplierCreditNotes(filters) {
 
         load();
         return () => { cancelled = true; };
-    }, [currentPage, cursors, debouncedSearch, debouncedFilter, filters.since, filters.to]);
+        // CRUCIAL: Quitamos 'cursors' de las dependencias. 
+        // Solo debe re-ejecutarse si cambia la página o los filtros.
+    }, [currentPage, debouncedSearch, debouncedFilter, filters.since, filters.to]);
 
+    // CORRECCIÓN CLAVE: Permitir saltos directos de página
     const goToPage = useCallback((page) => {
-        if (page >= 1 && (page < currentPage || cursors[page - 1] != null || page === 1)) {
+        // El usuario puede clickear libremente cualquier página ya descubierta (<= maxPageDiscovered)
+        // o avanzar a la siguiente inmediata si hasMore es verdadero.
+        if (page >= 1 && (page <= maxPageDiscovered || (page === currentPage + 1 && hasMore))) {
             setCurrentPage(page);
         }
-    }, [currentPage, cursors]);
+    }, [currentPage, hasMore, maxPageDiscovered]);
 
     return {
         creditNotes,
@@ -98,7 +113,8 @@ export function useSupplierCreditNotes(filters) {
         error,
         currentPage,
         hasMore,
-        totalPages: cursors.length,
+        // Enviamos las páginas descubiertas para que la enumeración funcione dinámicamente
+        totalPages: maxPageDiscovered, 
         goToPage,
     };
 }

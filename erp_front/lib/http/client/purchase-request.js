@@ -39,18 +39,56 @@ export function patchPurchaseQuote(id, body) {
   });
 }
 
-export function listPurchaseRequests({ contains } = {}) {
+export function listPurchaseRequests({
+  contains = "",
+  search = "",
+  filter = "",
+  status = "",
+  since = "",
+  to = "",
+  cursor,
+  limit,
+} = {}) {
   const params = new URLSearchParams();
 
-  if (contains?.trim()) {
-    params.set("contains", contains.trim());
+  const cleanContains = String(contains || search || "").trim();
+
+  if (cleanContains) {
+    params.set("contains", cleanContains);
+  }
+
+  if (filter?.trim()) {
+    params.set("filter", filter.trim());
+  }
+
+  if (status?.trim()) {
+    params.set("status", status.trim());
+  }
+
+  if (since) {
+    params.set("since", since);
+  }
+
+  if (to) {
+    params.set("to", to);
+  }
+
+  if (cursor !== null && cursor !== undefined && cursor !== "") {
+    params.set("cursor", String(cursor));
+  }
+
+  if (limit !== null && limit !== undefined && limit !== "") {
+    params.set("limit", String(limit));
   }
 
   const queryString = params.toString();
 
-  return clientRequest(`/purchases/purchase-requests${queryString ? `?${queryString}` : ""}`, {
-    method: "GET",
-  });
+  return clientRequest(
+    `/purchases/purchase-requests${queryString ? `?${queryString}` : ""}`,
+    {
+      method: "GET",
+    }
+  );
 }
 
 export function searchProductsForPurchaseRequest({ contains } = {}) {

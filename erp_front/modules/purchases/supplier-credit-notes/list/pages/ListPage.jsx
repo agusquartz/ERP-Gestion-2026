@@ -55,15 +55,14 @@ export default function CreditNotesListPage() {
 
       {/* Estado: Éxito */}
       {!loading && !error && (
-        <>
-          {/* Componente de Paginación que usamos de purchase-invoices/list */}
+        <div className="py-4 border-t border-border bg-surface">
           <Pagination 
             currentPage={currentPage}
             totalPages={totalPages}
             hasMore={hasMore}
             goToPage={goToPage}
           />
-        </>
+        </div>
       )}
     </div>
   );

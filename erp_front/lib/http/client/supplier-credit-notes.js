@@ -10,8 +10,8 @@ export function listSupplierCreditNotes({ search, filter, since, to, cursor, lim
   if (filter?.trim()) params.set("filter", filter.trim());
   if (since) params.set("since", since);
   if (to) params.set("to", to);
-  if (cursor) params.set("cursor", cursor);
-  if (limit) params.set("limit", String(limit));
+  if (cursor !== null && cursor !== undefined) params.set("cursor", String(cursor));
+  if (limit !== null && limit !== undefined) params.set("limit", String(limit));
 
   const queryString = params.toString();
 

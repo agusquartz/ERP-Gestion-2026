@@ -9,6 +9,8 @@ import {
 } from "@/lib/http/client/supplier";
 import { fetchPurchaseInvoices } from "@/lib/http/client/purchase-invoices";
 
+import { createPurchasePaymentOrder } from "@/lib/http/client/purchase-payment-order"
+
 const SUPPLIER_PAGE_SIZE = 10;
 
 // Helper: format currency
@@ -505,6 +507,7 @@ export default function NewPaymentOrderPage() {
 
       const payload = {
         supplierId: selectedSupplier.id,
+        statusId : 3,
         details: selectedInvoices.map((invoice) => ({
           purchaseInvoiceId: invoice.id,
           amountToPay: String(getInvoicePendingAmount(invoice)),
@@ -515,7 +518,7 @@ export default function NewPaymentOrderPage() {
       console.log("Payment order payload:", payload);
 
       // Later, when you create the API:
-      // await createPurchasePaymentOrder(payload);
+       await createPurchasePaymentOrder(payload);
 
       alert(
         `Orden de pago confirmada para ${selectedSupplier.name} por ${formatMoney(
@@ -523,7 +526,7 @@ export default function NewPaymentOrderPage() {
         )}`
       );
 
-      router.push("/purchase-payment-orders");
+      router.push("/purchases/purchase-payment-orders");
     } catch (err) {
       setError(err.message || "No se pudo confirmar la orden de pago.");
     } finally {

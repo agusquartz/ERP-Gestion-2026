@@ -1,8 +1,38 @@
 
 import { clientRequest } from "./request";
 
-export function getPurchasePaymentOrders(contains) {
-  const query = contains ? `?contains=${encodeURIComponent(contains)}` : "";
+function buildPurchasePaymentOrderQueryParams({
+  search = "",
+  filter = "",
+  status = "",
+  since = "",
+  to = "",
+  cursor,
+  limit,
+} = {}) {
+  const params = new URLSearchParams();
+
+  if (search?.trim()) params.set("search", search.trim());
+  if (filter?.trim()) params.set("filter", filter.trim());
+  if (status?.trim()) params.set("status", status.trim());
+  if (since) params.set("since", since);
+  if (to) params.set("to", to);
+
+  if (cursor !== null && cursor !== undefined && cursor !== "") {
+    params.set("cursor", String(cursor));
+  }
+
+  if (limit !== null && limit !== undefined && limit !== "") {
+    params.set("limit", String(limit));
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `?${queryString}` : "";
+}
+
+export function getPurchasePaymentOrders(filters = {}) {
+  const query = buildPurchasePaymentOrderQueryParams(filters);
 
   return clientRequest(`/purchase-payment-orders${query}`, {
     method: "GET",

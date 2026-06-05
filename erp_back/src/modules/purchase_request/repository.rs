@@ -81,38 +81,70 @@ INNER JOIN categories AS cat ON p.category_id = cat.id
 pub async fn query_requests(
     search: Option<String>,
     filter: Option<String>,
-    since:  Option<NaiveDate>,
-    to:     Option<NaiveDate>,
+    since: Option<NaiveDate>,
+    to: Option<NaiveDate>,
     status: Option<String>,
     cursor: Option<i32>,
-    limit:  i64,
-    ) -> Result<Vec<model::PurchaseRequestAggregate>, db_config::DbError> {
+    limit: i64,
+) -> Result<Vec<model::PurchaseRequestAggregate>, db_config::DbError> {
     let client = db_config::get_client().await?;
-    let req_aggregates: Vec<model::PurchaseRequestAggregate>;
 
-    let sql = format!("
-            {}
-	WHERE pr.id IN (
-			SELECT DISTINCT pr2.id
-			FROM purchase_requests AS pr2
-			INNER JOIN purchase_request_details AS prd2 ON pr.id = prd.purchase_request_id
-			INNER JOIN products AS p2 ON prd2.product_id = p2.id
-			WHERE ($1::INT  IS NULL OR pr2.id                      > $1)
-			AND ($3::TEXT IS NULL OR p2.description::TEXT ILIKE '%' || $3 || '%' OR p2.code::TEXT ILIKE '%' || $3 || '%')
-			AND ($4::DATE IS NULL OR pr2.created_at             >= $4)
-			AND ($5::DATE IS NULL OR pr2.created_at             <= $5)
-			ORDER BY pr2.id ASC
-			LIMIT $6
-			)
-	AND($2::TEXT IS NULL OR e.name ILIKE '%' || $2 || '%' OR e.surname ILIKE '%' || $2 || '%')
-	ORDER BY pr.id ASC, prd.id ASC
-            ", PURCHASE_REQUEST_SELECT_BASE); 
+    let sql = format!(
+        r#"
+        {}
+        WHERE pr.id IN (
+            SELECT DISTINCT pr2.id
+            FROM purchase_requests AS pr2
+            INNER JOIN employees AS e2
+                ON pr2.employee_id = e2.id
+            INNER JOIN purchase_request_details AS prd2
+                ON pr2.id = prd2.purchase_request_id
+            INNER JOIN products AS p2
+                ON prd2.product_id = p2.id
+            INNER JOIN categories AS cat2
+                ON p2.category_id = cat2.id
+            WHERE
+                ($1::INT IS NULL OR pr2.id > $1)
 
-    let req_rows = client.query(&sql, &[&cursor, &search, &filter, &since, &to, &limit]).await?;
+                AND (
+                    $2::TEXT IS NULL
+                    OR pr2.id::TEXT ILIKE '%' || $2 || '%'
+                    OR e2.name ILIKE '%' || $2 || '%'
+                    OR e2.surname ILIKE '%' || $2 || '%'
+                    OR p2.description ILIKE '%' || $2 || '%'
+                    OR p2.code ILIKE '%' || $2 || '%'
+                    OR cat2.name ILIKE '%' || $2 || '%'
+                )
 
-    req_aggregates = rows_to_request_aggregate(req_rows);
+                AND (
+                    $3::TEXT IS NULL
+                    OR p2.description ILIKE '%' || $3 || '%'
+                    OR p2.code ILIKE '%' || $3 || '%'
+                    OR cat2.name ILIKE '%' || $3 || '%'
+                )
 
-    let complete_aggs = get_the_quotes( &client,req_aggregates).await?;
+                AND ($4::DATE IS NULL OR pr2.created_at >= $4)
+                AND ($5::DATE IS NULL OR pr2.created_at <= $5)
+
+            ORDER BY pr2.id ASC
+            LIMIT $6
+        )
+        ORDER BY pr.id ASC, prd.id ASC
+        "#,
+        PURCHASE_REQUEST_SELECT_BASE
+    );
+
+    let req_rows = client
+        .query(
+            &sql,
+            &[&cursor, &search, &filter, &since, &to, &limit],
+        )
+        .await?;
+
+    let req_aggregates = rows_to_request_aggregate(req_rows);
+
+    let complete_aggs = get_the_quotes(&client, req_aggregates).await?;
+
     Ok(complete_aggs)
 }
 

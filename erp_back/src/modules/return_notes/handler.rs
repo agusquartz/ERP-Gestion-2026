@@ -6,16 +6,19 @@ use axum::{
 
 use crate::modules::return_notes::{
     dto::{
-        create::CreateReturnNoteDto, 
-        query::ReturnNoteListQuery, 
-        response::ReturnNoteResponseDto
+        create::CreateReturnNoteDto,
+        query::ReturnNoteListQuery,
+        response::{
+            ListReturnNoteView,
+            ReturnNoteResponseDto,
+        },
     },
     service,
 };
 
 pub async fn list_return_notes(
     Query(query): Query<ReturnNoteListQuery>,
-) -> Result<Json<Vec<ReturnNoteResponseDto>>, StatusCode> {
+) -> Result<Json<ListReturnNoteView>, StatusCode> {
     let result = service::list_return_notes(query)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;

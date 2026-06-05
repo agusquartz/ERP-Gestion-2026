@@ -926,6 +926,18 @@ export default function usePurchaseRequests(id) {
     }
   };
 
+  function normalizeSuppliersResponse(response) {
+    const raw = response?.suppliers ?? response;
+
+    if (Array.isArray(raw)) return raw;
+
+    if (raw && typeof raw === "object") {
+      return Object.values(raw).filter(Boolean);
+    }
+
+    return [];
+  }
+
   // ── Supplier search modal handlers ─────────────────────────────────────────
 
   /**
@@ -970,7 +982,7 @@ export default function usePurchaseRequests(id) {
 
       const seen = new Set();
       const result = searches
-        .flatMap(response => response.suppliers)
+        .flatMap((response) => normalizeSuppliersResponse(response))
         .filter((supplier) => {
           if (seen.has(supplier.id)) return false;
           seen.add(supplier.id);

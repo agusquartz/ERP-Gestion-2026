@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getReturnNotes } from "@/lib/http/client/return-notes";
+import { getReturnNotesView } from "@/lib/http/client/return-notes";
 
-const INITIAL_CURSOR = 0;
+const INITIAL_CURSOR = null;
+const PAGE_SIZE = 10;
 
 const RETURN_NOTE_STATUS_OPTIONS = [
   {
@@ -13,19 +14,24 @@ const RETURN_NOTE_STATUS_OPTIONS = [
     statusId: null,
   },
   {
+    value: "created",
+    label: "Creado",
+    statusId: 1,
+  },
+  {
     value: "pending",
     label: "Pendiente",
-    statusId: 1,
+    statusId: 3,
   },
   {
     value: "approved",
     label: "Aprobado",
-    statusId: 2,
+    statusId: 4,
   },
   {
     value: "cancelled",
     label: "Cancelado",
-    statusId: 3,
+    statusId: 5,
   },
 ];
 
@@ -154,16 +160,21 @@ const inputBaseClass =
 const dropdownButtonClass =
   "flex min-w-[150px] items-center justify-between gap-3 rounded-[8px] border border-slate-200 bg-[#f8fafc] px-4 py-2.5 text-[14px] font-bold text-slate-700 transition-colors hover:bg-slate-100";
 
+
+
 export default function ReturnNotesPage() {
   const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [secondaryFilter, setSecondaryFilter] = useState("");
 
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [fromDateFilter, setFromDateFilter] = useState("");
   const [toDateFilter, setToDateFilter] = useState("");
   const [cursor, setCursor] = useState(INITIAL_CURSOR);
+
+  const [cursorStack, setCursorStack] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
 
   const [showDateDrop, setShowDateDrop] = useState(false);
   const [showStatusDrop, setShowStatusDrop] = useState(false);
@@ -176,9 +187,16 @@ export default function ReturnNotesPage() {
   const selectedStatus = useMemo(() => {
     return (
       RETURN_NOTE_STATUS_OPTIONS.find((option) => option.value === statusFilter) ??
-      RETURN_NOTE_STATUS_OPTIONS[1]
+      RETURN_NOTE_STATUS_OPTIONS[0]
     );
   }, [statusFilter]);
+
+  useEffect(() => {
+    setCursor(INITIAL_CURSOR);
+    setCursorStack([]);
+    setHasMore(false);
+    setSelectedId(null);
+  }, [search, selectedStatus.statusId, fromDateFilter, toDateFilter]);
 
   useEffect(() => {
     let ignore = false;
@@ -188,22 +206,30 @@ export default function ReturnNotesPage() {
         setIsLoading(true);
         setErrorMessage(null);
 
-        const data = await getReturnNotes({
+        const data = await getReturnNotesView({
           contains: search,
           statusId: selectedStatus.statusId,
           fromDate: fromDateFilter,
           toDate: toDateFilter,
           cursor,
+          limit: PAGE_SIZE,
         });
 
-        const mapped = data.map(returnNoteToRow);
+        const rows = Array.isArray(data)
+          ? data
+          : data?.returnNotes ?? data?.return_notes ?? [];
+
+        const mapped = rows.map(returnNoteToRow);
 
         if (!ignore) {
           setReturnNotes(mapped);
+          setHasMore(Boolean(data?.hasMore ?? data?.has_more ?? false));
         }
       } catch (error) {
         if (!ignore) {
           setErrorMessage(error.message || "Return notes could not be loaded.");
+          setReturnNotes([]);
+          setHasMore(false);
         }
       } finally {
         if (!ignore) {
@@ -243,10 +269,12 @@ export default function ReturnNotesPage() {
   const clearFilters = () => {
     setSearch("");
     setSecondaryFilter("");
-    setStatusFilter("pending");
+    setStatusFilter("all");
     setFromDateFilter("");
     setToDateFilter("");
     setCursor(INITIAL_CURSOR);
+    setCursorStack([]);
+    setHasMore(false);
     setShowDateDrop(false);
     setShowStatusDrop(false);
     setSelectedId(null);
@@ -258,6 +286,26 @@ export default function ReturnNotesPage() {
 
   const handleOpen = (id) => {
     router.push(`/purchases/return-notes/${id}`);
+  };
+
+  const handleNextPage = () => {
+    if (!returnNotes.length || !hasMore) return;
+
+    const lastNote = returnNotes[returnNotes.length - 1];
+
+    setCursorStack((prev) => [...prev, cursor]);
+    setCursor(lastNote.id);
+    setSelectedId(null);
+  };
+
+  const handlePreviousPage = () => {
+    if (!cursorStack.length) return;
+
+    const previousCursor = cursorStack[cursorStack.length - 1];
+
+    setCursorStack((prev) => prev.slice(0, -1));
+    setCursor(previousCursor);
+    setSelectedId(null);
   };
 
   return (
@@ -574,11 +622,31 @@ export default function ReturnNotesPage() {
           </table>
         </div>
 
-       
-        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+        {/* CAMBIO: footer igual al estilo de DocumentsTable */}
+        <div className="flex flex-col gap-3 border-t border-border px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <span>
             Mostrando {filteredReturnNotes.length} de {returnNotes.length} resultados
           </span>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handlePreviousPage}
+              disabled={!cursorStack.length || isLoading}
+              className="rounded-[5px] border border-border px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNextPage}
+              disabled={!hasMore || isLoading}
+              className="rounded-[5px] border border-border px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>
