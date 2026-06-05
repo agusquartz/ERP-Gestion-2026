@@ -1077,23 +1077,30 @@ export default function ReturnNoteDetailPage() {
   };
 
   const handleCreateCreditNote = async (payload) => {
-    try {
-      setIsSubmittingCreditNote(true);
-      setCreditNoteSubmitError(null);
+  try {
+    setIsSubmittingCreditNote(true);
+    setCreditNoteSubmitError(null);
 
-      const createdCreditNote = await createSupplierCreditNote(payload);
-      const mappedCreditNote = mapSupplierCreditNote(createdCreditNote);
+    console.log("Payload para crear nota de crédito:", payload);
 
-      setCreditNotes((prev) => [mappedCreditNote, ...prev]);
-      setCreditNoteMode(null);
-    } catch (error) {
-      setCreditNoteSubmitError(
-        error.message || "No se pudo crear la nota de crédito."
-      );
-    } finally {
-      setIsSubmittingCreditNote(false);
-    }
-  };
+    const createdCreditNote = await createSupplierCreditNote(payload);
+
+    console.log("Respuesta al crear nota de crédito:", createdCreditNote);
+
+    const mappedCreditNote = mapSupplierCreditNote(createdCreditNote);
+
+    setCreditNotes((prev) => [mappedCreditNote, ...prev]);
+    setCreditNoteMode(null);
+  } catch (error) {
+    console.error("Error creando nota de crédito:", error);
+
+    setCreditNoteSubmitError(
+      error.message || "No se pudo crear la nota de crédito."
+    );
+  } finally {
+    setIsSubmittingCreditNote(false);
+  }
+};
 
   const openCreditNoteModal = (mode) => {
     setCreditNoteSubmitError(null);
