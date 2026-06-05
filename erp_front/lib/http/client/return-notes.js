@@ -81,6 +81,13 @@ export function getReturnNoteById(id) {
   });
 }
 
+export function getReturnNotesByInvoiceId(invoice_id) {
+  if (!invoice_id) throw new Error("Invoice ID is required");
+
+  return clientRequest(`/return-notes/by-invoice/${invoice_id}`, {
+    method: "GET",
+  });
+}
 /**
  * Creates a new return note.
  *

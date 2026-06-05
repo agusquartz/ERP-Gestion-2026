@@ -42,6 +42,20 @@ pub async fn get_return_note_by_id(
 }
 
 
+pub async fn get_return_notes_by_invoice_id(
+    Path(id): Path<i32>,
+) -> Result<Json<Option<Vec<ReturnNoteResponseDto>>>, StatusCode>{
+    println!("Llegó al handler get_return_notes_by_invoice_id con id: {}", id);
+    let result = service::get_return_notes_by_invoice_id(id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    match result {
+        Some(notes) => Ok(Json(Some(notes))),
+        None => Err(StatusCode::NOT_FOUND),
+    }
+
+
+}
 
 pub async fn create_return_note(
     Json(payload): Json<CreateReturnNoteDto>,

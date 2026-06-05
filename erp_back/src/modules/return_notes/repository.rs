@@ -175,6 +175,20 @@ pub async fn query_return_note_by_id(
     Ok(notes.pop())
 }
 
+pub async fn query_return_notes_by_invoice_id(
+    id: i32,
+) -> Result<Option<Vec<model::ReturnNoteAggregate>>, db_config::DbError> {
+    let client = db_config::get_client().await?;
+    let sql = format!(
+        "{} WHERE rn.purchase_invoice_id = $1 ORDER BY rn.id, rnd.id",
+        RETURN_NOTE_SELECT_BASE
+    );
+    let rows = client.query(&sql, &[&id]).await?;
+
+    let mut notes = rows_to_aggregates(rows);
+
+    Ok(Some(notes))
+}
 
 pub async fn get_status_id_by_name(
     status_name: &str,
