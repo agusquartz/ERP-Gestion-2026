@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { createReturnNotes, getReturnNotes } from "@/lib/http/client/return-notes.js";    
+import { createReturnNotes, getReturnNotes, getReturnNotesByInvoiceId } from "@/lib/http/client/return-notes.js";    
 
 /**
  * Custom hook to fetch, manage, and create return notes for a specific invoice.
@@ -26,7 +26,7 @@ export function usePurchaseInvoiceReturnNotes(id) {
         setError(null);
 
         try {
-            const data = await getReturnNotes(id);
+            const data = await getReturnNotesByInvoiceId(id);
             // Only update state if component is still mounted
             if (!isCancelled()) setReturnNotes(data ?? []);
         } catch (e) {
