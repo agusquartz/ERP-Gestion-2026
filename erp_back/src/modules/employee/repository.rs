@@ -221,7 +221,18 @@ pub async fn query_employee_by_id(
     let conn = db_config::get_client().await?;
 
     let sql = format!(
-        "{} WHERE e.id = $1 ORDER BY e.id, r.id",
+        "{} 
+
+       LEFT JOIN payroll_employee_summary AS pes ON e.id = pes.employee_id
+       AND pes.created_at = (
+               SELECT MAX(pes2.created_at)
+               FROM payroll_employee_summary pes2
+               WHERE pes2.employee_id = e.id
+          )
+       LEFT JOIN payroll_items AS pi ON pes.payroll_process_id = pi.payroll_process_id AND e.id = pi.employee_id
+       LEFT JOIN novelties AS n ON pi.novelty_id = n.id
+       LEFT JOIN payroll_processes AS pp ON pes.payroll_process_id = pp.id
+        WHERE e.id = $1 ORDER BY e.id, r.id",
         EMPLOYEE_SELECT_BASE
     );
 
@@ -297,7 +308,18 @@ pub async fn insert_employee(
 
     // Step 4: Re-query the full aggregate to return authoritative DB state
     let sql = format!(
-        "{} WHERE e.id = $1",
+        "{} 
+
+       LEFT JOIN payroll_employee_summary AS pes ON e.id = pes.employee_id
+       AND pes.created_at = (
+               SELECT MAX(pes2.created_at)
+               FROM payroll_employee_summary pes2
+               WHERE pes2.employee_id = e.id
+          )
+       LEFT JOIN payroll_items AS pi ON pes.payroll_process_id = pi.payroll_process_id AND e.id = pi.employee_id
+       LEFT JOIN novelties AS n ON pi.novelty_id = n.id
+       LEFT JOIN payroll_processes AS pp ON pes.payroll_process_id = pp.id
+        WHERE e.id = $1",
         EMPLOYEE_SELECT_BASE
     );
     let rows = tx.query(&sql, &[&employee_id]).await?;
