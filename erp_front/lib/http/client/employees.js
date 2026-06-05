@@ -49,11 +49,44 @@ export function patchEmployee(id, payload) {
 }
 
 /**
- * Cambia el estado de un empleado (ej. pasar a Inactivo).
+ * Cambia el estado de un proceso de pago (pasa de Computado a pagado, pero se debe enviar en ingles).
  */
-export function updateEmployeeStatus(id, status) {
-    return clientRequest(`/hr/employees/${id}/${status}`, {
+export function updatePayrollStatus(id, action) {
+    // Aseguramos que si viene "PAID", se convierta a "paid" para cumplir con el #[serde(rename_all = "lowercase")]
+    const cleanAction = typeof action === 'string' ? action.toLowerCase() : action?.action?.toLowerCase();
+
+    return clientRequest(`/hr/payroll/${id}/status`, {
         method: "POST",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ action: cleanAction}),
     });
+}
+
+export function getEmployeesForPayroll() {
+  return clientRequest("/hr/employees?limit=1000&status=active", { method: "GET" });
+}
+
+export function triggerPayroll(payload) {
+  return clientRequest("/hr/payroll/calculate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Trae el historial de todos los procesos de nómina ejecutados.
+ */
+export function getPayrollProcesses() {
+  return clientRequest("/hr/payroll", { 
+    method: "GET" 
+  });
+}
+
+/**
+ * Obtiene el detalle de empleados y sus liquidaciones calculadas para un proceso histórico.
+ * Apunta a: /hr/payroll/{process_id}/receipts
+ */
+export function getHistoricalPayroll(processId) {
+  return clientRequest(`/hr/payroll/${processId}/receipts`, {
+    method: "GET",
+  });
 }

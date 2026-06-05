@@ -1,93 +1,127 @@
 import { useState, useEffect, useCallback } from "react";
-import { fetchEmployees, createEmployee } from "@/lib/http/client/hr.js"; 
+import { 
+  getEmployeesByQuery, 
+  createEmployee as apiCreateEmployee, 
+  patchEmployee, 
+} from "@/lib/http/client/employees";
 
-const PAGE_SIZE = 30;
-
-function useDebounce(value, delay = 400) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
-}
-
-export function useEmployees(filters) {
+export function useEmployees() {
   const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Filtros de control: Inicializamos en "all" para que cargue todos al iniciar
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all"); 
+  const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
-  const [cursors, setCursors] = useState([undefined]);
 
-  const debouncedSearch = useDebounce(filters.search, 400);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setCursors([undefined]);
-  }, [debouncedSearch, filters.status]);
-
-  const loadEmployees = useCallback(async () => {
-    let cancelled = false;
+  const loadEmployees = useCallback(async (currentSearch, currentStatus, currentCursor) => {
     setLoading(true);
     setError(null);
-
     try {
-      const cursor = cursors[currentPage - 1];
-      const response = await fetchEmployees({
-        search: debouncedSearch || undefined,
-        status: filters.status || undefined,
-        cursor: cursor,
-        limit: PAGE_SIZE,
+      // Determinamos el filtro real para el backend de Rust
+      const backendStatus = (currentStatus === "all" || currentStatus === "Todos" || !currentStatus) 
+        ? "" 
+        : currentStatus;
+
+      const response = await getEmployeesByQuery({
+        search: currentSearch,
+        status: backendStatus,
+        cursor: currentCursor,
+        limit: 30,
       });
 
-      if (!cancelled) {
-        setEmployees(response.data ?? []);
-        setHasMore(response.hasMore ?? false);
+      console.log("Respuesta cruda:", response);
+      const employeesData = response?.employees || response.data?.employees || [];
+      const hasMoreData = response?.hasMore || response.data?.hasMore || false;
+      const nextCursor = response?.nextCursor || response.data?.nextCursor || null;
 
-        if (response.hasMore && response.nextCursor != null) {
-          setCursors((prev) => {
-            if (prev[currentPage] == null) {
-              const next = [...prev];
-              next[currentPage] = response.nextCursor;
-              return next;
-            }
-            return prev;
-          });
-        }
+      if (currentCursor) {
+        setEmployees((prev) => [...prev, ...employeesData]);
+      } else {
+        setEmployees(employeesData);
       }
-    } catch (e) {
-      if (!cancelled) setError(e.message);
+
+      setHasMore(hasMoreData);
+      setCursor(nextCursor);
+
+    } catch (err) {
+      console.error("Error al cargar empleados:", err);
+      setError("Ocurrió un error al traer los datos del personal.");
     } finally {
-      if (!cancelled) setLoading(false);
+      setLoading(false);
     }
+  }, []);
 
-    return () => { cancelled = true; };
-  }, [currentPage, cursors, debouncedSearch, filters.status]);
-
+  // Debounce para evitar sobrecargar el backend al tipear
   useEffect(() => {
-    loadEmployees();
-  }, [loadEmployees]);
+    const delayDebounceFn = setTimeout(() => {
+      loadEmployees(search, status, null);
+    }, 400);
 
-  const goToPage = useCallback((page) => {
-    if (page >= 1 && (page < currentPage || cursors[page - 1] != null || page === 1)) {
-      setCurrentPage(page);
+    return () => clearTimeout(delayDebounceFn);
+  }, [search, status, loadEmployees]);
+
+  const loadMore = () => {
+    if (!loading && hasMore && cursor) {
+      loadEmployees(search, status, cursor);
     }
-  }, [currentPage, cursors]);
+  };
 
-  const addEmployee = async (payload) => {
-    await createEmployee(payload);
-    await loadEmployees(); // Mutar y recargar la lista limpia de la página 1
+  const createEmployee = async (payload) => {
+    setIsSubmitting(true);
+    try {
+      const response = await apiCreateEmployee(payload);
+      await loadEmployees(search, status, null);
+      return { success: true, data: response.data };
+    } catch (err) {
+      return { success: false, error: err };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const updateEmployee = async (id, payload) => {
+    setIsSubmitting(true);
+    try {
+      const response = await patchEmployee(id, payload);
+      await loadEmployees(search, status, null);
+      return { success: true, data: response.data };
+    } catch (err) {
+      return { success: false, error: err };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toggleStatus = async (id, currentStatus) => {
+    const nextStatus = currentStatus === "active" ? "inactive" : "active";
+    try {
+      await updateEmployeeStatus(id, nextStatus);
+      setEmployees((prev) =>
+        prev.map((emp) => (emp.id === id ? { ...emp, status: nextStatus } : emp))
+      );
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return {
     employees,
     loading,
     error,
-    currentPage,
+    isSubmitting,
+    search,
+    setSearch,
+    status,
+    setStatus,
     hasMore,
-    totalPages: cursors.length,
-    goToPage,
-    addEmployee,
+    loadMore,
+    createEmployee,
+    updateEmployee,
+    toggleStatus,
+    refetch: () => loadEmployees(search, status, null),
   };
 }
