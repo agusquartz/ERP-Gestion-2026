@@ -14,6 +14,7 @@ import { getProductByQuery } from "../services/saleService";
  *   onSelect - (product) => void
  */
 export function ProductSearchModal({ open, onClose, onSelect }) {
+  const PRODUCT_PAGE_SIZE = 10;
   const [query, setQuery] = useState("");
   const [descFilter, setDescFilter] = useState("");
   const [catFilter, setCatFilter] = useState("");
@@ -22,7 +23,18 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
   const [showCatDrop, setShowCatDrop] = useState(false);
   const inputRef = useRef(null);
 
+  const [productCursor, setProductCursor] = useState(null);
+  const [productCursorStack, setProductCursorStack] = useState([]);
+  const [productHasMore, setProductHasMore] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+
   const categories = [...new Set(filtered.map((p) => p.category?.name))];
+
+  const resetProductPagination = () => {
+    setProductCursor(null);
+    setProductCursorStack([]);
+    setProductHasMore(false);
+  };
 
   useEffect(() => {
     if (open) {
@@ -32,6 +44,7 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
       setFiltered([]);
       setActiveRow(0);
       setShowCatDrop(false);
+      resetProductPagination();
       setTimeout(() => inputRef.current?.focus(), 60);
     }
   }, [open]);
@@ -60,37 +73,67 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
 }, [open, onClose, showCatDrop]);
 
   useEffect(() => {
-    if (query.length < 3) {
+    if (!open) return;
+
+    if (query.trim().length < 3) {
       setFiltered([]);
+      setProductHasMore(false);
       return;
     }
 
+    let cancelled = false;
+
     const timer = setTimeout(async () => {
       try {
-        let response = await getProductByQuery(query);
-		let f = response.products;
+        setIsLoadingProducts(true);
 
-        if (descFilter) {
-          f = f.filter(
-            (p) =>
-              p.description.toLowerCase().includes(descFilter.toLowerCase()) ||
-              p.code.toLowerCase().includes(descFilter.toLowerCase())
-          );
-        }
+        const response = await getProductByQuery({
+          search: query,
+          filter: descFilter,
+          cursor: productCursor,
+          limit: PRODUCT_PAGE_SIZE,
+        });
 
+        let products = Array.isArray(response)
+          ? response
+          : response?.products ?? [];
+
+        // Este filtro sigue siendo local porque tu ProductListQuery
+        // todavía no tiene categoryId/categoryName.
         if (catFilter) {
-          f = f.filter((p) => p.category?.name === catFilter);
+          products = products.filter((p) => p.category?.name === catFilter);
         }
 
-        setFiltered(f);
-        setActiveRow(0);
+        if (!cancelled) {
+          setFiltered(products);
+          setProductHasMore(
+            Boolean(response?.hasMore ?? response?.has_more ?? false)
+          );
+          setActiveRow(0);
+        }
       } catch (err) {
-        setFiltered([]);
+        if (!cancelled) {
+          setFiltered([]);
+          setProductHasMore(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingProducts(false);
+        }
       }
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [query, descFilter, catFilter]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    open,
+    query,
+    descFilter,
+    catFilter,
+    productCursor,
+  ]);
 
 
   // Handles keyboard actions inside the search input: Escape closes the modal, Enter selects a product, and arrow keys move between rows.
@@ -129,7 +172,28 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
     setQuery("");
     setDescFilter("");
     setCatFilter("");
+    setFiltered([]);
+    setActiveRow(0);
     setShowCatDrop(false);
+    resetProductPagination();
+  };
+
+  const handleNextProductPage = () => {
+    if (!filtered.length || !productHasMore) return;
+
+    const lastProduct = filtered[filtered.length - 1];
+
+    setProductCursorStack((prev) => [...prev, productCursor]);
+    setProductCursor(lastProduct.id);
+  };
+
+  const handlePreviousProductPage = () => {
+    if (!productCursorStack.length) return;
+
+    const previousCursor = productCursorStack[productCursorStack.length - 1];
+
+    setProductCursorStack((prev) => prev.slice(0, -1));
+    setProductCursor(previousCursor);
   };
 
   return (
@@ -149,7 +213,10 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
               className="w-full rounded-[5px] border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:bg-surface"
               placeholder="Buscar por Código, SKU, Descripción..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                resetProductPagination();
+              }}
               onKeyDown={handleKeyDown}
             />
           </div>
@@ -162,7 +229,10 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
               className="w-full rounded-[5px] border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:bg-surface"
               placeholder="Filtrar por Descripción, SKU, Código..."
               value={descFilter}
-              onChange={(e) => setDescFilter(e.target.value)}
+              onChange={(e) => {
+                setDescFilter(e.target.value);
+                resetProductPagination();
+              }}
             />
           </div>
 
@@ -184,6 +254,7 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
                   className="block w-full cursor-pointer rounded-[5px] px-3 py-2 text-left text-sm text-foreground transition hover:bg-background"
                   onClick={() => {
                     setCatFilter("");
+                    resetProductPagination();
                     setShowCatDrop(false);
                   }}
                 >
@@ -201,6 +272,7 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
                     }`}
                     onClick={() => {
                       setCatFilter(c);
+                      resetProductPagination();
                       setShowCatDrop(false);
                     }}
                   >
@@ -223,9 +295,17 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
           </div>
         </div>
 
-        <p className="text-xs text-muted">
-          Mostrando {filtered.length} resultados
-        </p>
+        <div className="flex items-center justify-between gap-3 text-xs text-muted">
+          <span>
+            Mostrando {filtered.length} resultados
+          </span>
+
+          {query.trim().length >= 3 && (
+            <span>
+              Página {productCursorStack.length + 1}
+            </span>
+          )}
+        </div>
 
         <div className="overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
           <div className="max-h-[420px] overflow-auto">
@@ -257,7 +337,17 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
               </thead>
 
               <tbody>
-                {filtered.map((p, i) => (
+                {isLoadingProducts && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-4 py-8 text-center text-sm text-muted"
+                    >
+                      Cargando productos...
+                    </td>
+                  </tr>
+                )}
+                {!isLoadingProducts && filtered.map((p, i) => (
                   <tr
                     key={p.id}
                     className={`cursor-pointer border-b border-border transition hover:bg-background ${
@@ -294,7 +384,7 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
                   </tr>
                 ))}
 
-                {filtered.length === 0 && (
+                {!isLoadingProducts && filtered.length === 0 && (
                   <tr>
                     <td
                       colSpan={7}
@@ -307,6 +397,33 @@ export function ProductSearchModal({ open, onClose, onSelect }) {
               </tbody>
             </table>
           </div>
+
+
+        <div className="flex flex-col gap-3 border-t border-border px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            Mostrando {filtered.length} productos
+          </span>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handlePreviousProductPage}
+              disabled={!productCursorStack.length || isLoadingProducts}
+              className="rounded-[5px] border border-border px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNextProductPage}
+              disabled={!productHasMore || isLoadingProducts}
+              className="rounded-[5px] border border-border px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
         </div>
 
         <p className="text-center text-xs text-muted">
