@@ -28,6 +28,18 @@ pub async fn list_return_notes(
     Ok(response)
 }
 
+pub async fn get_return_notes_by_invoice_id(
+    invoice_id: i32,
+) -> Result<Option<Vec<ReturnNoteResponseDto>>, db_config::DbError> {
+    let maybe_notes: Option<Vec<model::ReturnNoteAggregate>> = repository::query_return_notes_by_invoice_id(invoice_id).await?;
+
+    let response: Option<Vec<ReturnNoteResponseDto>> = maybe_notes.map(|notes|{ notes
+        .into_iter()
+        .map(mapper::map_return_note).collect()
+        });
+
+    Ok(response)
+}
 
 
 pub async fn get_return_note_by_id(
@@ -64,7 +76,7 @@ pub async fn create_return_note(
                 returned_quantity: detail.returned_quantity,
                 amount: detail.amount,
             })
-            .collect(),
+        .collect(),
     };
 
     let aggregate = repository::store_new_return_note(new_note).await?;
