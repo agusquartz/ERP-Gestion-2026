@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSupplierCreditNotes } from "../hooks/useSupplierCreditNotes"; // Ajusta el path
 import { CreditNoteSearch } from "../components/CreditNoteSearch"; // Reutilizamos el filtro estético
-import { Pagination } from "@/shared/components/Pagination"; // El componente de paginación de tu compañero
+import { Pagination } from "../../../purchase-invoices/list/components/Pagination"; // El componente de paginación de tu compañero
 import { useRouter } from "next/navigation";
 import { CreditNoteTable } from "../components/CreditNoteTable";
 
