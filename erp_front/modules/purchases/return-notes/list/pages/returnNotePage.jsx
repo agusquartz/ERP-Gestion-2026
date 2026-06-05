@@ -261,7 +261,7 @@ export default function ReturnNotesPage() {
   };
 
   return (
-    // CAMBIO: mismo contenedor responsive que DocumentsPage
+
     <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
       {/* Title */}
       <div className="mb-5 shrink-0">
@@ -276,7 +276,7 @@ export default function ReturnNotesPage() {
         <div className="mt-2 h-px w-full bg-border" />
       </div>
 
-      {/* CAMBIO: filtros con estilo tipo DocumentsSearch */}
+      
       <div className="w-full shrink-0 space-y-4 py-4">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1.5fr_auto_auto_auto] lg:items-end">
           <div className="flex flex-col gap-1.5">
@@ -447,20 +447,13 @@ export default function ReturnNotesPage() {
         </div>
       </div>
 
-      {/* Loading / Error */}
-      {isLoading && (
-        <div className="mb-4 shrink-0 rounded-[5px] border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
-          Cargando notas de devolución...
-        </div>
-      )}
-
+      
       {errorMessage && (
         <div className="mb-4 shrink-0 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage}
         </div>
       )}
 
-      {/* CAMBIO: tabla igual al estilo de DocumentsTable */}
       <div className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
         <div className="flex-1 min-h-0 overflow-auto">
           <table className="w-full min-w-[1050px] table-fixed border-collapse">
@@ -581,7 +574,7 @@ export default function ReturnNotesPage() {
           </table>
         </div>
 
-        {/* CAMBIO: footer igual al estilo de DocumentsTable */}
+       
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
           <span>
             Mostrando {filteredReturnNotes.length} de {returnNotes.length} resultados
