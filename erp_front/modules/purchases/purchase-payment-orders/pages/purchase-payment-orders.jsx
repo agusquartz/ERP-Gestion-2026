@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getPurchasePaymentOrders } from "@/lib/http/client/purchase-payment-order";
+import { EyeIcon } from "@/shared/components/Icons";
 
 const PAYMENT_TABS = {
   ALL: "Todos",
@@ -49,6 +50,7 @@ function statusToTab(statusName) {
 
 function statusBadgeClasses(statusName) {
   const normalized = normalizeStatus(statusName);
+
   switch (normalized) {
     case "Pagado":
       return {
@@ -57,6 +59,7 @@ function statusBadgeClasses(statusName) {
         text: "text-success",
         dot: "bg-success",
       };
+
     case "Pendiente":
       return {
         border: "border-destructive",
@@ -64,6 +67,7 @@ function statusBadgeClasses(statusName) {
         text: "text-destructive",
         dot: "bg-destructive",
       };
+
     case "Parcial":
       return {
         border: "border-warning",
@@ -71,6 +75,7 @@ function statusBadgeClasses(statusName) {
         text: "text-warning",
         dot: "bg-warning",
       };
+
     case "Anulado":
       return {
         border: "border-muted",
@@ -78,6 +83,7 @@ function statusBadgeClasses(statusName) {
         text: "text-muted-foreground",
         dot: "bg-muted-foreground",
       };
+
     default:
       return {
         border: "border-muted",
@@ -90,6 +96,7 @@ function statusBadgeClasses(statusName) {
 
 function PaymentStatusBadge({ status }) {
   const { border, bg, text, dot } = statusBadgeClasses(status);
+
   return (
     <span
       className={`inline-flex min-w-[96px] items-center justify-center gap-1.5 rounded-full border px-3 py-0.5 text-[10px] font-bold ${border} ${bg} ${text}`}
@@ -159,19 +166,26 @@ export default function PurchasePaymentOrdersPage() {
       try {
         setIsLoading(true);
         setErrorMessage(null);
+
         const data = await getPurchasePaymentOrders(search);
         const mapped = data.payments.map(paymentOrderToRow);
-        if (!ignore) setOrders(mapped);
+
+        if (!ignore) {
+          setOrders(mapped);
+        }
       } catch (error) {
         if (!ignore) {
           setErrorMessage(error.message || "No se pudieron cargar las órdenes de pago.");
         }
       } finally {
-        if (!ignore) setIsLoading(false);
+        if (!ignore) {
+          setIsLoading(false);
+        }
       }
     }
 
     const timeoutId = setTimeout(loadPaymentOrders, 300);
+
     return () => {
       ignore = true;
       clearTimeout(timeoutId);
@@ -195,6 +209,7 @@ export default function PurchasePaymentOrdersPage() {
 
       if (secondaryFilter) {
         const q = secondaryFilter.toLowerCase();
+
         const matches =
           order.paymentNumber.toLowerCase().includes(q) ||
           order.supplier.toLowerCase().includes(q) ||
@@ -221,9 +236,13 @@ export default function PurchasePaymentOrdersPage() {
     setSelectedId(null);
   };
 
-  const handleSelect = (id) => setSelectedId(id === selectedId ? null : id);
+  const handleSelect = (id) => {
+    setSelectedId(id === selectedId ? null : id);
+  };
 
-  const handleOpen = (id) => router.push(`/purchases/purchase-payment-orders/${id}`);
+  const handleOpen = (id) => {
+    router.push(`/purchases/purchase-payment-orders/${id}`);
+  };
 
   const tabs = [
     PAYMENT_TABS.ALL,
@@ -234,22 +253,22 @@ export default function PurchasePaymentOrdersPage() {
   ];
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
+    <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
       {/* Title */}
-      <div className="mb-5">
-        <h1 className="ttext-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
-          Ordenes de Pago
+      <div className="mb-5 shrink-0">
+        <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
+          Órdenes de Pago
         </h1>
 
         <p className="mt-1 text-sm text-muted-foreground">
-          Pagos realizados a proveedores
+          Pagos realizados a proveedores.
         </p>
 
         <div className="mt-2 h-px w-full bg-border" />
       </div>
 
       {/* Filters */}
-      <div className="mb-6 rounded-[5px] border border-border bg-surface p-4 shadow-panel">
+      <div className="mb-5 shrink-0 rounded-[5px] border border-border bg-surface p-4 shadow-panel">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
           <div>
             <label className="mb-1 block text-xs font-semibold text-secondary">
@@ -337,7 +356,7 @@ export default function PurchasePaymentOrdersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-5 rounded-[5px] border border-border bg-surface p-2 shadow-panel">
+      <div className="mb-5 shrink-0 rounded-[5px] border border-border bg-surface p-2 shadow-panel">
         <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => {
             const isActive = activeTab === tab;
@@ -373,15 +392,9 @@ export default function PurchasePaymentOrdersPage() {
         </div>
       </div>
 
-      {/* Loading / Error */}
-      {isLoading && (
-        <div className="mb-4 rounded-[5px] border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
-          Cargando órdenes de pago...
-        </div>
-      )}
-
+      
       {errorMessage && (
-        <div className="mb-4 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-4 shrink-0 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage}
         </div>
       )}
@@ -397,7 +410,7 @@ export default function PurchasePaymentOrdersPage() {
               <col />
               <col className="w-[170px]" />
               <col className="w-[150px]" />
-              <col className="w-[140px]" />
+              <col className="w-[120px]" />
             </colgroup>
 
             <thead>
@@ -427,7 +440,7 @@ export default function PurchasePaymentOrdersPage() {
                 </th>
 
                 <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Acciones
+                  Acción
                 </th>
               </tr>
             </thead>
@@ -475,18 +488,17 @@ export default function PurchasePaymentOrdersPage() {
 
                     <td className="px-4 py-3.5 text-right">
                       <div className="flex justify-end">
-                        {isSelected && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpen(order.id);
-                            }}
-                            className="rounded-[5px] bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition hover:bg-primary-hover active:translate-y-px"
-                          >
-                            Seleccionar
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpen(order.id);
+                          }}
+                          className="inline-flex rounded-[5px] p-1 text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary"
+                          title="Ver orden de pago"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -507,7 +519,6 @@ export default function PurchasePaymentOrdersPage() {
           </table>
         </div>
 
-        {/* CAMBIO: contador dentro del marco de la tabla, igual al estilo DocumentsTable */}
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
           <span>
             Mostrando {filteredOrders.length} de {orders.length} resultados

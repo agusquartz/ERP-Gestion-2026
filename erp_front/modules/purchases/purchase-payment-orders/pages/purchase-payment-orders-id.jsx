@@ -66,6 +66,7 @@ function statusToTab(statusName) {
  */
 function statusBadgeClasses(statusName) {
   const normalized = normalizeStatus(statusName);
+
   switch (normalized) {
     case "Pagado":
       return {
@@ -74,6 +75,7 @@ function statusBadgeClasses(statusName) {
         text: "text-success",
         dot: "bg-success",
       };
+
     case "Pendiente":
       return {
         border: "border-destructive",
@@ -81,6 +83,7 @@ function statusBadgeClasses(statusName) {
         text: "text-destructive",
         dot: "bg-destructive",
       };
+
     case "Parcial":
       return {
         border: "border-warning",
@@ -88,6 +91,7 @@ function statusBadgeClasses(statusName) {
         text: "text-warning",
         dot: "bg-warning",
       };
+
     case "Anulado":
       return {
         border: "border-muted",
@@ -95,6 +99,7 @@ function statusBadgeClasses(statusName) {
         text: "text-muted-foreground",
         dot: "bg-muted-foreground",
       };
+
     default:
       return {
         border: "border-muted",
@@ -113,9 +118,10 @@ function statusBadgeClasses(statusName) {
  */
 function PaymentStatusBadge({ status }) {
   const { border, bg, text, dot } = statusBadgeClasses(status);
+
   return (
     <span
-      className={`inline-flex min-w-[96px] items-center gap-2 rounded-[5px] border px-2.5 py-0.5 text-xs font-semibold ${border} ${bg} ${text}`}
+      className={`inline-flex min-w-[96px] items-center justify-center gap-1.5 rounded-full border px-3 py-0.5 text-[10px] font-bold ${border} ${bg} ${text}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
       {status}
@@ -162,6 +168,7 @@ function PrintIcon() {
 export default function PurchasePaymentOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
+
   // Extract id from dynamic route – e.g. /purchases/purchase-payment-orders/34
   const id = params.id;
 
@@ -175,9 +182,10 @@ export default function PurchasePaymentOrderDetailPage() {
     async function loadOrder() {
       try {
         setIsLoading(true);
+
         // Call your existing client function (GET /purchase-payment-orders/{id})
         const data = await getPurchasePaymentOrderById(id);
-        
+
         // Transform the backend DTO into the structure our UI expects
         // Backend sends: { id, createdAt, scheduledPaymentDate, status: { id, name }, supplier: { id, name }, totalToPay, details: [...] }
         const mappedOrder = {
@@ -187,15 +195,18 @@ export default function PurchasePaymentOrderDetailPage() {
           supplier: data.supplier,
           status: normalizeStatus(data.status?.name),
           totalToPay: Number(data.totalToPay),
+
           // Build invoices array from details
           invoices: (data.details || []).map((detail, idx) => ({
             number: detail.purchaseInvoice?.invoiceNr || `FAC-${idx + 1}`,
             date: detail.purchaseInvoice?.createdAt,
             amount: Number(detail.amountToPay),
           })),
+
           // Additional fields for the status summary block
-          paidAmount: calculatePaidAmount(data),   // you can compute from details if not provided
+          paidAmount: calculatePaidAmount(data),
         };
+
         setOrder(mappedOrder);
       } catch (err) {
         console.error("Failed to load payment order:", err);
@@ -215,9 +226,11 @@ export default function PurchasePaymentOrderDetailPage() {
     // For now, we assume that if status is "Pagado", paid = totalToPay, else 0.
     // You can adjust this logic based on your actual data.
     const statusName = orderData.status?.name?.toLowerCase();
+
     if (statusName === "pagado" || statusName === "paid" || statusName === "ok") {
       return Number(orderData.totalToPay);
     }
+
     // For partial payments you might need to sum actual paid amounts from another endpoint.
     // For demonstration we return 0 for pending/partial (the UI will show 0 paid).
     return 0;
@@ -225,8 +238,8 @@ export default function PurchasePaymentOrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
-        <div className="mb-4 rounded-[5px] border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
+      <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
+        <div className="rounded-[5px] border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
           Cargando orden de pago...
         </div>
       </div>
@@ -235,11 +248,13 @@ export default function PurchasePaymentOrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
+      <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
         <div className="mb-4 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error || "Orden de pago no encontrada"}
         </div>
+
         <button
+          type="button"
           onClick={() => router.back()}
           className="w-fit rounded-[5px] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
         >
@@ -252,9 +267,16 @@ export default function PurchasePaymentOrderDetailPage() {
   // Compute summary numbers
   const totalInvoices = order.invoices?.length || 0;
   const totalAmount = order.totalToPay;
+
   // For a real implementation, you might have a `paidAmount` field from the backend.
   // Here we simulate based on status – replace with actual data when available.
-  const paidAmount = order.status === "Pagado" ? totalAmount : (order.status === "Parcial" ? totalAmount * 0.5 : 0);
+  const paidAmount =
+    order.status === "Pagado"
+      ? totalAmount
+      : order.status === "Parcial"
+        ? totalAmount * 0.5
+        : 0;
+
   const pendingAmount = totalAmount - paidAmount;
 
   // Print handler: opens a new window with a print-friendly layout
@@ -263,10 +285,16 @@ export default function PurchasePaymentOrderDetailPage() {
 
     const totalInvoices = order.invoices?.length || 0;
     const totalAmount = order.totalToPay;
-    const paidAmount = order.status === "Pagado" ? totalAmount : (order.status === "Parcial" ? totalAmount * 0.5 : 0);
+    const paidAmount =
+      order.status === "Pagado"
+        ? totalAmount
+        : order.status === "Parcial"
+          ? totalAmount * 0.5
+          : 0;
     const pendingAmount = totalAmount - paidAmount;
 
     const printWindow = window.open("", "_blank");
+
     if (!printWindow) {
       alert("Please allow pop-ups to print the document.");
       return;
@@ -437,7 +465,7 @@ export default function PurchasePaymentOrderDetailPage() {
                   <th>Factura</th>
                   <th>Fecha</th>
                   <th class="text-right">Monto</th>
-                 </tr>
+                </tr>
               </thead>
               <tbody>
                 ${order.invoices?.map((inv, idx) => `
@@ -447,12 +475,12 @@ export default function PurchasePaymentOrderDetailPage() {
                     <td>${formatDate(inv.date)}</td>
                     <td class="text-right">${formatMoney(inv.amount)}</td>
                   </tr>
-                `).join('')}
+                `).join("")}
                 ${!order.invoices?.length ? `
                   <tr>
                     <td colspan="4" class="text-center">No hay facturas asociadas</td>
                   </tr>
-                ` : ''}
+                ` : ""}
               </tbody>
               <tfoot>
                 <tr>
@@ -473,109 +501,173 @@ export default function PurchasePaymentOrderDetailPage() {
         </body>
       </html>
     `);
+
     printWindow.document.close();
   };
 
   return (
-  <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
-    {/* Header with back and print buttons */}
-      <div className="mb-5">
-        <div className="flex justify-between items-center">
+    <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
+      {/* Header */}
+      <div className="mb-5 shrink-0">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <button
+            type="button"
             onClick={() => router.back()}
             className="flex items-center gap-1 text-sm font-medium text-secondary transition hover:text-foreground"
           >
             <ChevronLeftIcon />
             Volver
           </button>
+
           <button
+            type="button"
             onClick={handlePrint}
-            className="flex items-center gap-2 rounded-[5px] bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+            className="inline-flex items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover active:scale-95"
           >
             <PrintIcon />
             Imprimir
           </button>
         </div>
-        <div className="flex items-center justify-between flex-wrap gap-3 mt-4">
-          <h1 className="text-[28px] font-extrabold leading-none tracking-tight text-foreground md:text-[36px]">
+
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
             Orden Pago #{order.paymentNumber}
           </h1>
+
           <PaymentStatusBadge status={order.status} />
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm md:grid-cols-2">
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consultá las facturas asociadas y el estado de la orden de pago.
+        </p>
+
+        <div className="mt-3 flex flex-wrap gap-x-8 gap-y-1 text-sm">
           <div>
             <span className="font-semibold text-secondary">Proveedor:</span>{" "}
-            <span className="text-foreground">{order.supplier?.name || "Sin proveedor"}</span>
+            <span className="text-foreground">
+              {order.supplier?.name || "Sin proveedor"}
+            </span>
           </div>
+
           <div>
             <span className="font-semibold text-secondary">Fecha:</span>{" "}
             <span className="text-foreground">{formatDate(order.createdAt)}</span>
           </div>
         </div>
-        <div className="mt-2 h-px w-full bg-foreground/80" />
+
+        <div className="mt-2 h-px w-full bg-border" />
       </div>
 
-    {/* Two-column layout: Invoices Table (left) + Status Card (right) */}
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      {/* Left: Invoices Table - takes 2/3 on large screens */}
-      <div className="lg:col-span-2">
-        <div className="rounded-[5px] border border-border bg-surface shadow-panel">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-background text-xs font-semibold text-muted-foreground">
-                  <th className="w-[50px] border-b border-border px-3 py-2.5 text-center">#</th>
-                  <th className="border-b border-border px-3 py-2.5 text-left">Factura</th>
-                  <th className="border-b border-border px-3 py-2.5 text-left">Fecha</th>
-                  <th className="border-b border-border px-3 py-2.5 text-right">Monto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.invoices?.map((invoice, idx) => (
-                  <tr key={idx} className="border-b border-border text-sm text-foreground">
-                    <td className="px-3 py-2.5 text-center">{idx + 1}</td>
-                    <td className="px-3 py-2.5 font-medium">{invoice.number}</td>
-                    <td className="px-3 py-2.5">{formatDate(invoice.date)}</td>
-                    <td className="px-3 py-2.5 text-right">{formatMoney(invoice.amount)}</td>
+      {/* Content */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_328px]">
+        {/* Left: Invoices Table */}
+        <div className="flex min-h-0 flex-col overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+            <div className="min-h-0 flex-1 overflow-auto">
+              <table className="w-full min-w-[680px] table-fixed border-collapse">
+                <colgroup>
+                  <col className="w-[70px]" />
+                  <col />
+                  <col className="w-[170px]" />
+                  <col className="w-[180px]" />
+                </colgroup>
+
+                <thead>
+                  <tr className="bg-background">
+                    <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      #
+                    </th>
+
+                    <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Factura
+                    </th>
+
+                    <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Fecha
+                    </th>
+
+                    <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Monto
+                    </th>
                   </tr>
-                ))}
-                {(!order.invoices || order.invoices.length === 0) && (
-                  <tr>
-                    <td colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
-                      No hay facturas asociadas
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="border-t border-border px-4 py-2 text-right text-sm font-medium text-secondary">
-            Total de facturas: {totalInvoices}
+                </thead>
+
+                <tbody>
+                  {order.invoices?.map((invoice, idx) => (
+                    <tr
+                      key={idx}
+                      className="group border-b border-gray-100 transition-colors hover:bg-[#f0f7ff]"
+                    >
+                      <td className="px-4 py-3.5 text-center text-sm text-foreground">
+                        {idx + 1}
+                      </td>
+
+                      <td className="px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
+                        {invoice.number}
+                      </td>
+
+                      <td className="px-4 py-3.5 text-sm text-foreground">
+                        {formatDate(invoice.date)}
+                      </td>
+
+                      <td className="px-4 py-3.5 text-right text-sm font-bold text-foreground">
+                        {formatMoney(invoice.amount)}
+                      </td>
+                    </tr>
+                  ))}
+
+                  {(!order.invoices || order.invoices.length === 0) && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="py-9 text-center text-sm text-muted-foreground"
+                      >
+                        No hay facturas asociadas.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+              <span>Total de facturas: {totalInvoices}</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Right: Payment Status Card - takes 1/3 on large screens */}
-      <div className="lg:col-span-1">
-        <div className="rounded-[5px] border border-border bg-surface p-4 shadow-panel">
-          <h3 className="mb-3 text-base font-bold text-foreground">Estado de Orden de Pago</h3>
+        {/* Right: Payment Status Card */}
+        <aside className="min-h-0 overflow-auto rounded-[5px] border border-border bg-surface p-4 shadow-panel">
+          <h3 className="mb-3 text-base font-bold text-foreground">
+            Estado de Orden de Pago
+          </h3>
+
           <div className="flex flex-col gap-4">
             <div className="rounded-[5px] bg-background p-3 text-center">
               <div className="text-xs font-semibold text-secondary">Total</div>
-              <div className="text-xl font-bold text-foreground">{formatMoney(totalAmount)}</div>
+              <div className="text-xl font-bold text-foreground">
+                {formatMoney(totalAmount)}
+              </div>
             </div>
+
             <div className="rounded-[5px] bg-background p-3 text-center">
               <div className="text-xs font-semibold text-secondary">Pagado</div>
-              <div className="text-xl font-bold text-success">{formatMoney(paidAmount)}</div>
+              <div className="text-xl font-bold text-success">
+                {formatMoney(paidAmount)}
+              </div>
             </div>
+
             <div className="rounded-[5px] bg-background p-3 text-center">
-              <div className="text-xs font-semibold text-secondary">Saldo Pendiente</div>
-              <div className="text-xl font-bold text-destructive">{formatMoney(pendingAmount)}</div>
+              <div className="text-xs font-semibold text-secondary">
+                Saldo Pendiente
+              </div>
+              <div className="text-xl font-bold text-destructive">
+                {formatMoney(pendingAmount)}
+              </div>
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
-  </div>
-);
+  );
 }

@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getSupplierCreditNoteById } from "@/lib/http/client/supplier-credit-notes";
-import { s } from "../../purchase-requests/new/styles/NewPurchasesStyles";
 
 // Formateador de fechas interno para mantener consistencia con el diseño (DD/MM/YYYY)
 function formatDate(dateString) {
   if (!dateString) return "—";
+
   const date = new Date(dateString);
+
   return new Intl.DateTimeFormat("es-PY", {
     day: "2-digit",
     month: "2-digit",
@@ -16,12 +17,22 @@ function formatDate(dateString) {
   }).format(date);
 }
 
+function formatAmount(value) {
+  return `$ ${Number(value || 0)
+    .toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })
+    .replace(".00", "")}`;
+}
+
 // Función encargada de mapear el DTO de Rust al Front
 function mapBackToFrontCreditNoteDetail(item) {
   let cleanStamp = item.supplier?.stamp || "—";
+
   // Sanitizamos el timbrado si por error viene el timestamp completo desde el backend
   if (cleanStamp.includes("-") && cleanStamp.includes(":")) {
-    cleanStamp = "15478962"; 
+    cleanStamp = "15478962";
   }
 
   return {
@@ -29,18 +40,22 @@ function mapBackToFrontCreditNoteDetail(item) {
     note_number: item.note_number || "—",
     created_at: formatDate(item.created_at),
     total: item.total ? parseFloat(item.total) : 0,
-    
+
     supplier_name: item.supplier?.name || "—",
     supplier_stamp: cleanStamp,
-    
+
     // 🌟 GUARDAMOS EL ID PURO DE RUST para la navegación
-    invoice_raw_id: item.invoice_id, 
+    invoice_raw_id: item.invoice_id,
     return_note_raw_id: item.return_note_id,
-    
+
     // Mantenemos tus strings formateados para la vista visual
-    invoice_number: item.invoice_id ? `001-002-${String(item.invoice_id).padStart(7, "0")}` : "—",
-    return_note_number: item.return_note_id ? String(item.return_note_id).padStart(2, "0") : "—",
-    
+    invoice_number: item.invoice_id
+      ? `001-002-${String(item.invoice_id).padStart(7, "0")}`
+      : "—",
+    return_note_number: item.return_note_id
+      ? String(item.return_note_id).padStart(2, "0")
+      : "—",
+
     details: (item.details || []).map((d, idx) => ({
       pos: idx + 1,
       product_code: d.product_code || "—",
@@ -52,10 +67,27 @@ function mapBackToFrontCreditNoteDetail(item) {
   };
 }
 
+function ChevronLeftIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
 export default function DetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  
+
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -65,31 +97,46 @@ export default function DetailPage() {
       try {
         setLoading(true);
         setError("");
-        
+
         const data = await getSupplierCreditNoteById(id);
         const mappedData = mapBackToFrontCreditNoteDetail(data);
+
         setNote(mappedData);
       } catch (err) {
         console.error("Error cargando detalle de nota de crédito:", err);
-        setError("No se pudo obtener la información de la nota de crédito de proveedores.");
+        setError(
+          "No se pudo obtener la información de la nota de crédito de proveedores."
+        );
       } finally {
         setLoading(false);
       }
     }
+
     if (id) loadDetail();
   }, [id]);
 
   if (loading) {
-    return <div className="p-8 text-sm font-medium text-slate-400">Cargando detalles del documento...</div>;
+    return (
+      <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
+        <div className="rounded-[5px] border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
+          Cargando detalles del documento...
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
+        <div className="mb-4 rounded-[5px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
-        <button onClick={() => router.back()} className="mt-4 text-sm font-bold text-slate-600 underline">
+
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="w-fit rounded-[5px] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+        >
           Volver atrás
         </button>
       </div>
@@ -97,130 +144,208 @@ export default function DetailPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-white p-6 md:p-8 font-sans select-none max-w-[1200px] mx-auto w-full">
-      
-      {/* Título Principal de la Nota */}
-      <div className="mb-2">
-        <h1 className={`${s.pageTitle}`}>
+    <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
+      {/* Header */}
+      <div className="mb-5 shrink-0">
+        <div className="mb-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center gap-1 text-sm font-medium text-secondary transition hover:text-foreground"
+          >
+            <ChevronLeftIcon />
+            Volver
+          </button>
+        </div>
+
+        <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
           Nota de Crédito #{note.note_number}
         </h1>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consultá el detalle de la nota de crédito del proveedor y sus artículos.
+        </p>
+
+        <div className="mt-2 h-px w-full bg-border" />
       </div>
 
-      {/* Línea divisoria superior */}
-      <div className="w-full h-[1px] bg-slate-200 mb-4" />
+      {/* Metadata */}
+      <div className="mb-5 shrink-0 rounded-[5px] border border-border bg-surface px-6 py-3 shadow-sm">
+        <div className="flex flex-wrap gap-x-12 gap-y-2 text-sm sm:text-base">
+          <div>
+            <span className="font-bold text-foreground">Proveedor:</span>{" "}
+            <span className="font-medium text-secondary">
+              {note.supplier_name}
+            </span>
+          </div>
 
-      {/* Barra de Metadatos superior (Proveedor y Creado) */}
-      <div className="mb-4 flex gap-x-16 text-[15px]">
-        <div className="flex gap-2">
-          <span className="font-bold text-slate-800">Proveedor:</span>
-          <span className="font-normal text-slate-500">{note.supplier_name}</span>
-        </div>
-        <div className="flex gap-2">
-          <span className="font-bold text-slate-800">Creado:</span>
-          <span className="font-normal text-slate-500">{note.created_at}</span>
-        </div>
-      </div>
-
-      {/* Bloque Informativo de Documentos */}
-      <div className="mb-4 rounded-[6px] border border-slate-100 bg-white p-6 shadow-sm space-y-4">
-        
-        {/* Fila: Timbrado */}
-        <div className="flex items-start">
-          <span className="w-[180px] text-sm font-bold text-[#4a5568]">Timbrado:</span>
-          <span className="text-sm font-normal text-slate-800">{note.supplier_stamp}</span>
-        </div>
-
-        {/* Fila: Factura Nº */}
-        <div className="flex items-center">
-          <span className="w-[180px] text-sm font-bold text-[#4a5568]">Factura Nº:</span>
-          <div className="flex items-center gap-3">
-             <span className="text-sm text-slate-900">{note.invoice_number}</span>
-             <button 
-               type="button"
-               disabled={!note.invoice_raw_id}
-               onClick={() => router.push(`/purchases/purchase-invoices/${note.invoice_raw_id}`)}
-               className="rounded-[4px] border border-emerald-200 bg-white px-4 py-0.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
-             >
-               Ver
-             </button>
+          <div>
+            <span className="font-bold text-secondary">Creado:</span>{" "}
+            <span className="font-medium text-secondary">
+              {note.created_at}
+            </span>
           </div>
         </div>
-
-        {/* Fila: Nota de Devolución Nº */}
-        <div className="flex items-center">
-          <span className="w-[180px] text-sm font-bold text-[#4a5568]">Nota de Devolución Nº:</span>
-          <div className="flex items-center gap-3">
-             <span className="text-sm text-slate-900">{note.return_note_number}</span>
-             <button 
-               type="button"
-               disabled={!note.return_note_raw_id}
-               onClick={() => router.push(`/purchases/return-notes/${note.return_note_raw_id}`)}
-               className="rounded-[4px] border border-emerald-200 bg-white px-4 py-0.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
-             >
-               Ver
-             </button>
-          </div>
-        </div>
-
       </div>
 
-      {/* Tabla de Artículos */}
-      <div className="flex-1 overflow-hidden rounded-[4px] border border-slate-100 bg-white">
-        <table className="w-full border-collapse text-left">
-          <colgroup>
-            <col className="w-16" />
-            <col className="w-[140px]" />
-            <col />
-            <col className="w-32" />
-            <col className="w-[180px]" />
-            <col className="w-[180px]" />
-          </colgroup>
-          
-          <thead>
-            <tr className="bg-[#f1f5f9] border-b border-slate-200">
-              <th className="px-4 py-2 text-center text-xs font-bold text-slate-600">#</th>
-              <th className="px-4 py-2 text-left text-xs font-bold text-slate-600">Código</th>
-              <th className="px-4 py-2 text-left text-xs font-bold text-slate-600">Producto</th>
-              <th className="px-4 py-2 text-center text-xs font-bold text-slate-600">Cantidad</th>
-              <th className="px-4 py-2 text-right text-xs font-bold text-slate-600">Precio unitario</th>
-              <th className="px-4 py-2 text-right text-xs font-bold text-slate-600">Sub Total</th>
-            </tr>
-          </thead>
-          
-          <tbody className="divide-y divide-slate-100">
-            {note.details.map((item) => (
-              <tr key={item.pos} className="hover:bg-slate-50/50 transition-colors">
-                <td className="px-4 py-2.5 text-center text-sm font-normal text-slate-900">{item.pos}</td>
-                <td className="px-4 py-2.5 text-left text-sm font-normal text-slate-900">{item.product_code}</td>
-                <td className="px-4 py-2.5 text-left text-sm font-normal text-slate-700">{item.product_description}</td>
-                <td className="px-4 py-2.5 text-center text-sm text-slate-700">{item.quantity}</td>
-                <td className="px-4 py-2.5 text-right text-sm text-slate-700">
-                  $ {item.unit_cost.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).replace(".00", "")}
-                </td>
-                <td className="px-4 py-2.5 text-right text-sm font-normal text-slate-900">
-                  $ {item.subtotal.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).replace(".00", "")}
-                </td>
+      {/* Document info */}
+      <div className="mb-5 shrink-0 rounded-[5px] border border-border bg-surface p-4 shadow-panel">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-4 text-sm sm:grid-cols-[220px_1fr]">
+          <div className="font-bold uppercase text-secondary">Timbrado:</div>
+          <div className="font-medium text-foreground">
+            {note.supplier_stamp}
+          </div>
+
+          <div className="font-bold uppercase text-secondary">Factura Nº:</div>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-medium text-foreground">
+              {note.invoice_number}
+            </span>
+
+            <button
+              type="button"
+              disabled={!note.invoice_raw_id}
+              onClick={() =>
+                router.push(`/purchases/purchase-invoices/${note.invoice_raw_id}`)
+              }
+              className="rounded-[5px] border border-success bg-success/10 px-4 py-1 text-xs font-bold text-success transition hover:bg-success/15 disabled:pointer-events-none disabled:opacity-50"
+            >
+              Ver
+            </button>
+          </div>
+
+          <div className="font-bold uppercase text-secondary">
+            Nota de Devolución Nº:
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-medium text-foreground">
+              {note.return_note_number}
+            </span>
+
+            <button
+              type="button"
+              disabled={!note.return_note_raw_id}
+              onClick={() =>
+                router.push(`/purchases/return-notes/${note.return_note_raw_id}`)
+              }
+              className="rounded-[5px] border border-success bg-success/10 px-4 py-1 text-xs font-bold text-success transition hover:bg-success/15 disabled:pointer-events-none disabled:opacity-50"
+            >
+              Ver
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+        <div className="min-h-0 flex-1 overflow-auto">
+          <table className="w-full min-w-[980px] table-fixed border-collapse">
+            <colgroup>
+              <col className="w-[70px]" />
+              <col className="w-[150px]" />
+              <col />
+              <col className="w-[140px]" />
+              <col className="w-[180px]" />
+              <col className="w-[180px]" />
+            </colgroup>
+
+            <thead>
+              <tr className="bg-background">
+                <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  #
+                </th>
+
+                <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Código
+                </th>
+
+                <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Producto
+                </th>
+
+                <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Cantidad
+                </th>
+
+                <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Precio unitario
+                </th>
+
+                <th className="sticky top-0 z-10 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Sub Total
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {note.details.map((item) => (
+                <tr
+                  key={item.pos}
+                  className="group border-b border-gray-100 transition-colors hover:bg-[#f0f7ff]"
+                >
+                  <td className="px-4 py-3.5 text-center text-sm text-foreground">
+                    {item.pos}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
+                    {item.product_code}
+                  </td>
+
+                  <td
+                    className="truncate px-4 py-3.5 text-sm font-medium text-foreground"
+                    title={item.product_description}
+                  >
+                    {item.product_description}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-center text-sm text-foreground">
+                    {item.quantity}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-right text-sm text-foreground">
+                    {formatAmount(item.unit_cost)}
+                  </td>
+
+                  <td className="px-4 py-3.5 text-right text-sm font-bold text-foreground">
+                    {formatAmount(item.subtotal)}
+                  </td>
+                </tr>
+              ))}
+
+              {note.details.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="py-9 text-center text-sm text-muted-foreground"
+                  >
+                    No hay artículos en esta nota de crédito.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+          <span>Total artículos: {note.details.length}</span>
+        </div>
       </div>
 
-      {/* Sección Inferior de Totales */}
-      <div className="mt-4 rounded-[4px] bg-[#f1f5f9] px-4 py-2 flex justify-between items-center">
-        <span className="text-base font-bold text-slate-800">Total</span>
-        <span className="text-xl font-bold text-slate-900">
-          $ {note.total.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).replace(".00", "")}
-        </span>
-      </div>
+      {/* Total + footer action */}
+      <div className="mt-4 flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-border pt-4">
+        <div className="text-sm text-muted-foreground">
+          Total de la nota:{" "}
+          <span className="ml-1 text-xl font-bold text-foreground">
+            {formatAmount(note.total)}
+          </span>
+        </div>
 
-      {/* Botón Inferior Atras */}
-      <div className="mt-4 flex justify-end">
-        <button 
+        <button
+          type="button"
           onClick={() => router.back()}
-          className="rounded-[4px] border border-slate-300 bg-white px-12 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:shadow-sm active:scale-95 transition-all duration-150"
+          className="rounded-[8px] border border-slate-300 px-8 py-2.5 text-[14px] font-bold text-slate-700 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-95"
         >
-          Atras
+          Atrás
         </button>
       </div>
     </div>

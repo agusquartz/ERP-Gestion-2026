@@ -1346,7 +1346,7 @@ export default function ReturnNoteDetailPage() {
         </div>
       </div>
 
-      {/* CAMBIO: tabla principal estilo DocumentsTable */}
+      
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
         <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full min-w-[950px] table-fixed border-collapse">
