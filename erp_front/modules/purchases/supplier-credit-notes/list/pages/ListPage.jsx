@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSupplierCreditNotes } from "../hooks/useSupplierCreditNotes"; // Ajusta el path
 import { CreditNoteSearch } from "../components/CreditNoteSearch"; // Reutilizamos el filtro estético
-import { Pagination } from "../../../purchase-invoices/list/components/Pagination"; // El componente de paginación de tu compañero
+import { Pagination } from "@/shared/components/Pagination"; // El componente de paginación de tu compañero
 import { useRouter } from "next/navigation";
 import { CreditNoteTable } from "../components/CreditNoteTable";
 
@@ -55,15 +55,14 @@ export default function CreditNotesListPage() {
 
       {/* Estado: Éxito */}
       {!loading && !error && (
-        <>
-          {/* Componente de Paginación que usamos de purchase-invoices/list */}
+        <div className="py-4 border-t border-border bg-surface">
           <Pagination 
             currentPage={currentPage}
             totalPages={totalPages}
             hasMore={hasMore}
             goToPage={goToPage}
           />
-        </>
+        </div>
       )}
     </div>
   );
