@@ -49,6 +49,7 @@ pub struct PayrollSummary {
     pub id: i32,
     pub payroll_process_id: i32,
     pub payroll_process_start_date: DateTime<Utc>,
+    pub payroll_process_state: String,
     pub gross_amount: Decimal,
     pub deductions: Decimal,
     pub net_earnings: Decimal,

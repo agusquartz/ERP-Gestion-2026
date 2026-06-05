@@ -300,13 +300,22 @@ pub async fn update_payroll_status(
         PayrollStatusAction::Cancelled => "cancelled",
     };
 
-    let affected = repository::update_payroll_process_status(process_id, status_str).await?;
+    let mut client = db_config::get_client().await?;
+    let tx = client.transaction().await.map_err(db_config::DbError::from)?;
+
+    let affected = repository::update_payroll_process_status(&tx, process_id, status_str).await?;
 
     if affected == 0 {
         return Err(ServiceError::Validation(
             "Payroll process not found or already closed (paid/cancelled).".to_string()
         ));
     }
+    crate::modules::accounting::service::post_payroll_payment_tx(
+        &tx,
+        process_id,
+    )
+    .await?;
+    tx.commit().await.map_err(db_config::DbError::from)?;
 
     Ok(())
 }

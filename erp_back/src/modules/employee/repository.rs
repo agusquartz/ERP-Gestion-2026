@@ -2,7 +2,7 @@ use std::collections::{ BTreeMap, HashMap};
 
 use super::model::{PayrollProcess, NewPayrollItem};
 
-use tokio_postgres::Row;
+use tokio_postgres::{Row,Transaction};
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
 
@@ -116,6 +116,7 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<EmployeeAggregate> {
                     id: summary_id,
                     payroll_process_id: row.get("payroll_process_id"),
                     payroll_process_start_date: row.get("payroll_process_start_date"),
+                    payroll_process_state: row.get("payroll_process_state"),
                     gross_amount: row.get("gross_earnings"),
                     deductions: row.get("deductions"),
                     net_earnings: row.get("net_earnings"),
@@ -436,13 +437,13 @@ pub async fn save_payroll_run_results(
 
 /// Updates the state of an existing payroll process run
 pub async fn update_payroll_process_status(
+    tx: &tokio_postgres::Transaction<'_>,
     process_id: i32,
     target_status: &str,
 ) -> Result<u64, db_config::DbError> {
-    let conn = db_config::get_client().await?;
 
     // We only allow transition into paid/cancelled if the current state allows it
-    let rows_affected = conn.execute(
+    let rows_affected = tx.execute(
         r#"
         UPDATE payroll_processes
         SET state = $1
