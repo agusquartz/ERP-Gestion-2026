@@ -12,6 +12,8 @@ pub struct ReturnNoteResponseDto {
     pub motive: String,
     pub created_at: NaiveDate,
 
+    pub credit_note_id: Option<i32>,
+
     /// Total calculado sumando los amount de los detalles.
     pub total: Decimal,
 

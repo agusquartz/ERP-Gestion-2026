@@ -39,6 +39,7 @@ pub fn map_return_note(
         motive: value.return_note.motive,
         created_at: value.return_note.created_at,
         total,
+        credit_note_id: value.return_note.credit_note_id,
         supplier: ReturnNoteSupplierResponseDto {
             id: value.supplier.id,
             name: value.supplier.name,

@@ -15,6 +15,8 @@ SELECT
     rn.created_at AS created_at,
     rn.status_id AS status_id,
 
+    rcn.id AS credit_note_id,
+
     s.id AS supplier_id,
     s.name AS supplier_name,
 
@@ -41,6 +43,13 @@ INNER JOIN return_note_details rnd
     ON rnd.return_note_id = rn.id
 INNER JOIN products p
     ON p.id = rnd.product_id
+LEFT JOIN LATERAL (
+    SELECT rcn_inner.id
+    FROM return_credit_notes rcn_inner
+    WHERE rcn_inner.return_note_id = rn.id
+    ORDER BY rcn_inner.id DESC
+    LIMIT 1
+) rcn ON TRUE
 "#;
 
 fn rows_to_aggregates(rows: Vec<Row>) -> Vec<model::ReturnNoteAggregate> {
@@ -57,6 +66,7 @@ fn rows_to_aggregates(rows: Vec<Row>) -> Vec<model::ReturnNoteAggregate> {
                     motive: row.get("motive"),
                     created_at: row.get("created_at"),
                     status_id: row.get("status_id"),
+                    credit_note_id: row.get("credit_note_id"),
                 },
                 supplier: model::ReturnNoteSupplier {
                     id: row.get("supplier_id"),
