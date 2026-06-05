@@ -130,7 +130,12 @@ function paymentOrderToRow(order) {
     date: order.createdAt,
     supplier: order.supplier?.name || "Sin proveedor",
     total: Number(order.totalToPay || 0),
-    status: normalizeStatus(order.status?.name),
+    status: normalizeStatus(
+      order.status?.name ??
+      order.status?.status ??
+      order.statusName ??
+      order.status_name
+    ),
     raw: order,
   };
 }
@@ -144,6 +149,16 @@ const dropdownButtonClass =
 
 export default function PurchasePaymentOrdersPage() {
   const router = useRouter();
+
+  const PAGE_SIZE = 10;
+
+  const PAYMENT_TAB_STATUS = {
+    [PAYMENT_TABS.ALL]: "",
+    [PAYMENT_TABS.PAID]: "paid",
+    [PAYMENT_TABS.PENDING]: "pending",
+    [PAYMENT_TABS.PARTIAL]: "partial",
+    [PAYMENT_TABS.CANCELLED]: "cancelled",
+  };
 
   const [activeTab, setActiveTab] = useState(PAYMENT_TABS.ALL);
   const [search, setSearch] = useState("");
@@ -159,6 +174,16 @@ export default function PurchasePaymentOrdersPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
+  const [cursor, setCursor] = useState(null);
+  const [cursorStack, setCursorStack] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
+
+  useEffect(() => {
+    setCursor(null);
+    setCursorStack([]);
+    setSelectedId(null);
+  }, [search, secondaryFilter, dateFilter, activeTab]);
+
   useEffect(() => {
     let ignore = false;
 
@@ -167,15 +192,33 @@ export default function PurchasePaymentOrdersPage() {
         setIsLoading(true);
         setErrorMessage(null);
 
-        const data = await getPurchasePaymentOrders(search);
-        const mapped = data.payments.map(paymentOrderToRow);
+        const backendStatus = PAYMENT_TAB_STATUS[activeTab] || "";
+
+        const data = await getPurchasePaymentOrders({
+          search,
+          filter: secondaryFilter,
+          status: backendStatus,
+          since: dateFilter || undefined,
+          to: dateFilter || undefined,
+          cursor,
+          limit: PAGE_SIZE,
+        });
+
+        const rows = Array.isArray(data?.payments) ? data.payments : [];
+        const mapped = rows.map(paymentOrderToRow);
 
         if (!ignore) {
           setOrders(mapped);
+          setHasMore(Boolean(data?.hasMore ?? data?.has_more ?? false));
+
         }
       } catch (error) {
         if (!ignore) {
-          setErrorMessage(error.message || "No se pudieron cargar las órdenes de pago.");
+          setErrorMessage(
+            error.message || "No se pudieron cargar las órdenes de pago."
+          );
+          setOrders([]);
+          setHasMore(false);
         }
       } finally {
         if (!ignore) {
@@ -190,7 +233,13 @@ export default function PurchasePaymentOrdersPage() {
       ignore = true;
       clearTimeout(timeoutId);
     };
-  }, [search]);
+  }, [
+    search,
+    secondaryFilter,
+    dateFilter,
+    activeTab,
+    cursor,
+  ]);
 
   const counts = useMemo(() => {
     return {
@@ -202,28 +251,7 @@ export default function PurchasePaymentOrdersPage() {
     };
   }, [orders]);
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      if (activeTab !== PAYMENT_TABS.ALL && statusToTab(order.status) !== activeTab) return false;
-      if (statusFilter && normalizeStatus(order.status) !== statusFilter) return false;
-
-      if (secondaryFilter) {
-        const q = secondaryFilter.toLowerCase();
-
-        const matches =
-          order.paymentNumber.toLowerCase().includes(q) ||
-          order.supplier.toLowerCase().includes(q) ||
-          order.status.toLowerCase().includes(q) ||
-          String(order.total).includes(q);
-
-        if (!matches) return false;
-      }
-
-      if (dateFilter && order.date !== dateFilter) return false;
-
-      return true;
-    });
-  }, [orders, activeTab, secondaryFilter, statusFilter, dateFilter]);
+  const filteredOrders = orders;
 
   const clearFilters = () => {
     setSearch("");
@@ -234,6 +262,10 @@ export default function PurchasePaymentOrdersPage() {
     setShowStatusDrop(false);
     setActiveTab(PAYMENT_TABS.ALL);
     setSelectedId(null);
+
+    setCursor(null);
+    setCursorStack([]);
+    setHasMore(false);
   };
 
   const handleSelect = (id) => {
@@ -251,6 +283,26 @@ export default function PurchasePaymentOrdersPage() {
     PAYMENT_TABS.PARTIAL,
     PAYMENT_TABS.CANCELLED,
   ];
+
+  const handleNextPage = () => {
+    if (!orders.length || !hasMore) return;
+
+    const lastOrder = orders[orders.length - 1];
+
+      setCursorStack((prev) => [...prev, cursor]);
+      setCursor(lastOrder.id);
+      setSelectedId(null);
+  };
+
+  const handlePreviousPage = () => {
+    if (!cursorStack.length) return;
+
+    const previousCursor = cursorStack[cursorStack.length - 1];
+
+    setCursorStack((prev) => prev.slice(0, -1));
+    setCursor(previousCursor);
+    setSelectedId(null);
+  };
 
   return (
     <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
@@ -519,10 +571,30 @@ export default function PurchasePaymentOrdersPage() {
           </table>
         </div>
 
-        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+        <div className="flex flex-col gap-3 border-t border-border px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <span>
-            Mostrando {filteredOrders.length} de {orders.length} resultados
+            Mostrando {filteredOrders.length} resultados
           </span>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handlePreviousPage}
+              disabled={!cursorStack.length || isLoading}
+              className="rounded-[5px] border border-border px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNextPage}
+              disabled={!hasMore || isLoading}
+              className="rounded-[5px] border border-border px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>

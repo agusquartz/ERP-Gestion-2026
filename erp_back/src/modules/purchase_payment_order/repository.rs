@@ -210,29 +210,69 @@ pub async fn get_purchase_payment_orders(
 ) -> Result<Vec<PurchasePaymentOrderWithDetails>, db_config::DbError> {
     let client = db_config::get_client().await?;
 
-    let sql = format!("
-            {}
-	WHERE ppo.id IN (
-			SELECT DISTINCT ppo2.id
-			FROM purchase_payment_orders AS ppo2
-			INNER JOIN statuses AS st2 ON ppo2.status_id = st2.id
-			INNER JOIN suppliers AS sup2 ON ppo2.supplier_id = sup2.id
-			LEFT JOIN purchase_payment_order_details AS ppod2 ON ppod2.purchase_payment_order_id = ppo2.id
-			LEFT JOIN purchase_invoices AS pi2 ON ppod2.purchase_invoice_id = pi2.id
-			WHERE ($1::INT  IS NULL OR ppo2.id                      > $1)
-			AND ($3::TEXT IS NULL OR pi2.invoice_nr::TEXT ILIKE '%' || $3 || '%' OR sup2.name::TEXT ILIKE '%' || $3 || '%')
-			AND ($4::DATE IS NULL OR ppo2.created_at             >= $4)
-			AND ($5::DATE IS NULL OR ppo2.created_at             <= $5)
-			AND ($6::TEXT IS NULL OR st2.status ILIKE $6)
-			ORDER BY ppo2.id ASC
-			LIMIT $7
-			)
-	AND($2::TEXT IS NULL OR ppo.observations ILIKE '%' || $2 || '%')
-	ORDER BY ppo.id ASC, ppod.id ASC
-            ", BASE_QUERY); 
+    let sql = format!(
+        "
+        {base_query}
+        WHERE ppo.id IN (
+            SELECT DISTINCT ppo2.id
+            FROM purchase_payment_orders AS ppo2
+            INNER JOIN statuses AS st2
+                ON ppo2.status_id = st2.id
+            INNER JOIN suppliers AS sup2
+                ON ppo2.supplier_id = sup2.id
+            LEFT JOIN purchase_payment_order_details AS ppod2
+                ON ppod2.purchase_payment_order_id = ppo2.id
+            LEFT JOIN purchase_invoices AS pi2
+                ON ppod2.purchase_invoice_id = pi2.id
+            WHERE ($1::INT IS NULL OR ppo2.id > $1)
 
+            AND (
+                $2::TEXT IS NULL
+                OR ppo2.id::TEXT ILIKE '%' || $2 || '%'
+                OR sup2.name ILIKE '%' || $2 || '%'
+                OR st2.status ILIKE '%' || $2 || '%'
+                OR pi2.invoice_nr ILIKE '%' || $2 || '%'
+            )
 
-    let rows = client.query(&sql, &[&cursor, &search, &filter, &since, &to, &status, &limit]).await?;
+            AND (
+                $3::TEXT IS NULL
+                OR ppo2.observations ILIKE '%' || $3 || '%'
+                OR ppo2.id::TEXT ILIKE '%' || $3 || '%'
+                OR sup2.name ILIKE '%' || $3 || '%'
+                OR st2.status ILIKE '%' || $3 || '%'
+                OR pi2.invoice_nr ILIKE '%' || $3 || '%'
+            )
+
+            AND ($4::DATE IS NULL OR ppo2.created_at >= $4)
+            AND ($5::DATE IS NULL OR ppo2.created_at <= $5)
+
+            AND (
+                $6::TEXT IS NULL
+                OR st2.status ILIKE '%' || $6 || '%'
+            )
+
+            ORDER BY ppo2.id ASC
+            LIMIT $7
+        )
+        ORDER BY ppo.id ASC, ppod.id ASC
+        ",
+        base_query = BASE_QUERY
+    );
+
+    let rows = client
+        .query(
+            &sql,
+            &[
+                &cursor,
+                &search,
+                &filter,
+                &since,
+                &to,
+                &status,
+                &limit,
+            ],
+        )
+        .await?;
 
     Ok(rows_to_aggregate(rows))
 }
