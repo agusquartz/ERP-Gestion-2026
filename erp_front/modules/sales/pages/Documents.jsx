@@ -226,12 +226,8 @@ export default function DocumentsPage() {
   );
 
   return (
-<<<<<<< feature/KAN-71-centralize-frontend-styling
     
      <div className="flex h-[calc(100dvh-16px)] sm:h-[calc(100dvh-24px)] md:h-[calc(100dvh-48px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:p-4 md:p-6">
-=======
-    <div className="flex h-full min-h-0 flex-col bg-surface p-4 md:p-6 rounded-[5px]">
->>>>>>> develop
       <div className="mb-5">
         <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px] ">
           Buscar Documentos
