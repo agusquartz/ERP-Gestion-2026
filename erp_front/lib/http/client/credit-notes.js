@@ -14,6 +14,7 @@ export function listCreditNotes({ contains } = {}) {
 
   if (contains?.trim()) {
     params.set("search", contains.trim());
+	params.set("limit", 10000);
   }
 
   const queryString = params.toString();

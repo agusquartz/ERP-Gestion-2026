@@ -112,7 +112,9 @@ pub async fn query_credit_notes(
 			ORDER BY cn2.id ASC
 			LIMIT $7
 			)
-	AND($2::TEXT IS NULL OR cn.credit_note_nr     ILIKE '%' || $2 || '%')
+	AND($2::TEXT IS NULL OR cn.credit_note_nr ILIKE '%' || $2 || '%' 
+        OR c.name ILIKE '%' || $2 || '%' 
+        OR c.surname ILIKE '%' || $2 || '%')
 	ORDER BY cn.id ASC, cnd.id ASC
             ", CREDIT_NOTES_SELECT_BASE); 
 
