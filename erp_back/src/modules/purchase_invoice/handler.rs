@@ -17,10 +17,19 @@ use crate::modules::purchase_invoice::{
     dto::{
         query::PurchaseInvoicesListQuery,
         create::CreatePurchaseInvoiceDto,
-        response::{PaginatedInvoicesResponse, PurchaseInvoiceDetailResponse},
+        response::{PaginatedInvoicesResponse, PurchaseInvoiceDetailResponse, PurchaseInvoiceResponse},
     },
     service,
 };
+pub async fn get_purchase_invoices_by_order_id(
+    Path(id): Path<i32>,
+) -> Result<Json<Option<Vec<PurchaseInvoiceResponse>>>, StatusCode> {
+    dbg!(&id);
+    let result = service::get_purchase_invoices_by_order_id(id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(result))
+}
 
 /// GET /purchases/purchase-invoices
 ///

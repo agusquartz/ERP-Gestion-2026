@@ -274,3 +274,29 @@ pub async fn create(
 
     Ok(invoice_id)
 }
+
+pub async fn query_invoices_by_order_id(
+    order_id: i32
+) -> Result<Option<Vec<PurchaseInvoice>>, db_config::DbError> {
+
+    let client = db_config::get_client().await?;
+
+    let sql = format!("
+        {}
+        WHERE pi.id IN (
+            SELECT DISTINCT pi2.id
+            FROM purchase_invoices pi2
+            WHERE (pi2.purchase_order_id = $1)
+            ORDER BY pi2.id ASC
+        )
+        ORDER BY pi.id ASC, pid.id ASC
+    ", PURCHASE_INVOICES_SELECT_BASE);
+
+    let rows = client.query(
+        &sql,
+        &[&order_id],
+    ).await?;
+
+    Ok(Some(row_to_invoices(rows)))
+}
+
