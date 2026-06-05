@@ -1,0 +1,150 @@
+use crate::modules::product::dto::{
+    ProductListQuery,
+    ProductResponse, 
+    PatchProductDto,
+    response::ListProductView,
+};
+use crate::modules::product::repository;
+use crate::shared::db_config;
+
+/// Service-level error type for product operations.
+///
+/// Wraps database errors and domain validation errors.
+#[derive(Debug)]
+pub enum ServiceError {
+    Db(db_config::DbError),
+    Validation(String),
+}
+
+/// Converts a database error into a service error.
+impl From<db_config::DbError> for ServiceError {
+    fn from(value: db_config::DbError) -> Self {
+        Self::Db(value)
+    }
+}
+
+/// Formats the error for user-facing messages or logs.
+impl std::fmt::Display for ServiceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ServiceError::Db(_) => write!(f, "database error"),
+            ServiceError::Validation(msg) => write!(f, "validation error: {msg}"),
+        }
+    }
+}
+
+impl std::error::Error for ServiceError {}
+
+/// Returns a list of products.
+///
+/// If `contains` is provided, filters products by code or description.
+/// Otherwise, returns all products.
+pub async fn list_products(query: ProductListQuery) -> Result<ListProductView, ServiceError> {
+    let rows= repository::query_products(
+        query.search, 
+        query.filter, 
+        query.since, 
+        query.to, 
+        query.status, 
+        query.cursor, 
+        query.limit + 1,
+    ).await?;
+
+    let mut products: Vec<ProductResponse> = rows.into_iter().map(ProductResponse::from).collect();
+
+    let limit = query.limit as usize;
+
+    let has_more = products.len() > limit; 
+
+    products.truncate(limit);
+    //create the list view
+    let view = ListProductView {
+        products: products,
+        has_more: has_more,
+    };
+
+    Ok(view)
+}
+
+/// Retrieves a single product by its ID.
+///
+/// Returns:
+/// - `Ok(Some(product))` if found
+/// - `Ok(None)` if the product does not exist
+pub async fn get_product(id: i32) -> Result<Option<ProductResponse>, ServiceError> {
+    let product = repository::query_product_by_id(id).await?;
+    Ok(product.map(ProductResponse::from))
+}
+
+/// Partially updates a product.
+///
+/// Applies only the fields provided in `PatchProductDto`.
+///
+/// # Errors
+///
+/// - Returns `Validation` error if the patch is empty
+/// - Returns `Db` error if the database operation fails
+///
+/// # Returns
+///
+/// - `Ok(Some(product))` if updated successfully
+/// - `Ok(None)` if the product does not exist
+pub async fn patch_product(
+    id: i32,
+    patch: PatchProductDto,
+) -> Result<Option<ProductResponse>, ServiceError> {
+    if patch.is_empty() {
+        return Err(ServiceError::Validation(
+            "patch body cannot be empty".to_string(),
+        ));
+    }
+
+    let product = repository::patch_product(id, &patch).await?;
+    Ok(product.map(ProductResponse::from))
+}
+
+
+/// Retrieves a single product by its code.
+///
+/// Returns:
+/// - `Ok(Some(product))` if found
+/// - `Ok(None)` if the product does not exist
+pub async fn get_product_by_code(
+    code: String,
+) -> Result<Option<ProductResponse>, ServiceError> {
+    let product = repository::get_product_by_code(&code).await?;
+    Ok(product.map(ProductResponse::from))
+}
+
+
+pub async fn decrease_stock(
+    tx: &tokio_postgres::Transaction<'_>,
+    product_id: i32,
+    amount: i32,
+) -> Result<(), db_config::DbError> {
+    if amount <= 0 {
+        return Err(db_config::DbError::Other("amount must be > 0".into()));
+    }
+
+    let ok = repository::decrease_stock(tx, product_id, amount).await?;
+
+    if !ok {
+        return Err(db_config::DbError::Other("insufficient stock".into()));
+    }
+
+    Ok(())
+}
+
+pub async fn increase_stock(
+    tx: &tokio_postgres::Transaction<'_>,
+    product_id: i32,
+    amount: i32,
+) -> Result<(), db_config::DbError> {
+    if amount <= 0 {
+        return Err(db_config::DbError::Other("amount must be > 0".into()));
+    }
+
+    repository::increase_stock(tx, product_id, amount).await?;
+
+    Ok(())
+}
