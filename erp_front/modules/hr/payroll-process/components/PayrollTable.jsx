@@ -4,159 +4,208 @@ import { formatCurrency } from "./utils";
 import { EyeIcon } from "@/shared/components/Icons";
 
 export function PayrollTable({
-  employees,
+  employees = [],
   loading,
   error,
-  excludedIds,
+  excludedIds = [],
   onToggleEmployee,
   onToggleAll,
   onView,
 }) {
-  
   // Función para limpiar la fecha ISO (ej: 2026-06-04T16:28... -> 04/06/2026)
   const formatDate = (dateString) => {
     if (!dateString) return "Sin registros";
+
     try {
       const date = new Date(dateString);
+
       // Validamos si es una fecha válida antes de operar
       if (isNaN(date.getTime())) return "Sin registros";
-      
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
+
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
       const year = date.getFullYear();
-      
+
       return `${day}/${month}/${year}`; // Formato amigable DD/MM/AAAA
     } catch (e) {
       return "Sin registros";
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-slate-400 text-[14px]">
-        Cargando empleados...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-20 text-red-400 text-[14px]">
-        {error}
-      </div>
-    );
-  }
-
-  if (!loading && (!employees || employees.length === 0)) {
-    return (
-      <div className="flex items-center justify-center py-20 text-slate-400 text-[14px]">
-        No se encontraron empleados activos.
-      </div>
-    );
-  }
-
   const allIds = employees.map((e) => e.id);
   const allSelected = excludedIds.length === 0;
 
   return (
-    
-    <div className="max-h-[50vh] overflow-y-auto rounded-[5px] border border-slate-200 shadow-sm bg-white">
-      <table className="w-full text-[14px] text-slate-700">
-        <thead className="sticky top-0 z-10 bg-[#f8fafc]">
-          <tr className="border-b border-slate-200 text-[13px] text-slate-500">
-            <th className="px-6 py-3.5 text-left font-semibold uppercase tracking-wider">
-              Empleado
-            </th>
-            <th className="px-6 py-3.5 text-left font-semibold uppercase tracking-wider">
-              Cargo
-            </th>
-            {/* NUEVA COLUMNA: Encabezado */}
-            <th className="px-6 py-3.5 text-center font-semibold uppercase tracking-wider">
-              Último Cálculo
-            </th>
-            <th className="px-6 py-3.5 text-right font-semibold uppercase tracking-wider">
-              Ingreso Bruto
-            </th>
-            <th className="px-6 py-3.5 text-right font-semibold uppercase tracking-wider">
-              Deducciones
-            </th>
-            <th className="px-6 py-3.5 text-right font-semibold uppercase tracking-wider">
-              Ingreso Neto
-            </th>
-            <th className="px-6 py-3.5 text-center font-semibold uppercase tracking-wider">
-              Acciones
-            </th>
-            <th className="px-4 py-3.5 text-center font-semibold uppercase tracking-wider">
-              <div className="flex items-center justify-center gap-1.5">
-                <span className="text-[12px]">Todos</span>
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={() => onToggleAll(allIds)}
-                  className="h-4 w-4 rounded border-slate-300 accent-[#2b6df5] cursor-pointer"
-                />
-              </div>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {employees.map((emp) => {
-            const isExcluded = excludedIds.includes(emp.id);
-            const grossIncome = emp.grossIncome ?? 0;
-            const deductions = emp.deductions ?? 0;
-            const netIncome = emp.netIncome ?? 0;
+   
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+      <div className="min-h-0 flex-1 overflow-auto">
+        <table className="w-full min-w-[1150px] table-fixed border-collapse">
+          <colgroup>
+            <col />
+            <col className="w-[180px]" />
+            <col className="w-[160px]" />
+            <col className="w-[160px]" />
+            <col className="w-[160px]" />
+            <col className="w-[160px]" />
+            <col className="w-[120px]" />
+            <col className="w-[120px]" />
+          </colgroup>
 
-            return (
-              <tr
-                key={emp.id}
-                className={`transition-colors ${
-                  isExcluded
-                    ? "opacity-40 bg-slate-50"
-                    : "hover:bg-[#F2F3F7]/60"
-                }`}
-              >
-                <td className="px-6 py-3.5 font-medium text-slate-900">
-                  {emp.first_name} {emp.last_name}
-                </td>
-                <td className="px-6 py-3.5 text-slate-600">{emp.position}</td>
-                
-                {/* NUEVA COLUMNA: Contenido de la celda formateada */}
-                <td className="px-6 py-3.5 text-center text-slate-500 text-[13px]">
-                  {formatDate(emp.lastTimeComputed)}
-                </td>
+          <thead>
+            <tr className="bg-background">
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Empleado
+              </th>
 
-                <td className="px-6 py-3.5 text-right text-slate-700">
-                  {formatCurrency(grossIncome)}
-                </td>
-                <td className="px-6 py-3.5 text-right text-slate-700">
-                  {formatCurrency(deductions)}
-                </td>
-                <td className="px-6 py-3.5 text-right font-semibold text-slate-900">
-                  {formatCurrency(netIncome)}
-                </td>
-                <td className="px-6 py-3.5 text-center">
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-[5px] p-1.5 text-slate-500 duration-200 hover:bg-slate-100"
-                    onClick={() => onView?.(emp)}
-                    title="Ver detalle de pago"
-                  >
-                    <EyeIcon className="w-4 h-4" />
-                  </button>
-                </td>
-                <td className="px-4 py-3.5 text-center">
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Cargo
+              </th>
+
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Último Cálculo
+              </th>
+
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Ingreso Bruto
+              </th>
+
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Deducciones
+              </th>
+
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Ingreso Neto
+              </th>
+
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Acción
+              </th>
+
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="flex items-center justify-center gap-1.5">
+                  <span>Todos</span>
+
                   <input
                     type="checkbox"
-                    checked={!isExcluded}
-                    onChange={() => onToggleEmployee(emp.id)}
-                    className="h-4 w-4 rounded border-slate-300 accent-[#2b6df5] cursor-pointer"
+                    checked={allSelected}
+                    onChange={() => onToggleAll(allIds)}
+                    className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#2b6df5]"
                   />
+                </div>
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading && (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="py-9 text-center text-sm text-muted-foreground"
+                >
+                  Cargando empleados...
                 </td>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            )}
+
+            {error && !loading && (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="py-9 text-center text-sm text-red-500"
+                >
+                  {error}
+                </td>
+              </tr>
+            )}
+
+            {!loading && !error && employees.length === 0 && (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="py-9 text-center text-sm text-muted-foreground"
+                >
+                  No se encontraron empleados activos.
+                </td>
+              </tr>
+            )}
+
+            {!loading &&
+              !error &&
+              employees.map((emp) => {
+                const isExcluded = excludedIds.includes(emp.id);
+                const grossIncome = emp.grossIncome ?? 0;
+                const deductions = emp.deductions ?? 0;
+                const netIncome = emp.netIncome ?? 0;
+
+                return (
+                  <tr
+                    key={emp.id}
+                    className={`group border-b border-gray-100 transition-colors ${
+                      isExcluded
+                        ? "bg-slate-50 opacity-40"
+                        : "hover:bg-[#f0f7ff]"
+                    }`}
+                  >
+                    <td className="truncate px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
+                      {emp.first_name} {emp.last_name}
+                    </td>
+
+                    <td
+                      className="truncate px-4 py-3.5 text-sm font-medium text-foreground"
+                      title={emp.position}
+                    >
+                      {emp.position}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-center text-sm text-foreground">
+                      {formatDate(emp.lastTimeComputed)}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right text-sm text-foreground">
+                      {formatCurrency(grossIncome)}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right text-sm text-foreground">
+                      {formatCurrency(deductions)}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right text-sm font-bold text-foreground">
+                      {formatCurrency(netIncome)}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right">
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          className="inline-flex rounded-[5px] p-1 text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary"
+                          onClick={() => onView?.(emp)}
+                          title="Ver detalle de pago"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={!isExcluded}
+                        onChange={() => onToggleEmployee(emp.id)}
+                        className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#2b6df5]"
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+
+     
+      <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+        <span>Total empleados: {employees.length}</span>
+      </div>
     </div>
   );
 }

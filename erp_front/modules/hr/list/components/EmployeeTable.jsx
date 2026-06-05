@@ -1,86 +1,151 @@
 "use client";
 
 import { getStatusStyle } from "./utils";
-import { EyeIcon } from "@/shared/components/Icons";
 
-export function EmployeeTable({ employees, loading, error, onEdit, onView }) {
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-slate-400 text-[14px]">
-        Cargando personal...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-20 text-red-400 text-[14px]">
-        {error}
-      </div>
-    );
-  }
-
-  if (!loading && (!employees || employees.length === 0)) {
-    return (
-      <div className="flex items-center justify-center py-20 text-slate-400 text-[14px]">
-        No se encontraron registros de empleados.
-      </div>
-    );
-  }
-
+export function EmployeeTable({ employees = [], loading, error, onEdit, onView }) {
   return (
-    <div className="max-h-[65vh] overflow-y-auto rounded-[5px] border border-slate-200 shadow-sm bg-white">
-      <table className="w-full text-[14px] text-slate-700">
-        <thead className="sticky top-0 z-10 bg-[#f8fafc]">
-          <tr className="border-b border-slate-200 text-[13px] font-bold text-slate-500">
-            <th className="px-6 py-3.5 text-left font-semibold uppercase tracking-wider">Empleado</th>
-            <th className="px-6 py-3.5 text-left font-semibold uppercase tracking-wider">Cargo / Puesto</th>
-            <th className="px-6 py-3.5 text-center font-semibold uppercase tracking-wider">Estado</th>
-            <th className="px-6 py-3.5 text-center font-semibold uppercase tracking-wider">Acciones</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {employees.map((emp) => {
-            
-            // CONTROL DE SEGURIDAD: Si emp.status no existe o no es válido,
-            // le pasamos "active" por defecto para evitar que la app crashee.
-            const currentStatus = emp.status === "active" || emp.status === "inactive" 
-              ? emp.status 
-              : "active";
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+      <div className="min-h-0 flex-1 overflow-auto">
+        <table className="w-full min-w-[760px] table-fixed border-collapse">
+          <colgroup>
+            <col />
+            <col className="w-[260px]" />
+            <col className="w-[150px]" />
+            <col className="w-[130px]" />
+          </colgroup>
 
-            // Ahora invocamos de manera segura la función de utilidades
-            const { label, color, bg, dot, border } = getStatusStyle(currentStatus);
+          <thead>
+            <tr className="bg-background">
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Empleado
+              </th>
 
-            return (
-              <tr key={emp.id} className="hover:bg-[#F2F3F7]/60 transition-colors">
-                <td className="px-6 py-3.5 font-medium text-slate-900">
-                  {emp.first_name} {emp.last_name}
-                </td>
-                <td className="px-6 py-3.5 text-slate-600">{emp.position}</td>
-                <td className="px-6 py-3.5 text-center">
-                  <span className={`border ${border} inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1 text-[12px] font-semibold ${bg} ${color}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-                    {label}
-                  </span>
-                </td>
-                <td className="px-6 py-3.5 text-center space-x-1">
-                  {/* BOTÓN EDITAR: */}
-                  <button
-                    className="inline-flex items-center justify-center rounded-[5px] p-1.5 text-slate-500 duration-200 hover:bg-slate-100"
-                    onClick={() => onEdit?.(emp)}
-                    title="Editar empleado"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                    </svg>
-                  </button>
-                  
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Cargo / Puesto
+              </th>
+
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Estado
+              </th>
+
+              <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Acciones
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading && (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="py-9 text-center text-sm text-muted-foreground"
+                >
+                  Cargando personal...
                 </td>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            )}
+
+            {error && !loading && (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="py-9 text-center text-sm text-red-500"
+                >
+                  {error}
+                </td>
+              </tr>
+            )}
+
+            {!loading && !error && employees.length === 0 && (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="py-9 text-center text-sm text-muted-foreground"
+                >
+                  No se encontraron registros de empleados.
+                </td>
+              </tr>
+            )}
+
+            {!loading &&
+              !error &&
+              employees.map((emp) => {
+                // CONTROL DE SEGURIDAD: Si emp.status no existe o no es válido,
+                // le pasamos "active" por defecto para evitar que la app crashee.
+                const currentStatus =
+                  emp.status === "active" || emp.status === "inactive"
+                    ? emp.status
+                    : "active";
+
+                // Ahora invocamos de manera segura la función de utilidades
+                const { label, color, bg, dot, border } =
+                  getStatusStyle(currentStatus);
+
+                return (
+                  <tr
+                    key={emp.id}
+                    className="group border-b border-gray-100 transition-colors hover:bg-[#f0f7ff]"
+                  >
+                    <td className="truncate px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
+                      {emp.first_name} {emp.last_name}
+                    </td>
+
+                    <td
+                      className="truncate px-4 py-3.5 text-sm font-medium text-foreground"
+                      title={emp.position}
+                    >
+                      {emp.position}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-center">
+                      <div className="flex justify-center">
+                        <span
+                          className={`inline-flex min-w-[96px] items-center justify-center gap-1.5 rounded-full border px-3 py-0.5 text-[10px] font-bold ${border} ${bg} ${color}`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+                          {label}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right">
+                      <div className="flex justify-end">
+                        {/* BOTÓN EDITAR */}
+                        <button
+                          type="button"
+                          className="inline-flex rounded-[5px] p-1 text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary"
+                          onClick={() => onEdit?.(emp)}
+                          title="Editar empleado"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                            className="h-5 w-5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* CAMBIO: footer igual al estilo de DocumentsTable */}
+      <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+        <span>Total empleados: {employees.length}</span>
+      </div>
     </div>
   );
 }

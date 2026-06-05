@@ -1,132 +1,189 @@
 "use client";
 
-import { usePayrollHistory } from "./hook/usePayrollHistory"; // Corregido a hooks en plural
-import { Eye, Layers } from "lucide-react"; 
+import { usePayrollHistory } from "./hook/usePayrollHistory";
+import { Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function PayrollList({ onSelectProcess }) {
   const { history, loading, error } = usePayrollHistory();
   const router = useRouter();
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 space-y-4">
-        <div className="w-8 h-8 border-4 border-[#2b6df5] border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-slate-500 font-medium">Cargando historial...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 bg-red-50 border border-red-200 rounded-xl max-w-2xl mx-auto my-12 text-center">
-        <p className="text-sm text-red-600 font-medium">⚠️ {error}</p>
-      </div>
-    );
-  }
-
   const getStateBadge = (state) => {
     const s = state?.toLowerCase();
+
     if (s === "paid") {
       return (
-        <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700 border border-green-200">
+        <span className="inline-flex min-w-[96px] items-center justify-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-0.5 text-[10px] font-bold text-green-700">
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
           PAID
         </span>
       );
     }
+
     if (s === "computed") {
       return (
-        <span className="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 border border-amber-200">
+        <span className="inline-flex min-w-[96px] items-center justify-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-0.5 text-[10px] font-bold text-amber-700">
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
           COMPUTED
         </span>
       );
     }
+
     return (
-      <span className="inline-flex items-center rounded-md bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-700 border border-slate-200">
-        {state?.toUpperCase()}
+      <span className="inline-flex min-w-[96px] items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-0.5 text-[10px] font-bold text-slate-700">
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        {state?.toUpperCase() || "SIN ESTADO"}
       </span>
     );
   };
 
   return (
-    /* DIV BLANCO FIJO: Estructura idéntica h-[calc(100vh-140px)] para simetría total */
-    <div className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
-      
-      {/* SECCIÓN 1: CABECERA / TÍTULO */}
-      <div className="p-6 flex items-center justify-between border-b border-slate-100 flex-shrink-0">
-        <div className="flex items-center space-x-3">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Historial de Nóminas</h1>
-            <p className="text-sm text-slate-500">Registros y auditoría de cierres mensuales asentados</p>
-          </div>
-        </div>
+    // CAMBIO: contenedor principal estilo DocumentsPage
+    <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
+      {/* CAMBIO: header principal estilo DocumentsPage */}
+      <div className="mb-5 shrink-0">
+        <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
+          Historial de Nóminas
+        </h1>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consultá registros y auditoría de cierres mensuales asentados.
+        </p>
+
+        <div className="mt-2 h-px w-full bg-border" />
       </div>
 
-      {/* SECCIÓN 2: TABLA ENMARCADA POR DENTRO CON MARGEN INTERNO (px-6 pb-6 pt-6) */}
-      <div className="flex-1 px-6 pb-6 pt-6 min-h-0 flex flex-col">
-        {/* Recuadro propio de la tabla con bordes definidos y scroll interno independiente */}
-        <div className="flex-1 w-full rounded-xl border border-slate-200 bg-white overflow-hidden flex flex-col shadow-xs">
-          
-          <div className="max-h-[65vh] overflow-y-auto rounded-[5px] border border-slate-200 shadow-sm bg-white">
-            <table className="w-full text-left text-[14px] text-slate-700 border-collapse">
-              <thead className="text-slate-500 font-semibold border-b border-slate-200">
+      {/* CAMBIO: tabla estilo DocumentsTable */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[5px] border border-border bg-surface shadow-panel">
+        <div className="min-h-0 flex-1 overflow-auto">
+          <table className="w-full min-w-[950px] table-fixed border-collapse">
+            <colgroup>
+              <col className="w-[160px]" />
+              <col className="w-[170px]" />
+              <col className="w-[170px]" />
+              <col />
+              <col className="w-[150px]" />
+              <col className="w-[120px]" />
+            </colgroup>
+
+            <thead>
+              <tr className="bg-background">
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Id de Proceso
+                </th>
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Fin del Periodo
+                </th>
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Día de Pago
+                </th>
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Tipo de Proceso
+                </th>
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Estado
+                </th>
+
+                <th className="sticky top-0 border-b border-border bg-background px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Acción
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading && (
                 <tr>
-                  <th className="sticky top-0 bg-[#f8fafc] z-10 px-6 py-3.5 font-bold shadow-[inset_0_-1px_0_rgba(226,232,240,1)]">Id de Proceso</th>
-                  <th className="sticky top-0 bg-[#f8fafc] z-10 px-6 py-3.5 font-bold shadow-[inset_0_-1px_0_rgba(226,232,240,1)]">Fin del Periodo</th>
-                  <th className="sticky top-0 bg-[#f8fafc] z-10 px-6 py-3.5 font-bold shadow-[inset_0_-1px_0_rgba(226,232,240,1)]">Día de Pago</th>
-                  <th className="sticky top-0 bg-[#f8fafc] z-10 px-6 py-3.5 font-bold shadow-[inset_0_-1px_0_rgba(226,232,240,1)]">Tipo de Proceso</th>
-                  <th className="sticky top-0 bg-[#f8fafc] z-10 px-6 py-3.5 font-bold shadow-[inset_0_-1px_0_rgba(226,232,240,1)] text-center">Estado</th>
-                  <th className="sticky top-0 bg-[#f8fafc] z-10 px-6 py-3.5 font-bold shadow-[inset_0_-1px_0_rgba(226,232,240,1)] text-center">Acciones</th>
+                  <td
+                    colSpan={6}
+                    className="py-9 text-center text-sm text-muted-foreground"
+                  >
+                    Cargando historial...
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {history.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-12 text-slate-400 italic">
-                      No hay registros históricos disponibles en este momento.
+              )}
+
+              {error && !loading && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="py-9 text-center text-sm text-red-500"
+                  >
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !error && history.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="py-9 text-center text-sm text-muted-foreground"
+                  >
+                    No hay registros históricos disponibles en este momento.
+                  </td>
+                </tr>
+              )}
+
+              {!loading &&
+                !error &&
+                history.map((process) => (
+                  <tr
+                    key={process.id}
+                    className="group border-b border-gray-100 transition-colors hover:bg-[#f0f7ff]"
+                  >
+                    <td className="px-4 py-3.5 text-sm font-bold text-[#2b6df5]">
+                      #{process.id}
                     </td>
-                  </tr>
-                ) : (
-                  history.map((process) => (
-                    <tr key={process.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-4 font-mono font-bold text-slate-900">#{process.id}</td>
-                      <td className="px-6 py-4 text-slate-600 font-medium">
-                        {process.cutoffDate || process.cutoff_date || "--/--/----"}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 font-mono">
-                        {process.payDate || process.pay_date || "--/--/----"}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-slate-700 capitalize">
-                        {process.processType?.toLowerCase() || process.process_type || "Mensual"}
-                      </td>
-                      <td className="px-6 py-4 text-center">{getStateBadge(process.state)}</td>
-                      <td className="px-6 py-4 text-center">
+
+                    <td className="px-4 py-3.5 text-sm text-foreground">
+                      {process.cutoffDate || process.cutoff_date || "--/--/----"}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-sm text-foreground">
+                      {process.payDate || process.pay_date || "--/--/----"}
+                    </td>
+
+                    <td className="truncate px-4 py-3.5 text-sm font-medium capitalize text-foreground">
+                      {process.processType?.toLowerCase() ||
+                        process.process_type ||
+                        "Mensual"}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-center">
+                      <div className="flex justify-center">
+                        {getStateBadge(process.state)}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right">
+                      <div className="flex justify-end">
                         <button
                           type="button"
-                          onClick={() => router.push(`/hr/payrolls/${String(process.id)}`)}
-                          className="p-1.5 rounded-md text-slate-500 hover:text-[#2b6df5] hover:bg-slate-100 transition-all active:scale-95"
+                          onClick={() =>
+                            router.push(`/hr/payrolls/${String(process.id)}`)
+                          }
+                          className="inline-flex rounded-[5px] p-1 text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary"
                           title="Ver detalles de la nómina"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="h-5 w-5" />
                         </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
 
-          {/* TOTALIZADOR / PIE DE TABLA HISTÓRICA */}
-          <div className="bg-[#f8fafc] border-t border-slate-200 px-6 py-3.5 flex items-center justify-between relative z-20 flex-shrink-0">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Cómputos totales registrados: {history.length}
-            </span>
-          </div>
-
+        {/* CAMBIO: footer igual al estilo de DocumentsTable */}
+        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
+          <span>Cómputos totales registrados: {history.length}</span>
         </div>
       </div>
-
     </div>
   );
 }

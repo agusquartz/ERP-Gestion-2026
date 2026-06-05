@@ -28,9 +28,10 @@ export default function EmployeesPage() {
   const normalizedEmployees = (employees || []).map(emp => {
     // Corregido: isActive es booleano, no hay campo "status"
     let calculatedStatus = "active";
+
     if (emp.is_active !== undefined) {
       calculatedStatus = emp.is_active ? "active" : "inactive";
-    } else if (emp.isActive !== undefined) {         
+    } else if (emp.isActive !== undefined) {
       calculatedStatus = emp.isActive ? "active" : "inactive";
     }
 
@@ -43,7 +44,7 @@ export default function EmployeesPage() {
       birthDate: emp.birthDate || emp.birth_date || "",
       document: emp.document || "",
       baseSalary: emp.currentContract?.salary || emp.baseSalary || emp.base_salary || 0,
-      relatives: emp.relatives || []
+      relatives: emp.relatives || [],
     };
   });
 
@@ -54,6 +55,7 @@ export default function EmployeesPage() {
       } else {
         await createEmployee(payload);
       }
+
       setIsModalOpen(false);
       setSelectedEmployee(null);
     } catch (err) {
@@ -79,48 +81,57 @@ export default function EmployeesPage() {
   const hasRecords = normalizedEmployees.length > 0;
 
   return (
-    <div className="flex h-[calc(100dvh-16px)] sm:h-[calc(100dvh-24px)] md:h-[calc(100dvh-48px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:p-4 md:p-6">
-      {/* Encabezado */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Empleados</h1>
-        <p className="text-sm text-slate-500">Gestión de personal</p>
+    // CAMBIO: contenedor principal igual al estilo de DocumentsPage
+    <div className="flex h-[calc(100dvh-16px)] min-h-0 flex-col overflow-hidden rounded-[5px] bg-surface p-3 sm:h-[calc(100dvh-24px)] sm:p-4 md:h-[calc(100dvh-48px)] md:p-6">
+      {/* CAMBIO: header principal estilo DocumentsPage */}
+      <div className="mb-5 shrink-0">
+        <h1 className="text-[24px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px] md:text-[32px]">
+          Empleados
+        </h1>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consultá y gestioná el personal registrado.
+        </p>
+
+        <div className="mt-2 h-px w-full bg-border" />
       </div>
 
-      <div className="w-full bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-        
-        {/* Filtros */}
-        <EmployeeFilters 
+      {/* CAMBIO: filtros separados del marco de tabla, como DocumentsSearch */}
+      <div className="shrink-0">
+        <EmployeeFilters
           search={search}
           setSearch={setSearch}
           status={status}
           setStatus={setStatus}
-          onNewEmployeeClick={handleNewEmployeeClick} 
+          onNewEmployeeClick={handleNewEmployeeClick}
         />
+      </div>
 
-        {/* Tabla de Empleados */}
-        <EmployeeTable 
-          employees={normalizedEmployees} 
-          loading={loading} 
+      {/* CAMBIO: área de tabla con altura controlada para que no empuje la pantalla */}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <EmployeeTable
+          employees={normalizedEmployees}
+          loading={loading}
           error={error}
           onEdit={handleEditClick}
           onView={(emp) => console.log("Visualizar ficha:", emp)}
         />
-
-        {/* Paginación */}
-        {!loading && !error && hasMore && hasRecords && (
-          <div className="flex justify-center pt-2">
-            <button
-              onClick={loadMore}
-              className="rounded-[5px] border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs"
-            >
-              Cargar más registros
-            </button>
-          </div>
-        )}
       </div>
 
+      {/* CAMBIO: paginación abajo, fija dentro del layout */}
+      {!loading && !error && hasMore && hasRecords && (
+        <div className="mt-4 flex shrink-0 justify-center">
+          <button
+            onClick={loadMore}
+            className="rounded-[8px] border border-slate-300 px-6 py-2.5 text-[14px] font-bold text-slate-700 transition-all hover:bg-slate-50 hover:shadow-sm active:scale-95"
+          >
+            Cargar más registros
+          </button>
+        </div>
+      )}
+
       {/* Modales unificados */}
-      <EmployeeModals 
+      <EmployeeModals
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSave={handleSaveEmployee}

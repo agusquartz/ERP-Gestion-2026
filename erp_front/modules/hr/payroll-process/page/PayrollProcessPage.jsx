@@ -81,7 +81,7 @@ export default function PayrollProcessPage() {
         />
 
       {/* SECCIÓN 3: TABLA ENMARCADA POR DENTRO CON SCROLL INDEPENDIENTE */}
-      <div className="flex-1 px-6 pb-4 pt-4 min-h-0 flex flex-col space-y-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
         
         {/* Alerta de cambios pendientes (UX Helper) */}
         {!isComputed && allEmployees.length > 0 && startDate && endDate && (
