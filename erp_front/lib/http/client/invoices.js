@@ -12,7 +12,8 @@ export function listInvoices({ contains } = {}) {
   const params = new URLSearchParams();
 
   if (contains?.trim()) {
-    params.set("contains", contains.trim());
+    params.set("search", contains.trim());
+	params.set("limit", 10000);
   }
 
   const queryString = params.toString();
