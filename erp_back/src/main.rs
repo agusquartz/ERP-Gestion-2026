@@ -32,6 +32,7 @@ mod modules {
     pub mod purchase_payment_order;
     pub mod supplier;
     pub mod accounting;
+    pub mod employee;
 }
 
 
@@ -126,6 +127,7 @@ async fn main() {
         .merge(modules::purchase_payment_order::router::purchase_payment_order_router())
         .merge(modules::supplier::router::supplier_router())
         .merge(modules::accounting::router::accounting_router())
+        .merge(modules::employee::router::employee_router())
         .layer(CookieManagerLayer::new())
         .layer(cors);
 
