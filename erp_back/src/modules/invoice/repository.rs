@@ -107,11 +107,7 @@ pub async fn query_invoices(
             INNER JOIN clients AS c2 ON inv2.client_id = c2.id
             INNER JOIN sale_conditions AS s2 ON inv2.sale_condition_id = s2.id
             WHERE ($1::INT  IS NULL OR inv2.id                      > $1)
-<<<<<<< HEAD
             AND ($3::TEXT IS NULL OR p2.description::TEXT ILIKE '%' || $3 || '%' OR c2.name ILIKE '%' || $3 || '%' OR c2.surname ILIKE '%' || $3 || '%' OR ( lpad(inv.establishment::text, 3, '0') || '-' || lpad(inv.emission_point::text, 3, '0') || '-' || lpad(inv.invoice_sequential::text, 7, '0') ILIKE $3))
-=======
-            AND ($3::TEXT IS NULL OR p2.description::TEXT ILIKE '%' || $3 || '%' OR c2.name ILIKE '%' || $3 || '%' OR c2.surname ILIKE '%' || $3 || '%')
->>>>>>> 96b3442 (KAN-76: Add cursor and queries to invoices)
             AND ($4::DATE IS NULL OR inv2.created_at             >= $4)
             AND ($5::DATE IS NULL OR inv2.created_at             <= $5)
             ORDER BY inv2.id ASC
