@@ -3,8 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { getSuppliers } from "@/lib/http/client/supplier";
+import {
+  getSuppliersView,
+  getCategories,
+} from "@/lib/http/client/supplier";
 import { fetchPurchaseInvoices } from "@/lib/http/client/purchase-invoices";
+
+const SUPPLIER_PAGE_SIZE = 10;
 
 // Helper: format currency
 function formatMoney(value) {
@@ -85,6 +90,42 @@ function TrashIcon({ className = "" }) {
   );
 }
 
+function SupplierCategoryBadges({ categories = [] }) {
+  if (!categories.length) {
+    return (
+      <span className="text-xs text-muted-foreground">
+        Sin categorías
+      </span>
+    );
+  }
+
+  const visibleCategories = categories.slice(0, 2);
+  const hiddenCount = categories.length - visibleCategories.length;
+  const title = categories.map((category) => category.name).join(", ");
+
+  return (
+    <div
+      className="flex max-w-[260px] flex-wrap gap-1.5"
+      title={title}
+    >
+      {visibleCategories.map((category) => (
+        <span
+          key={category.id}
+          className="max-w-[110px] truncate rounded-full border border-border bg-background px-2 py-0.5 text-xs text-secondary"
+        >
+          {category.name}
+        </span>
+      ))}
+
+      {hiddenCount > 0 && (
+        <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+          +{hiddenCount}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ---------- Main Page Component ----------
 export default function NewPaymentOrderPage() {
   const router = useRouter();
@@ -99,6 +140,13 @@ export default function NewPaymentOrderPage() {
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
   const [supplierError, setSupplierError] = useState("");
 
+  const [supplierCategories, setSupplierCategories] = useState([]);
+  const [supplierCategoryId, setSupplierCategoryId] = useState("");
+
+  const [supplierCursor, setSupplierCursor] = useState(null);
+  const [supplierCursorStack, setSupplierCursorStack] = useState([]);
+  const [supplierHasMore, setSupplierHasMore] = useState(false);
+
   // Invoice modal
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [invoiceSearch, setInvoiceSearch] = useState("");
@@ -109,6 +157,41 @@ export default function NewPaymentOrderPage() {
   const [purchaseInvoices, setPurchaseInvoices] = useState([]);
   const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
   const [invoiceError, setInvoiceError] = useState("");
+
+  useEffect(() => {
+    if (!isSupplierModalOpen) return;
+
+    let cancelled = false;
+
+    async function loadSupplierCategories() {
+      try {
+        const result = await getCategories();
+
+        if (!cancelled) {
+          setSupplierCategories(Array.isArray(result) ? result : []);
+        }
+      } catch (error) {
+        console.warn("Supplier categories could not be loaded:", error);
+
+        if (!cancelled) {
+          setSupplierCategories([]);
+        }
+      }
+    }
+
+    loadSupplierCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSupplierModalOpen]);
+
+  useEffect(() => {
+    if (!isSupplierModalOpen) return;
+
+    setSupplierCursor(null);
+    setSupplierCursorStack([]);
+  }, [isSupplierModalOpen, supplierSearch, supplierCategoryId]);
 
   // Load suppliers from API when supplier modal opens or search changes.
   useEffect(() => {
@@ -121,12 +204,27 @@ export default function NewPaymentOrderPage() {
         setIsLoadingSuppliers(true);
         setSupplierError("");
 
-        const result = await getSuppliers({
-          contains: supplierSearch,
+        const selectedCategories = supplierCategoryId
+          ? [Number(supplierCategoryId)]
+          : [];
+
+        const result = await getSuppliersView({
+          search: supplierSearch,
+          categories: selectedCategories,
+          cursor: supplierCursor,
+          limit: SUPPLIER_PAGE_SIZE,
         });
 
         if (!cancelled) {
-          setSuppliers(Array.isArray(result) ? result : []);
+          setSuppliers(
+            Array.isArray(result)
+              ? result
+              : result?.suppliers ?? []
+          );
+
+          setSupplierHasMore(
+            Boolean(result?.hasMore ?? result?.has_more ?? false)
+          );
         }
       } catch (error) {
         if (!cancelled) {
@@ -134,6 +232,7 @@ export default function NewPaymentOrderPage() {
             error.message || "No se pudieron cargar los proveedores."
           );
           setSuppliers([]);
+          setSupplierHasMore(false);
         }
       } finally {
         if (!cancelled) {
@@ -146,7 +245,12 @@ export default function NewPaymentOrderPage() {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [isSupplierModalOpen, supplierSearch]);
+  }, [
+    isSupplierModalOpen,
+    supplierSearch,
+    supplierCategoryId,
+    supplierCursor,
+  ]);
 
   useEffect(() => {
     if (!isInvoiceModalOpen || !selectedSupplier) return;
@@ -195,11 +299,33 @@ export default function NewPaymentOrderPage() {
 
   const openSupplierModal = () => {
     setSupplierSearch("");
+    setSupplierCategoryId("");
+    setSupplierCursor(null);
+    setSupplierCursorStack([]);
+    setSupplierHasMore(false);
     setIsSupplierModalOpen(true);
   };
 
   const closeSupplierModal = () => {
     setIsSupplierModalOpen(false);
+  };
+
+  const handleNextSupplierPage = () => {
+    if (!suppliers.length || !supplierHasMore) return;
+
+    const lastSupplier = suppliers[suppliers.length - 1];
+
+    setSupplierCursorStack((prev) => [...prev, supplierCursor]);
+    setSupplierCursor(lastSupplier.id);
+  };
+
+  const handlePreviousSupplierPage = () => {
+    if (!supplierCursorStack.length) return;
+
+    const previousCursor = supplierCursorStack[supplierCursorStack.length - 1];
+
+    setSupplierCursorStack((prev) => prev.slice(0, -1));
+    setSupplierCursor(previousCursor);
   };
 
   const handleSelectSupplier = (supplier) => {
@@ -624,7 +750,7 @@ export default function NewPaymentOrderPage() {
       {/* Supplier Search Modal */}
       {isSupplierModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[5px] bg-surface shadow-xl">
+          <div className="relative flex h-[760px] max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[5px] bg-surface shadow-xl">
             {/* Modal Header */}
             <div className="border-b border-border bg-surface px-6 py-4">
               <h2 className="text-2xl font-bold text-foreground">
@@ -638,28 +764,53 @@ export default function NewPaymentOrderPage() {
 
             {/* Search */}
             <div className="border-b border-border p-4">
-              <label className="mb-1 block text-xs font-semibold text-secondary">
-                Buscar proveedor
-              </label>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_260px]">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-secondary">
+                    Buscar proveedor
+                  </label>
 
-              <input
-                type="text"
-                value={supplierSearch}
-                onChange={(event) => setSupplierSearch(event.target.value)}
-                placeholder="Ej: Michelin, Neumáticos, ventas@..."
-                autoFocus
-                className="w-full rounded-[5px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-              />
+                  <input
+                    type="text"
+                    value={supplierSearch}
+                    onChange={(event) => setSupplierSearch(event.target.value)}
+                    placeholder="Ej: Michelin, Neumáticos, ventas@..."
+                    autoFocus
+                    className="w-full rounded-[5px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-secondary">
+                    Categoría
+                  </label>
+
+                  <select
+                    value={supplierCategoryId}
+                    onChange={(event) => setSupplierCategoryId(event.target.value)}
+                    className="w-full rounded-[5px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  >
+                    <option value="">Todas las categorías</option>
+
+                    {supplierCategories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
             {/* Supplier Results */}
-            <div className="min-h-0 flex-1 overflow-auto p-4">
+            <div className="min-h-0 flex-1 overflow-hidden p-4">
               {supplierError && (
                 <div className="mb-3 rounded-[5px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {supplierError}
                 </div>
               )}
 
+              <div className="h-full overflow-auto">
               {isLoadingSuppliers ? (
                 <div className="py-10 text-center text-sm text-muted-foreground">
                   Cargando proveedores...
@@ -671,7 +822,7 @@ export default function NewPaymentOrderPage() {
                       <tr className="border-b border-border text-left text-xs font-semibold text-muted-foreground">
                         <th className="px-2 py-2">Proveedor</th>
                         <th className="px-2 py-2">Email</th>
-                        <th className="px-2 py-2">Categorías</th>
+                        <th className="w-[280px] px-2 py-2">Categorías</th>
                         <th className="px-2 py-2 text-right">Acción</th>
                       </tr>
                     </thead>
@@ -695,23 +846,8 @@ export default function NewPaymentOrderPage() {
 
                             <td className="px-2 py-2">{supplier.email}</td>
 
-                            <td className="px-2 py-2">
-                              {supplier.categories?.length > 0 ? (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {supplier.categories.map((category) => (
-                                    <span
-                                      key={category.id}
-                                      className="rounded-full border border-border bg-background px-2 py-0.5 text-xs text-secondary"
-                                    >
-                                      {category.name}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  Sin categorías
-                                </span>
-                              )}
+                            <td className="px-2 py-2 align-top">
+                              <SupplierCategoryBadges categories={supplier.categories || []} />
                             </td>
 
                             <td className="px-2 py-2 text-right">
@@ -734,17 +870,42 @@ export default function NewPaymentOrderPage() {
                   No se encontraron proveedores.
                 </div>
               )}
+              </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex justify-end gap-3 border-t border-border bg-surface px-6 py-4">
-              <button
-                type="button"
-                onClick={closeSupplierModal}
-                className="rounded-[5px] border border-border px-5 py-2 text-sm font-semibold text-secondary transition hover:bg-background"
-              >
-                Cerrar
-              </button>
+            <div className="flex flex-col gap-3 border-t border-border bg-surface px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs text-muted-foreground">
+                Mostrando {suppliers.length} proveedores
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handlePreviousSupplierPage}
+                  disabled={!supplierCursorStack.length || isLoadingSuppliers}
+                  className="rounded-[5px] border border-border px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Previous
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleNextSupplierPage}
+                  disabled={!supplierHasMore || isLoadingSuppliers}
+                  className="rounded-[5px] border border-border px-4 py-2 text-sm font-semibold text-secondary transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closeSupplierModal}
+                  className="rounded-[5px] border border-border px-5 py-2 text-sm font-semibold text-secondary transition hover:bg-background"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>

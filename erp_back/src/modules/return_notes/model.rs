@@ -10,6 +10,7 @@ pub struct ReturnNote {
     pub motive: String,
     pub created_at: NaiveDate,
     pub status_id: i32,
+    pub credit_note_id: Option<i32>,
 }
 
 /// Represents the return_note_details table

@@ -40,13 +40,19 @@ import { clientRequest } from "./request";
  *
  * @returns {string} Query string starting with "?", or an empty string if no filters exist.
  */
-function buildSupplierQueryParams({ contains = "", categories = [] } = {}) {
+function buildSupplierQueryParams({
+  search = "",
+  contains = "",
+  categories = [],
+  cursor,
+  limit,
+} = {}) {
   const params = new URLSearchParams();
 
-  const cleanContains = contains.trim();
+  const cleanSearch = String(search || contains || "").trim();
 
-  if (cleanContains) {
-    params.set("contains", cleanContains);
+  if (cleanSearch) {
+    params.set("search", cleanSearch);
   }
 
   for (const categoryId of categories) {
@@ -55,9 +61,32 @@ function buildSupplierQueryParams({ contains = "", categories = [] } = {}) {
     }
   }
 
+  if (cursor !== null && cursor !== undefined && cursor !== "") {
+    params.set("cursor", String(cursor));
+  }
+
+  if (limit !== null && limit !== undefined && limit !== "") {
+    params.set("limit", String(limit));
+  }
+
   const queryString = params.toString();
 
   return queryString ? `?${queryString}` : "";
+}
+
+/**
+ * Gets the full suppliers list response:
+ * {
+ *   suppliers: [],
+ *   hasMore: true
+ * }
+ */
+export function getSuppliersView(filters = {}) {
+  const query = buildSupplierQueryParams(filters);
+
+  return clientRequest(`/suppliers${query}`, {
+    method: "GET",
+  });
 }
 
 /**
@@ -119,12 +148,14 @@ function buildSupplierQueryParams({ contains = "", categories = [] } = {}) {
  *
  * @returns {Promise<Array>} List of suppliers.
  */
-export function getSuppliers(filters = {}) {
-  const query = buildSupplierQueryParams(filters);
+export async function getSuppliers(filters = {}) {
+  const response = await getSuppliersView(filters);
 
-  return clientRequest(`/suppliers${query}`, {
-    method: "GET",
-  });
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  return response?.suppliers ?? [];
 }
 
 /**

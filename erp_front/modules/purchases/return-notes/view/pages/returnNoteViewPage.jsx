@@ -6,7 +6,7 @@ import { getReturnNoteById } from "@/lib/http/client/return-notes";
 import { getPurchaseInvoiceById } from "@/lib/http/client/purchase-invoices";
 import {
   createSupplierCreditNote,
-  listSupplierCreditNotes,
+  getSupplierCreditNoteById,
 } from "@/lib/http/client/supplier-credit-notes";
 /**
  * Gets today's date in YYYY-MM-DD format for date inputs.
@@ -216,6 +216,12 @@ function mapReturnNote(data) {
     purchaseInvoice?.provider ??
     { id: null, name: "Sin proveedor" };
 
+  
+  const creditNoteId =
+    data.creditNoteId ??
+    data.credit_note_id ??
+    null;
+
   const status = data.status ?? null;
 
   const purchaseInvoiceId =
@@ -288,6 +294,8 @@ function mapReturnNote(data) {
   return {
     id: data.id,
     returnNoteNumber: String(data.id).padStart(2, "0"),
+
+    creditNoteId,
 
     purchaseInvoiceId,
     purchaseInvoiceNumber:
@@ -1021,21 +1029,25 @@ export default function ReturnNoteDetailPage() {
         }
 
         try {
-          const rawCreditNotes = await listSupplierCreditNotes({
-            search: String(mappedReturnNote.id),
-          });
+          if (!mappedReturnNote.creditNoteId) {
+            if (!ignore) {
+              setCreditNotes([]);
+            }
 
-          const linkedCreditNotes = (rawCreditNotes || [])
-            .map(mapSupplierCreditNote)
-            .filter(
-              (note) => Number(note.returnNoteId) === Number(mappedReturnNote.id)
-            );
+            return;
+          }
+
+          const creditNoteData = await getSupplierCreditNoteById(
+            mappedReturnNote.creditNoteId
+          );
+
+          const mappedCreditNote = mapSupplierCreditNote(creditNoteData);
 
           if (!ignore) {
-            setCreditNotes(linkedCreditNotes);
+            setCreditNotes([mappedCreditNote]);
           }
         } catch (creditNoteError) {
-          console.warn("Credit notes could not be loaded:", creditNoteError);
+          console.warn("Credit note could not be loaded:", creditNoteError);
 
           if (!ignore) {
             setCreditNotes([]);
@@ -1081,12 +1093,54 @@ export default function ReturnNoteDetailPage() {
       setIsSubmittingCreditNote(true);
       setCreditNoteSubmitError(null);
 
+      console.log("Payload para crear nota de crédito:", payload);
+
       const createdCreditNote = await createSupplierCreditNote(payload);
+
+      console.log("Respuesta al crear nota de crédito:", createdCreditNote);
+
       const mappedCreditNote = mapSupplierCreditNote(createdCreditNote);
 
-      setCreditNotes((prev) => [mappedCreditNote, ...prev]);
+      setCreditNotes([mappedCreditNote]);
+
+      setReturnNote((prev) =>
+        prev
+          ? {
+              ...prev,
+              creditNoteId: mappedCreditNote.id,
+            }
+          : prev
+      );
       setCreditNoteMode(null);
     } catch (error) {
+      console.error("Error creando nota de crédito:", error);
+
+      if (error.code === "INSUFFICIENT_STOCK") {
+        setCreditNoteSubmitError(
+          error.productId
+            ? `No hay stock suficiente para el producto ID ${error.productId}.`
+            : "No hay stock suficiente para completar la nota de crédito."
+        );
+
+        return;
+      }
+
+      if (error.code === "VALIDATION_ERROR") {
+        setCreditNoteSubmitError(
+          error.message || "Los datos enviados no son válidos."
+        );
+
+        return;
+      }
+
+      if (error.status === 409) {
+        setCreditNoteSubmitError(
+          error.message || "No se puede completar la operación por un conflicto de datos."
+        );
+
+        return;
+      }
+
       setCreditNoteSubmitError(
         error.message || "No se pudo crear la nota de crédito."
       );
@@ -1234,14 +1288,15 @@ export default function ReturnNoteDetailPage() {
           <div className="relative">
             <button
               type="button"
+              disabled={creditNotes.length > 0}
               onClick={() => setShowCreditNoteMenu((prev) => !prev)}
-              className="flex h-11 items-center gap-3 rounded-[5px] bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover"
+              className="flex h-11 items-center gap-3 rounded-[5px] bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Agregar Nota de Crédito
+              {creditNotes.length > 0 ? "Nota ya registrada" : "Agregar Nota de Crédito"}
               <ChevronDownIcon className="h-5 w-5" />
             </button>
 
-            {showCreditNoteMenu && (
+            {showCreditNoteMenu && creditNotes.length === 0 && (
               <div className="absolute z-20 mt-2 w-[240px] rounded-[5px] border border-border bg-surface p-2 shadow-panel">
                 <button
                   type="button"
