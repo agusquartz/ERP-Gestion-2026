@@ -1,7 +1,7 @@
 import { clientRequest } from "./request";
 
 export function getProductByQuery(q) {
-  return clientRequest(`/products?q=${encodeURIComponent(q)}`, {
+  return clientRequest(`/products?search=${encodeURIComponent(q)}`, {
     method: "GET",
   });
 }

@@ -14,6 +14,7 @@
 //! - `purchase_order::service::increase_received_quantity`
 //! - `product::service::increase_stock`
 use crate::modules::purchase_invoice::{
+    model::PurchaseInvoice,
     dto::{
         query::PurchaseInvoicesListQuery,
         create::CreatePurchaseInvoiceDto,
@@ -89,6 +90,18 @@ pub async fn get_purchase_invoice(
     Ok(invoice.map(PurchaseInvoiceDetailResponse::from))
 }
 
+pub async fn get_purchase_invoices_by_order_id(
+    order_id: i32
+) -> Result<Option<Vec<PurchaseInvoiceResponse>>, ServiceError> {
+    let maybe_invoices: Option<Vec<PurchaseInvoice>> = repository::query_invoices_by_order_id(order_id).await?;
+    let response: Option<Vec<PurchaseInvoiceResponse>> = maybe_invoices
+        .map(|inv| { inv
+            .into_iter()
+            .map(PurchaseInvoiceResponse::from)
+            .collect()
+    });
+    Ok(response)
+}
 
 
 /// Creates a new purchase invoice and triggers its side effects atomically.

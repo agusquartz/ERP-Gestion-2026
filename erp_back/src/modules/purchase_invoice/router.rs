@@ -6,6 +6,7 @@ use crate::modules::{
         list_purchase_invoices,
         get_purchase_invoice,
         create_purchase_invoice,
+        get_purchase_invoices_by_order_id,
     },
 };
 
@@ -29,6 +30,10 @@ pub fn purchase_invoice_router() -> Router {
         .route(
             "/purchases/purchase-invoices/{id}",
             get(get_purchase_invoice),
+        )
+        .route(
+            "/purchases/purchase-invoices/by-order/{id}",
+            get(get_purchase_invoices_by_order_id)
         );
     protect_routes(protected)
 }
